@@ -1,2 +1,57 @@
 
-[]
+[
+  {
+    "id": "mock-product-001",
+    "name": "CyberGuard Pro",
+    "version": "2.5.0",
+    "status": "Stable",
+    "releaseDate": "2025-05-15T10:00:00.000Z",
+    "description": "Comprehensive enterprise-grade cyber security suite.",
+    "longDescription": "CyberGuard Pro offers multi-layered protection against advanced threats, including malware, ransomware, and phishing attacks. Features real-time monitoring, AI-driven threat detection, and automated incident response.",
+    "imageUrl": "https://placehold.co/600x400.png",
+    "productUrl": "/services/cyber-security",
+    "developer": "MintFire R&D",
+    "pricingType": "Paid",
+    "pricingTerm": "Subscription",
+    "tags": ["security", "enterprise", "ai"],
+    "isFeatured": true,
+    "createdAt": "2025-06-10T12:00:00.000Z",
+    "updatedAt": "2025-06-10T12:00:00.000Z"
+  },
+  {
+    "id": "mock-product-002",
+    "name": "ChainWeaver Studio",
+    "version": "0.8.1 Beta",
+    "status": "Beta",
+    "releaseDate": "2025-06-01T10:00:00.000Z",
+    "description": "Intuitive visual development environment for smart contracts and dApps.",
+    "longDescription": "ChainWeaver Studio simplifies blockchain development with a drag-and-drop interface, pre-built templates, and seamless deployment to multiple networks. Currently in public beta.",
+    "imageUrl": "https://placehold.co/600x400.png",
+    "productUrl": "https://mintfire.com/chainweaver",
+    "developer": "MintFire Labs",
+    "pricingType": "Free",
+    "pricingTerm": "Lifetime",
+    "tags": ["blockchain", "developer tools", "beta"],
+    "isFeatured": true,
+    "createdAt": "2025-06-10T12:05:00.000Z",
+    "updatedAt": "2025-06-10T12:05:00.000Z"
+  },
+  {
+    "id": "mock-product-003",
+    "name": "InsightAI Engine",
+    "version": "Pre-Alpha",
+    "status": "Upcoming",
+    "releaseDate": "2025-09-01T10:00:00.000Z",
+    "description": "Next-gen AI engine for predictive analytics and real-time decision making.",
+    "longDescription": "InsightAI Engine leverages advanced machine learning models to provide actionable insights from complex datasets. Designed for scalability and ease of integration. Coming soon!",
+    "imageUrl": "https://placehold.co/600x400.png",
+    "productUrl": "",
+    "developer": "MintFire AI Division",
+    "pricingType": "Paid",
+    "pricingTerm": "Subscription",
+    "tags": ["ai", "analytics", "upcoming"],
+    "isFeatured": false,
+    "createdAt": "2025-06-10T12:10:00.000Z",
+    "updatedAt": "2025-06-10T12:10:00.000Z"
+  }
+]

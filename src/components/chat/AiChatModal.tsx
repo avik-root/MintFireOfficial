@@ -87,7 +87,6 @@ const AiChatModal = () => {
           <DialogTitle className="flex items-center font-headline text-xl">
             <Bot className="mr-2 text-primary glowing-icon-primary" /> MintFire AI Assistant
           </DialogTitle>
-          {/* The default DialogContent close button will be used */}
         </DialogHeader>
         <ScrollArea className="flex-grow p-4 bg-background/70" ref={scrollAreaRef}>
           <div className="space-y-4">
@@ -100,7 +99,7 @@ const AiChatModal = () => {
               >
                 {message.sender === 'ai' && (
                   <div className="p-2 bg-muted rounded-full mb-1">
-                    <Bot className="w-5 h-5 text-primary" />
+                    <Bot className="w-5 h-5 text-primary glowing-icon-primary" />
                   </div>
                 )}
                 <div
@@ -122,7 +121,7 @@ const AiChatModal = () => {
             {isLoading && (
               <div className="flex items-start space-x-3">
                  <div className="p-2 bg-muted rounded-full">
-                   <Bot className="w-5 h-5 text-primary animate-pulse" />
+                   <Bot className="w-5 h-5 text-primary animate-pulse glowing-icon-primary" />
                  </div>
                 <div className="p-3 rounded-lg bg-card text-card-foreground border border-border">
                   <p className="text-sm italic">MintFire AI is thinking...</p>

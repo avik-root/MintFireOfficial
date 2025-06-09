@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -71,15 +72,15 @@ body {
     --secondary-foreground: 0 70% 25%; /* Darker Blood Red on secondary */
 
     --muted: 0 0% 88%; /* Lighter grey for muted elements */
-    --muted-foreground: 0 70% 45%; /* Softer Blood Red for muted text */
+    --muted-foreground: 0 0% 50%; /* Neutral Medium Grey for muted text */
 
-    --accent: 210 70% 65%; /* Related Lighter Blue for accents */
+    --accent: 210 80% 70%; /* Vibrant Light Blue */
     --accent-foreground: 0 0% 100%; /* White text on Accent */
 
     --destructive: 0 80% 55%; /* Saturated Red for destructive actions */
     --destructive-foreground: 0 0% 100%; /* White text on destructive */
 
-    --border: 0 0% 85%; /* Light grey border */
+    --border: 0 0% 80%; /* Slightly darker light grey border */
     --input: 0 0% 95%; /* Very light grey for input backgrounds */
     --ring: 220 75% 55%; /* Prime Blue for focus rings */
     
@@ -87,9 +88,9 @@ body {
     --sidebar-foreground: var(--foreground); /* Blood red text in sidebar */
     --sidebar-primary: var(--primary); /* Prime blue for primary sidebar elements */
     --sidebar-primary-foreground: var(--primary-foreground); /* White text on prime blue */
-    --sidebar-accent: var(--accent); /* Lighter blue for sidebar accents */
+    --sidebar-accent: var(--accent); /* Vibrant light blue for sidebar accents */
     --sidebar-accent-foreground: var(--accent-foreground); /* White text on accent */
-    --sidebar-border: 0 0% 90%; /* Light grey border for sidebar */
+    --sidebar-border: 0 0% 85%; /* Light grey border for sidebar */
     --sidebar-ring: var(--ring); /* Prime blue for focus rings in sidebar */
   }
 }
@@ -117,7 +118,7 @@ body {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 1000; /* Ensure it's on top of most things but interactable through */
+  z-index: 1000; 
 }
 
 .scanline-overlay::before {
@@ -130,11 +131,11 @@ body {
   background-image: repeating-linear-gradient(
     transparent,
     transparent 2px,
-    hsla(var(--foreground) / 0.03) 2px, /* More subtle scanlines */
+    hsla(var(--foreground) / 0.03) 2px, 
     hsla(var(--foreground) / 0.03) 3px
   );
   animation: scanline-animation 20s linear infinite;
-  opacity: 0.7; /* Overall opacity of scanlines */
+  opacity: 0.7; 
 }
 
 @keyframes scanline-animation {
@@ -142,7 +143,7 @@ body {
     background-position: 0 0;
   }
   100% {
-    background-position: 0px 100px; /* Adjust speed by changing 100px */
+    background-position: 0px 100px; 
   }
 }
 
@@ -164,7 +165,6 @@ body {
   filter: drop-shadow(0 0 5px hsl(var(--primary) / 0.9)) drop-shadow(0 0 12px hsl(var(--primary) / 0.7));
 }
 
-/* Glitch animation for text */
 .glitch-text {
   position: relative;
   animation: glitch-skew 1s infinite linear alternate-reverse;
@@ -177,7 +177,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: hsl(var(--background)); /* Or transparent if on complex bg */
+  background: hsl(var(--background)); 
   overflow: hidden;
 }
 .glitch-text::before {
@@ -207,17 +207,14 @@ body {
   0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); }
   10% { clip-path: polygon(0 15%, 100% 15%, 100% 18%, 0 18%); }
   20% { clip-path: polygon(0 40%, 100% 40%, 100% 43%, 0 43%); }
-  /* ... more steps ... */
   100% { clip-path: polygon(0 50%, 100% 50%, 100% 53%, 0 53%); }
 }
 
 @keyframes glitch-anim-2 {
   0% { clip-path: polygon(0 60%, 100% 60%, 100% 63%, 0 63%); }
-  /* ... more steps ... */
   100% { clip-path: polygon(0 90%, 100% 90%, 100% 93%, 0 93%); }
 }
 
-/* Layered effect for cards */
 .layered-card {
   position: relative;
   background-color: hsl(var(--card));
@@ -232,7 +229,7 @@ body {
   top: 0;
   width: 100%;
   height: 100%;
-  border-radius: inherit; /* inherit from parent */
+  border-radius: inherit; 
   z-index: -1;
   transition: transform 0.3s ease-out;
 }
@@ -253,5 +250,3 @@ body {
 .layered-card:hover::after {
   transform: translate(12px, 12px);
 }
-
-    

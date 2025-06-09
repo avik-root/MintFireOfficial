@@ -1,7 +1,6 @@
 
 import Link from 'next/link';
 import Logo from '@/components/Logo';
-// ThemeToggle is removed as theme is now fixed
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -57,13 +56,13 @@ const Header = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/admin/login" className="text-foreground/80 hover:text-primary transition-colors">
+        </nav>
+        <div className="flex items-center space-x-4">
+          <Link href="/admin/login" className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors">
             Admin Login
           </Link>
-        </nav>
-        <div className="flex items-center space-x-2">
-          {/* ThemeToggle component is removed */}
-          {/* Placeholder for mobile menu trigger if needed */}
+          {/* Placeholder for mobile menu trigger if needed in future */}
+          {/* e.g. <Button variant="ghost" size="icon" className="md:hidden"><Menu /></Button> */}
         </div>
       </div>
     </header>

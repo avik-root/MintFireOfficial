@@ -1,8 +1,8 @@
 
 import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Briefcase, Activity } from 'lucide-react';
 import Link from 'next/link';
 
 interface FeatureItem {
@@ -30,8 +30,8 @@ const sectionsData: Array<{ title: string; items: FeatureItem[]; sectionIcon: Re
     sectionIcon: Clock,
     sectionId: "upcoming-products",
     items: [
-      { id: "up1", title: "Project Chimera AI", description: "Adaptive AI core for industrial automation.", icon: Cpu, image: "https://placehold.co/600x400.png", dataAiHint: "artificial intelligence" },
-      { id: "up2", title: "Helios IoT Platform", description: "Scalable platform for interconnected smart devices.", icon: Smartphone, image: "https://placehold.co/600x400.png", dataAiHint: "iot devices" },
+      { id: "up1", title: "Project Chimera AI", description: "Adaptive AI core for industrial automation.", icon: Cpu, image: "https://placehold.co/600x400.png", dataAiHint: "artificial intelligence", link: "/services/ai" },
+      { id: "up2", title: "Helios IoT Platform", description: "Scalable platform for interconnected smart devices.", icon: Smartphone, image: "https://placehold.co/600x400.png", dataAiHint: "iot devices", link: "/services/iot-devices" },
     ],
   },
   {
@@ -51,6 +51,23 @@ const sectionsData: Array<{ title: string; items: FeatureItem[]; sectionIcon: Re
     ],
   },
 ];
+
+interface CoreTechnology {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  link: string;
+}
+
+const coreTechnologiesData: CoreTechnology[] = [
+  { id: "ct1", title: "Cyber Security", description: "Protecting digital assets with cutting-edge defense mechanisms.", icon: ShieldCheck, link: "/services/cyber-security" },
+  { id: "ct2", title: "Blockchain", description: "Building transparent and secure decentralized solutions.", icon: Blocks, link: "/services/blockchain" },
+  { id: "ct3", title: "Artificial Intelligence", description: "Leveraging AI to create intelligent systems and insights.", icon: Cpu, link: "/services/ai" },
+  { id: "ct4", title: "Industrial Software", description: "Optimizing industrial operations with robust software.", icon: Briefcase, link: "/services/industrial-software" },
+  { id: "ct5", title: "IoT Devices", description: "Connecting the physical world with smart, secure devices.", icon: Smartphone, link: "/services/iot-devices" },
+];
+
 
 export default function Home() {
   return (
@@ -108,6 +125,36 @@ export default function Home() {
           </div>
         </section>
       ))}
+
+      <section id="core-technologies" className="py-16">
+        <div className="text-center mb-12">
+          <Activity className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
+          <h2 className="font-headline text-4xl font-bold">Our Core Technologies</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mt-2">
+            Driving innovation across key technology domains to build the future.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {coreTechnologiesData.map((tech) => (
+            <Card key={tech.id} className="layered-card overflow-hidden group transition-all duration-300 ease-in-out hover:shadow-primary/30 flex flex-col">
+              <CardHeader className="items-center text-center">
+                <div className="p-3 bg-primary/10 rounded-full inline-block mb-4 border border-primary/30 group-hover:border-primary transition-colors">
+                  <tech.icon className="w-10 h-10 text-primary glowing-icon-primary transition-colors group-hover:text-accent" />
+                </div>
+                <CardTitle className="font-headline text-2xl group-hover:text-foreground transition-colors">{tech.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex-grow">
+                <CardDescription className="text-muted-foreground h-16 overflow-hidden">{tech.description}</CardDescription>
+              </CardContent>
+              <CardFooter className="justify-center pt-4">
+                 <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
+                   <Link href={tech.link}>Explore Solutions <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                 </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

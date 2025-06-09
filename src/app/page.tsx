@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, GitBranch, Sparkles, TestTube2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface FeatureItem {
@@ -74,7 +74,7 @@ export default function Home() {
       </section>
 
       {sectionsData.map((section) => (
-        <section key={section.id} id={section.sectionId} className="py-12">
+        <section key={section.sectionId} id={section.sectionId} className="py-12">
           <div className="flex items-center mb-8">
             <section.sectionIcon className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
             <h2 className="font-headline text-4xl font-bold">{section.title}</h2>
@@ -107,4 +107,6 @@ export default function Home() {
           </div>
         </section>
       ))}
-    
+    </div>
+  );
+}

@@ -4,6 +4,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
+import type { CreateAdminInput, LoginAdminInput } from '@/lib/schemas/admin-schemas';
 // In a real application, use a library like bcrypt for password hashing
 // import bcrypt from 'bcryptjs'; 
 
@@ -57,16 +58,6 @@ export async function checkAdminExists(): Promise<{ exists: boolean; error?: str
   }
 }
 
-export const CreateAdminSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-  confirmPassword: z.string(),
-}).refine(async (data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match.",
-  path: ["confirmPassword"],
-});
-export type CreateAdminInput = z.infer<typeof CreateAdminSchema>;
-
 export async function createAdminAccount(data: CreateAdminInput): Promise<{ success: boolean; message: string }> {
   try {
     const admins = await getAdmins();
@@ -86,12 +77,6 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
     return { success: false, message: error.message || "Failed to create admin account." };
   }
 }
-
-export const LoginAdminSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
-});
-export type LoginAdminInput = z.infer<typeof LoginAdminSchema>;
 
 export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string }> {
   try {

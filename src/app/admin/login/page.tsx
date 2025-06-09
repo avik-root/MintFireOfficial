@@ -15,11 +15,13 @@ import {
   checkAdminExists, 
   createAdminAccount, 
   loginAdmin, 
-  CreateAdminSchema, 
-  CreateAdminInput,
-  LoginAdminSchema,
-  LoginAdminInput
 } from '@/actions/admin-actions';
+import {
+  CreateAdminSchema, 
+  type CreateAdminInput,
+  LoginAdminSchema,
+  type LoginAdminInput
+} from '@/lib/schemas/admin-schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 

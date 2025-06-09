@@ -64,6 +64,11 @@ export const ProductSchema = z.object({
 });
 export type Product = z.infer<typeof ProductSchema>;
 
+// Exporting the ProductSchema as an array for use in the AI flow
+export const ProductListSchema = z.array(ProductSchema);
+export type ProductList = z.infer<typeof ProductListSchema>;
+
+
 export const FormProductSchema = z.object({
   name: z.string().min(1, "Product name is required."),
   version: z.string().optional().nullable(),
@@ -110,10 +115,9 @@ export const FormProductSchema = z.object({
 
     if (data.pricingType === 'Paid') {
         if (data.pricingTerm === 'Subscription') {
-            const mpValid = parseAndValidateAmount(data.monthlyPriceString, ["monthlyPriceString"], "Monthly price", true);
-            const smpValid = parseAndValidateAmount(data.sixMonthPriceString, ["sixMonthPriceString"], "6-Month price", true);
-            const apValid = parseAndValidateAmount(data.annualPriceString, ["annualPriceString"], "Annual price", true);
-            if (!mpValid || !smpValid || !apValid) return z.NEVER; // Stop further validation if any price is invalid
+            if(!parseAndValidateAmount(data.monthlyPriceString, ["monthlyPriceString"], "Monthly price", true)) return z.NEVER;
+            if(!parseAndValidateAmount(data.sixMonthPriceString, ["sixMonthPriceString"], "6-Month price", true)) return z.NEVER;
+            if(!parseAndValidateAmount(data.annualPriceString, ["annualPriceString"], "Annual price", true)) return z.NEVER;
         } else if (data.pricingTerm === 'Lifetime') {
             if(!parseAndValidateAmount(data.priceAmountString, ["priceAmountString"], "Price amount", true)) return z.NEVER;
         }

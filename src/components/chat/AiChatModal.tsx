@@ -34,6 +34,18 @@ const AiChatModal = () => {
   };
 
   useEffect(() => {
+    // Add welcome message only when dialog opens and there are no messages
+    if (isOpen && messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: 'welcome-' + Date.now(),
+        text: "Welcome to MintFire! I'm your AI assistant. Ask me anything about our Cyber Security, Blockchain, AI, or IoT solutions.",
+        sender: 'ai',
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [isOpen]); // Effect runs when isOpen changes
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
@@ -72,11 +84,11 @@ const AiChatModal = () => {
     return (
       <Button
         variant="outline"
-        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg border-2 border-accent text-accent hover:border-accent/80 hover:text-foreground z-50"
+        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg border-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground z-50"
         onClick={() => setIsOpen(true)}
         aria-label="Open AI Chat"
       >
-        <Bot size={28} className="text-accent group-hover:text-foreground" />
+        <Bot size={28} />
       </Button>
     );
   }
@@ -89,7 +101,7 @@ const AiChatModal = () => {
             <Bot className="mr-2 text-accent" /> MintFire AI Assistant
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-grow p-4 bg-background/70" ref={scrollAreaRef}>
+        <ScrollArea className="flex-grow p-4 bg-background" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -99,12 +111,12 @@ const AiChatModal = () => {
                 }`}
               >
                 {message.sender === 'ai' && (
-                  <div className="p-2 bg-muted rounded-full mb-1">
+                  <div className="p-2 bg-muted rounded-full mb-1 self-start flex-shrink-0">
                     <Bot className="w-5 h-5 text-accent" />
                   </div>
                 )}
                 <div
-                  className={`p-3 rounded-lg max-w-[75%] shadow-md ${
+                  className={`p-3 rounded-lg max-w-[75%] shadow-md break-words ${
                     message.sender === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-card text-card-foreground border border-border'
@@ -113,7 +125,7 @@ const AiChatModal = () => {
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                 </div>
                 {message.sender === 'user' && (
-                   <div className="p-2 bg-muted rounded-full mb-1">
+                   <div className="p-2 bg-muted rounded-full mb-1 self-start flex-shrink-0">
                     <User className="w-5 h-5 text-accent" />
                   </div>
                 )}
@@ -121,7 +133,7 @@ const AiChatModal = () => {
             ))}
             {isLoading && (
               <div className="flex items-start space-x-3">
-                 <div className="p-2 bg-muted rounded-full">
+                 <div className="p-2 bg-muted rounded-full self-start flex-shrink-0">
                    <Bot className="w-5 h-5 text-accent animate-pulse" />
                  </div>
                 <div className="p-3 rounded-lg bg-card text-card-foreground border border-border">
@@ -142,7 +154,7 @@ const AiChatModal = () => {
               className="flex-grow focus-visible:ring-accent"
               disabled={isLoading}
             />
-            <Button onClick={handleSendMessage} disabled={isLoading} variant="outline">
+            <Button onClick={handleSendMessage} disabled={isLoading} variant="outline" size="icon">
               <Send className="w-5 h-5" />
               <span className="sr-only">Send message</span>
             </Button>

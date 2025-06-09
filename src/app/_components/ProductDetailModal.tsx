@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink, Repeat, Clock, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { cn } from "@/lib/utils"; // Added import
+import { cn } from "@/lib/utils";
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -31,6 +31,11 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
       colorClass = 'bg-yellow-600/30 text-yellow-400 border-yellow-500';
     } else if (status === 'Alpha') {
       colorClass = 'bg-orange-600/30 text-orange-400 border-orange-500';
+    } else if (status === 'Upcoming') {
+      colorClass = 'bg-blue-600/30 text-blue-400 border-blue-500';
+      IconComponent = Clock;
+    } else if (status === 'Deprecated') {
+      colorClass = 'bg-red-600/30 text-red-400 border-red-500';
     }
     return (
       <Badge variant="outline" className={`text-sm px-2 py-1 ${colorClass}`}>
@@ -183,4 +188,3 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     </Dialog>
   );
 }
-

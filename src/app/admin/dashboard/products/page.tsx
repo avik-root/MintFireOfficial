@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { PlusCircle, Edit, Package, AlertTriangle, Search, ArrowUpDown, Loader2, Eye, EyeOff, Ticket, KeyRound, DollarSign, Layers } from "lucide-react";
+import { PlusCircle, Edit, Package, AlertTriangle, Search, ArrowUpDown, Loader2, Eye, EyeOff, Ticket, KeyRound, DollarSign, Layers, Clock } from "lucide-react";
 import DeleteProductButton from "./_components/DeleteProductButton";
 import type { Product } from "@/lib/schemas/product-schemas";
 import { Badge } from "@/components/ui/badge";
@@ -101,7 +101,7 @@ export default function AdminProductsPage() {
       } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
         valA = valA ? 1 : 0;
         valB = valB ? 1 : 0;
-      } else if (sortKey === 'pricingType') { // Basic sort for pricing - can be enhanced
+      } else if (sortKey === 'pricingType') { 
         valA = a.pricingType === 'Paid' ? (a.monthlyPrice || a.priceAmount || 1) : 0;
         valB = b.pricingType === 'Paid' ? (b.monthlyPrice || b.priceAmount || 1) : 0;
       }
@@ -251,6 +251,7 @@ export default function AdminProductsPage() {
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">{product.name}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm">
                         <Badge variant="outline" className={getStatusColor(product.status)}>
+                           {product.status === 'Upcoming' && <Clock className="mr-1 h-3 w-3" />}
                           {product.status} {product.version && `v${product.version}`}
                         </Badge>
                       </td>

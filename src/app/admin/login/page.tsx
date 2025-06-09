@@ -162,7 +162,7 @@ export default function AdminPage() {
                   )}
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/80 text-primary-foreground" disabled={isSubmittingCreate}>
+                  <Button type="submit" className="w-full" variant="default" disabled={isSubmittingCreate}>
                     {isSubmittingCreate ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : 'Create Account'}
                   </Button>
                 </CardFooter>
@@ -218,7 +218,7 @@ export default function AdminPage() {
                   )}
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/80 text-primary-foreground" disabled={isSubmittingLogin}>
+                  <Button type="submit" className="w-full" variant="default" disabled={isSubmittingLogin}>
                     {isSubmittingLogin ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...</> : 'Login'}
                   </Button>
                    <p className="text-xs text-muted-foreground text-center">

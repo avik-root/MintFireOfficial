@@ -64,10 +64,10 @@ export default function Home() {
             Pioneering the future of Cyber Security, Blockchain, AI, Industrial Software, and IoT Devices.
           </p>
           <div className="space-x-4">
-            <Button asChild size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-lg shadow-primary/50">
+            <Button asChild size="lg" variant="default" className="shadow-lg shadow-primary/50">
               <Link href="#latest-releases">Explore Products</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="border-accent text-accent hover:bg-accent/10 hover:text-accent glowing-icon shadow-lg shadow-accent/30">
+            <Button asChild variant="outline" size="lg" className="shadow-lg shadow-accent/30">
               <Link href="/company">About Us</Link>
             </Button>
           </div>
@@ -89,16 +89,16 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                     <item.icon className="absolute top-4 right-4 w-8 h-8 text-accent glowing-icon" />
                   </div>
-                  <CardTitle className="font-headline text-2xl group-hover:text-primary transition-colors">{item.title}</CardTitle>
+                  <CardTitle className="font-headline text-2xl group-hover:text-foreground transition-colors">{item.title}</CardTitle>
                   <CardDescription className="text-muted-foreground h-12 overflow-hidden">{item.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {item.link ? (
-                     <Button asChild variant="link" className="text-accent p-0 hover:text-primary">
+                     <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
                        <Link href={item.link}>Learn More <ArrowRight className="ml-2 w-4 h-4" /></Link>
                      </Button>
                   ) : (
-                    <Button variant="outline" className="text-accent border-accent hover:bg-accent hover:text-accent-foreground">
+                    <Button variant="outline" className="text-accent border-accent">
                       Get Notified <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   )}

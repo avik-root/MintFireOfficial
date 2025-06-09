@@ -34,7 +34,7 @@ const ServicePageLayout: React.FC<ServicePageLayoutProps> = ({
           fill
           className="object-cover absolute inset-0 z-0 opacity-30" 
           data-ai-hint={imageAiHint}
-          priority // Added priority for LCP images if this is above the fold
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent z-10"></div>
         <div className="container mx-auto px-4 relative z-20 text-center">
@@ -64,7 +64,7 @@ const ServicePageLayout: React.FC<ServicePageLayoutProps> = ({
             <p className="text-muted-foreground mb-6">
               Our {title.toLowerCase()} solutions are built on a foundation of innovation, security, and scalability, ensuring your operations are future-proof and resilient.
             </p>
-            <Button asChild className="bg-accent hover:bg-accent/80 text-accent-foreground w-full glowing-icon">
+            <Button asChild variant="outline" className="w-full glowing-icon">
               <Link href="/company#contact">Request a Demo <ArrowRight className="ml-2 w-4 h-4" /></Link>
             </Button>
           </div>

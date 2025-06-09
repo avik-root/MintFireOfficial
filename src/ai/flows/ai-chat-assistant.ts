@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -27,6 +28,7 @@ export async function chatAssistant(input: ChatAssistantInput): Promise<ChatAssi
 
 const prompt = ai.definePrompt({
   name: 'chatAssistantPrompt',
+  model: 'googleai/gemini-pro', // Explicitly define the model
   input: {schema: ChatAssistantInputSchema},
   output: {schema: ChatAssistantOutputSchema},
   prompt: `You are an AI chat assistant for MintFire, a company specializing in Cyber Security, Blockchain, AI, Industrial Software, and IoT Devices.

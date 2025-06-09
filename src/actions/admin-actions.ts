@@ -4,45 +4,30 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import type { CreateAdminInput, LoginAdminInput } from '@/lib/schemas/admin-schemas';
-// In a real application, use a library like bcrypt for password hashing
-// import bcrypt from 'bcryptjs'; 
+import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored } from '@/lib/schemas/admin-schemas';
+import { AdminUserStoredSchema, CreateAdminSchema } from '@/lib/schemas/admin-schemas'; // Ensure CreateAdminSchema is imported for password validation reference
+import { revalidatePath } from 'next/cache';
 
 const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
 
-// Schema for admin user stored in JSON
-const AdminUserStoredSchema = z.object({
-  adminName: z.string(),
-  adminId: z.string(),
-  email: z.string().email(),
-  // In a real app, this would be a password hash
-  // For prototype simplicity, storing password directly.
-  // IMPORTANT: This is not secure for production.
-  password: z.string(), 
-});
-type AdminUserStored = z.infer<typeof AdminUserStoredSchema>;
-
-async function getAdmins(): Promise<AdminUserStored[]> {
+async function getAdminsInternal(): Promise<AdminUserStored[]> {
   try {
-    // Ensure 'data' directory exists
     await fs.mkdir(path.dirname(adminFilePath), { recursive: true }); 
     const data = await fs.readFile(adminFilePath, 'utf-8');
-    return JSON.parse(data) as AdminUserStored[];
+    const parsedData = JSON.parse(data);
+    return z.array(AdminUserStoredSchema).parse(parsedData);
   } catch (error: any) {
-    // If file doesn't exist, create it with an empty array
     if (error.code === 'ENOENT') {
       await fs.writeFile(adminFilePath, JSON.stringify([]), 'utf-8');
       return [];
     }
     console.error("Error reading admin file:", error);
-    // For other errors, rethrow or handle as appropriate
     throw new Error('Could not read admin data. Please ensure the data directory is writable.');
   }
 }
 
 async function saveAdmins(admins: AdminUserStored[]): Promise<void> {
   try {
-    // Ensure 'data' directory exists
     await fs.mkdir(path.dirname(adminFilePath), { recursive: true });
     await fs.writeFile(adminFilePath, JSON.stringify(admins, null, 2), 'utf-8');
   } catch (error) {
@@ -53,7 +38,7 @@ async function saveAdmins(admins: AdminUserStored[]): Promise<void> {
 
 export async function checkAdminExists(): Promise<{ exists: boolean; error?: string }> {
   try {
-    const admins = await getAdmins();
+    const admins = await getAdminsInternal();
     return { exists: admins.length > 0 };
   } catch (error: any) {
     return { exists: false, error: error.message || "Failed to check admin status." };
@@ -62,18 +47,15 @@ export async function checkAdminExists(): Promise<{ exists: boolean; error?: str
 
 export async function createAdminAccount(data: CreateAdminInput): Promise<{ success: boolean; message: string }> {
   try {
-    const admins = await getAdmins();
+    const admins = await getAdminsInternal();
     if (admins.length > 0) {
       return { success: false, message: "An admin account already exists. Cannot create another." };
     }
-    // In a real app, hash the password before saving
-    // const hashedPassword = await bcrypt.hash(data.password, 10);
     const newAdmin: AdminUserStored = { 
       adminName: data.adminName,
       adminId: data.adminId,
       email: data.email, 
-      password: data.password // Store plain password (NOT FOR PRODUCTION)
-      // password: hashedPassword 
+      password: data.password 
     };
     await saveAdmins([newAdmin]);
     return { success: true, message: "Admin account created successfully. You can now log in." };
@@ -84,7 +66,7 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
 
 export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string }> {
   try {
-    const admins = await getAdmins();
+    const admins = await getAdminsInternal();
     const admin = admins.find(a => 
       a.email === data.email &&
       a.adminName === data.adminName &&
@@ -94,16 +76,68 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     if (!admin) {
       return { success: false, message: "Invalid credentials." };
     }
-    // In a real app, compare with the hashed password
-    // const passwordMatch = await bcrypt.compare(data.password, admin.password);
-    // if (!passwordMatch) {
-    //   return { success: false, message: "Invalid credentials." };
-    // }
-    if (admin.password !== data.password) { // Plain text comparison (NOT FOR PRODUCTION)
+    if (admin.password !== data.password) {
         return { success: false, message: "Invalid credentials." };
     }
     return { success: true, message: "Login successful! Redirecting..." };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to log in." };
+  }
+}
+
+export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?: string }> {
+  try {
+    const admins = await getAdminsInternal();
+    if (admins.length === 0) {
+      return { error: "Admin account not found." };
+    }
+    const currentAdmin = admins[0]; // Assuming single admin system
+    return { 
+      admin: {
+        adminName: currentAdmin.adminName,
+        adminId: currentAdmin.adminId,
+        email: currentAdmin.email,
+      } 
+    };
+  } catch (error: any) {
+    return { error: error.message || "Failed to fetch admin profile." };
+  }
+}
+
+export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
+  try {
+    const admins = await getAdminsInternal();
+    if (admins.length === 0) {
+      return { success: false, message: "Admin account not found. Cannot update." };
+    }
+    
+    let currentAdmin = admins[0]; // Assuming single admin
+
+    // Handle password change
+    if (data.newPassword) {
+      if (!data.currentPassword) {
+        return { success: false, message: "Current password is required to set a new password." };
+      }
+      if (data.currentPassword !== currentAdmin.password) {
+        return { success: false, message: "Incorrect current password." };
+      }
+      // Password strength is validated by the Zod schema (UpdateAdminProfileSchema)
+      currentAdmin.password = data.newPassword;
+    }
+
+    // Update other details
+    currentAdmin.adminName = data.adminName;
+    currentAdmin.adminId = data.adminId;
+    currentAdmin.email = data.email;
+
+    await saveAdmins([currentAdmin, ...admins.slice(1)]); // Save updated admin (and any others, though it's single admin for now)
+    
+    revalidatePath('/admin/dashboard/settings'); // Revalidate settings page
+    
+    return { success: true, message: "Admin profile updated successfully." };
+
+  } catch (error: any) {
+    console.error("Error updating admin profile:", error);
+    return { success: false, message: error.message || "Failed to update admin profile." };
   }
 }

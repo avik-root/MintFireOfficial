@@ -1,12 +1,12 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, User, X } from 'lucide-react';
+import { Bot, Send, User } from 'lucide-react';
 import { chatAssistant, ChatAssistantInput } from '@/ai/flows/ai-chat-assistant';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +22,20 @@ const AiChatModal = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (scrollAreaRef.current) {
+      const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+      if (scrollViewport) {
+        scrollViewport.scrollTop = scrollViewport.scrollHeight;
+      }
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
@@ -54,11 +68,10 @@ const AiChatModal = () => {
     }
   };
 
-  // This is a floating action button to open the chat
   if (!isOpen) {
     return (
       <Button
-        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-primary hover:bg-primary/80 text-primary-foreground glowing-icon-primary"
+        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-primary hover:bg-primary/80 text-primary-foreground glowing-icon-primary z-50"
         onClick={() => setIsOpen(true)}
         aria-label="Open AI Chat"
       >
@@ -70,33 +83,28 @@ const AiChatModal = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px] md:max-w-[600px] lg:max-w-[700px] h-[80vh] flex flex-col p-0 border-primary shadow-2xl shadow-primary/30">
-        <DialogHeader className="p-4 border-b border-border">
+        <DialogHeader className="p-4 border-b border-border sticky top-0 bg-card z-10">
           <DialogTitle className="flex items-center font-headline text-xl">
             <Bot className="mr-2 text-primary glowing-icon-primary" /> MintFire AI Assistant
           </DialogTitle>
-          <DialogClose asChild>
-             <Button variant="ghost" size="icon" className="absolute right-4 top-3">
-                <X className="h-5 w-5" />
-                <span className="sr-only">Close</span>
-              </Button>
-          </DialogClose>
+          {/* The default DialogContent close button will be used */}
         </DialogHeader>
-        <ScrollArea className="flex-grow p-4 bg-background/70">
+        <ScrollArea className="flex-grow p-4 bg-background/70" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex items-start space-x-3 ${
+                className={`flex items-end space-x-3 ${
                   message.sender === 'user' ? 'justify-end' : ''
                 }`}
               >
                 {message.sender === 'ai' && (
-                  <div className="p-2 bg-muted rounded-full">
+                  <div className="p-2 bg-muted rounded-full mb-1">
                     <Bot className="w-5 h-5 text-primary" />
                   </div>
                 )}
                 <div
-                  className={`p-3 rounded-lg max-w-[75%] ${
+                  className={`p-3 rounded-lg max-w-[75%] shadow-md ${
                     message.sender === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-card text-card-foreground border border-border'
@@ -105,7 +113,7 @@ const AiChatModal = () => {
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                 </div>
                 {message.sender === 'user' && (
-                   <div className="p-2 bg-muted rounded-full">
+                   <div className="p-2 bg-muted rounded-full mb-1">
                     <User className="w-5 h-5 text-accent" />
                   </div>
                 )}
@@ -123,7 +131,7 @@ const AiChatModal = () => {
             )}
           </div>
         </ScrollArea>
-        <DialogFooter className="p-4 border-t border-border">
+        <DialogFooter className="p-4 border-t border-border sticky bottom-0 bg-card z-10">
           <div className="flex w-full space-x-2">
             <Input
               type="text"

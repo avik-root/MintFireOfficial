@@ -44,8 +44,17 @@ const chatAssistantFlow = ai.defineFlow(
     outputSchema: ChatAssistantOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const result = await prompt(input); // Get the full result object
+    if (!result.output) {
+      console.error(
+        'AI chat assistant did not receive the expected output structure from the model.',
+        'Input:', input,
+        'Full Model Response:', result.response // Log the raw response for debugging
+      );
+      // Provide a fallback error message in the expected structure
+      return { response: "I'm sorry, I encountered an issue processing your request. Please try again later." };
+    }
+    return result.output; // Now it's safer, as we've checked result.output
   }
 );
 

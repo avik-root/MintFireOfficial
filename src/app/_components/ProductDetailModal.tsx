@@ -98,8 +98,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-0 border-primary shadow-2xl shadow-primary/30 max-h-[90vh] flex flex-col">
-        <DialogHeader className="p-6 pb-4 border-b border-border bg-card sticky top-0 z-10">
-          {/* Removed the flex div and custom close button. The default DialogClose from DialogContent will be used. */}
+        <DialogHeader className="p-6 pb-4 border-b border-border bg-card">
           <DialogTitle className="font-headline text-2xl md:text-3xl text-primary flex items-center gap-3">
             <Package className="w-7 h-7 md:w-8 md:h-8 text-primary flex-shrink-0" />
             {product.name}
@@ -166,9 +165,8 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
           </div>
         </ScrollArea>
 
-        <DialogFooter className="p-4 border-t border-border bg-card sticky bottom-0 z-10">
+        <DialogFooter className="p-4 border-t border-border bg-card">
           <div className="flex w-full justify-between items-center gap-2">
-            {/* Default DialogClose (from DialogContent) will handle closing. We just need a styled button for the user to click if they don't use the X */}
              <Button variant="outline" onClick={onClose}>Close</Button>
             {productLinkProps && (
                 <Button asChild variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground">

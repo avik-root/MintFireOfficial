@@ -35,8 +35,8 @@ export default function TeamMemberCard({ member, onViewDetails }: TeamMemberCard
         <CardDescription className="text-accent">{member.role}</CardDescription>
       </CardContent>
       <CardFooter className="justify-center">
-        <Button 
-          variant="link" 
+        <Button
+          variant="link"
           className="text-accent p-0 hover:text-foreground"
           onClick={() => onViewDetails(member)}
           aria-label={`See more details for ${member.name}`}

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, use } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { getApplicantById } from "@/actions/applicant-actions";
 import { UserCheck, Loader2, AlertTriangle, Mail, Phone, Briefcase, Link as LinkIcon, ExternalLink, FileText, MessageSquare, CalendarDays } from "lucide-react";
@@ -11,11 +11,13 @@ import UpdateApplicantStatusForm from '../_components/UpdateApplicantStatusForm'
 import Link from 'next/link'; // Next.js Link
 import { Button } from '@/components/ui/button'; // Assuming you have a Button component
 
-export default function ApplicantDetailPage({ params }: { params: { id: string } }) {
+export default function ApplicantDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const [applicant, setApplicant] = useState<Applicant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Unwrap the params promise using React.use()
+  const params = use(paramsPromise);
   const applicantId = params.id;
 
   const fetchApplicant = useCallback(async () => {

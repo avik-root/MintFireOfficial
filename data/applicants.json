@@ -1,2 +1,17 @@
-
-[]
+[
+  {
+    "fullName": "Test Hacker",
+    "email": "test@gmail.com",
+    "phone": "9123456780",
+    "positionAppliedFor": "hacker",
+    "coverLetter": "Hacking",
+    "resumeLink": "https://9000-firebase-studio-1749466999761.cluster-73qgvk7hjjadkrjeyexca5ivva.cloudworkstations.dev/admin/dashboard/blogs",
+    "portfolioUrl": "",
+    "githubUrl": "https://9000-firebase-studio-1749466999761.cluster-73qgvk7hjjadkrjeyexca5ivva.cloudworkstations.dev/admin/dashboard/blogs",
+    "linkedinUrl": "https://9000-firebase-studio-1749466999761.cluster-73qgvk7hjjadkrjeyexca5ivva.cloudworkstations.dev/admin/dashboard/blogs",
+    "id": "e7f9699b-07a4-4779-8a50-8766df17a6c7",
+    "status": "Pending",
+    "appliedAt": "2025-06-09T19:09:50.094Z",
+    "notes": null
+  }
+]

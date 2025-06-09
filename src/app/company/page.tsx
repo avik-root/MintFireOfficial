@@ -77,4 +77,4 @@ const CompanyPage = () => {
   );
 };
 
-export default
+export default CompanyPage;

@@ -11,9 +11,9 @@ import {
   LayoutDashboard,
   Users,
   Package,
-  Newspaper, // For Blog Posts
+  Newspaper, // For Blog Posts & Site Content
   Image as ImageIcon, // For Media
-  FileText, // For Site Content (banners, news)
+  FileText, // For Site Content (if distinct icon needed, using Newspaper for now)
   Briefcase, // For Applicants
   UsersRound, // For Team
   MessageSquareWarning, // For Feedback
@@ -63,7 +63,7 @@ export default function AdminDashboardLayout({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-card",
-          "transition-all duration-0 ease-in-out", // Removed animation
+          "transition-all duration-0 ease-in-out", // Removed animation for instant snap
           isCollapsed ? "w-20" : "w-64"
         )}
       >
@@ -81,7 +81,7 @@ export default function AdminDashboardLayout({
         <ScrollArea className="flex-1">
           <nav className={cn("grid gap-1 p-2.5", isCollapsed ? "px-2" : "px-4")}>
             {sidebarNavItems.map((item) => {
-              const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin/dashboard');
+              const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin/dashboard' && item.href.length > '/admin/dashboard'.length);
               return (
                 <Link
                   key={item.label}
@@ -94,7 +94,7 @@ export default function AdminDashboardLayout({
                   title={isCollapsed ? item.label : undefined}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
-                  <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}> {/* Removed animation */}
+                  <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}>
                     {item.label}
                   </span>
                 </Link>
@@ -119,7 +119,7 @@ export default function AdminDashboardLayout({
                   title={isCollapsed ? item.label : undefined}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
-                  <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}> {/* Removed animation */}
+                  <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}>
                     {item.label}
                   </span>
                 </Link>
@@ -144,3 +144,5 @@ export default function AdminDashboardLayout({
     </div>
   );
 }
+
+    

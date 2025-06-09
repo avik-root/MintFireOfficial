@@ -34,6 +34,10 @@ const AiChatModal = () => {
   };
 
   useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeMessage: Message = {
         id: 'welcome-' + Date.now(),
@@ -42,11 +46,7 @@ const AiChatModal = () => {
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen, messages.length]); 
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  }, [isOpen, messages]); // Changed messages.length to messages
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
@@ -83,7 +83,7 @@ const AiChatModal = () => {
     return (
       <Button
         variant="outline"
-        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg border-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground z-50"
+        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg border-2 border-accent text-accent hover:bg-accent hover:text-foreground z-50"
         onClick={() => setIsOpen(true)}
         aria-label="Open AI Chat"
       >
@@ -165,3 +165,4 @@ const AiChatModal = () => {
 };
 
 export default AiChatModal;
+

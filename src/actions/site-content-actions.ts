@@ -4,8 +4,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import { 
+import {
   SiteContentItemSchema,
+  CreateSiteContentItemSchema, // Added schema import
   type SiteContentItem,
   type CreateSiteContentItemInput,
   type UpdateSiteContentItemInput
@@ -90,7 +91,7 @@ export async function getSiteContentItemById(id: string): Promise<{ item?: SiteC
 }
 
 export async function updateSiteContentItem(id: string, data: UpdateSiteContentItemInput): Promise<{ success: boolean; item?: SiteContentItem; error?: string, errors?: z.ZodIssue[] }> {
-  const validation = CreateSiteContentItemSchema.safeParse(data);
+  const validation = CreateSiteContentItemSchema.safeParse(data); // Uses the schema object
    if (!validation.success) {
     return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
   }

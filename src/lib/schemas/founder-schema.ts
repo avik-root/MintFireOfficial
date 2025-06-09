@@ -1,6 +1,4 @@
 
-'use server';
-
 import { z } from 'zod';
 
 export const FounderSchema = z.object({
@@ -28,3 +26,4 @@ export const FormFounderSchema = z.object({
   imageUrl: z.string().optional(), 
 });
 export type FormFounderInput = z.infer<typeof FormFounderSchema>;
+

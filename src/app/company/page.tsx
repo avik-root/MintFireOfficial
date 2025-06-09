@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Zap, Target, Lightbulb } from 'lucide-react';
@@ -35,9 +36,8 @@ const CompanyPage = () => {
              <Image 
               src="https://placehold.co/600x400.png" 
               alt="Company Vision" 
-              layout="fill"
-              objectFit="cover"
-              className="rounded-lg shadow-xl border border-accent/20"
+              fill
+              className="object-cover rounded-lg shadow-xl border border-accent/20"
               data-ai-hint="futuristic city"
             />
           </div>

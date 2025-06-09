@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,10 +31,10 @@ const ServicePageLayout: React.FC<ServicePageLayoutProps> = ({
         <Image 
           src={imageUrl} 
           alt={imageAlt} 
-          layout="fill" 
-          objectFit="cover" 
-          className="absolute inset-0 z-0 opacity-30" 
+          fill
+          className="object-cover absolute inset-0 z-0 opacity-30" 
           data-ai-hint={imageAiHint}
+          priority // Added priority for LCP images if this is above the fold
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent z-10"></div>
         <div className="container mx-auto px-4 relative z-20 text-center">

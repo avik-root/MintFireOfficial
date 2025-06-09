@@ -62,11 +62,12 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
       if (typeof product.annualPrice === 'number') plans.push(`$${product.annualPrice.toFixed(2)}/yr`);
       
       if (plans.length > 0) return plans.join(' | ');
-      // This case should ideally not be hit if validation for Paid Subscription requires all three prices
       return "Subscription (Contact for pricing)"; 
     }
     return "Paid (Details unavailable)";
   };
+
+  const isSimpleDeveloperName = product.developer && !product.developer.includes(' & ') && !product.developer.includes(',');
 
   return (
     <Card className="layered-card flex flex-col overflow-hidden group h-full transition-all duration-300 ease-in-out hover:shadow-accent/30">
@@ -80,7 +81,13 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
         </div>
         {product.developer && (
           <CardDescription className="text-xs text-muted-foreground flex items-center">
-            <Users className="w-3 h-3 mr-1.5 text-accent/80" /> By: {product.developer}
+            <Users className="w-3 h-3 mr-1.5 text-accent/80" /> 
+            By: {' '}
+            {isSimpleDeveloperName ? (
+              <Link href="/company" className="hover:text-primary hover:underline ml-1">{product.developer}</Link>
+            ) : (
+              <span className="ml-1">{product.developer}</span>
+            )}
           </CardDescription>
         )}
       </CardHeader>
@@ -137,3 +144,4 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
     </Card>
   );
 }
+

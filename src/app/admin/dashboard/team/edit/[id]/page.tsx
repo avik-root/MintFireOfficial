@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getTeamMemberById, updateTeamMember } from "@/actions/team-member-actions";
 import TeamMemberForm from "../../_components/TeamMemberForm";
 import { Edit3, Loader2, AlertTriangle } from "lucide-react";
-import type { TeamMember, CreateTeamMemberInput } from "@/lib/schemas/team-member-schemas";
+import type { TeamMember } from "@/lib/schemas/team-member-schemas";
 
 export default function EditTeamMemberPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const [member, setMember] = useState<TeamMember | null>(null);
@@ -33,14 +33,16 @@ export default function EditTeamMemberPage({ params: paramsPromise }: { params: 
     fetchMember();
   }, [fetchMember]);
 
-  const handleSubmit = async (data: CreateTeamMemberInput) => {
+  const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
-    const result = await updateTeamMember(memberId, data);
+    // The server action updateTeamMember needs the ID.
+    // We pass it directly, formData doesn't need to contain it.
+    const result = await updateTeamMember(memberId, formData);
     setIsSubmitting(false);
     if(result.success) {
       await fetchMember(); 
     }
-    return result;
+    return result; // This result will be handled by TeamMemberForm's own submit handler
   };
 
   if (isLoading) {

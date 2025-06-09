@@ -6,7 +6,7 @@ export const TeamMemberSchema = z.object({
   name: z.string().min(1, "Name is required."),
   role: z.string().min(1, "Role is required."),
   description: z.string().min(1, "Description is required."),
-  imageUrl: z.string().url("Image URL must be a valid URL.").or(z.literal('')),
+  imageUrl: z.string().optional().or(z.literal('')), // Path to image, e.g., /uploads/team-photos/image.png
   email: z.string().email("Invalid email address."),
   githubUrl: z.string().url("Invalid GitHub URL.").optional().or(z.literal('')),
   linkedinUrl: z.string().url("Invalid LinkedIn URL.").optional().or(z.literal('')),
@@ -16,26 +16,24 @@ export const TeamMemberSchema = z.object({
 });
 export type TeamMember = z.infer<typeof TeamMemberSchema>;
 
-export const CreateTeamMemberInputSchema = TeamMemberSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  // Make joiningDate optional on creation, will default in action if not provided
-  joiningDate: z.string().datetime({ message: "Invalid date format for joining date."}).optional(),
-});
-export type CreateTeamMemberInput = z.infer<typeof CreateTeamMemberInputSchema>;
-
-export const UpdateTeamMemberInputSchema = CreateTeamMemberInputSchema.extend({
-  // All fields are effectively partial due to how updates are handled, but explicitly define
-  name: z.string().min(1, "Name is required.").optional(),
-  role: z.string().min(1, "Role is required.").optional(),
-  description: z.string().min(1, "Description is required.").optional(),
-  imageUrl: z.string().url("Image URL must be a valid URL.").or(z.literal('')).optional(),
-  email: z.string().email("Invalid email address.").optional(),
+// Schema for react-hook-form in the client component
+export const FormTeamMemberSchema = z.object({
+  name: z.string().min(1, "Name is required."),
+  role: z.string().min(1, "Role is required."),
+  description: z.string().min(1, "Description is required."),
+  email: z.string().email("Invalid email address."),
   githubUrl: z.string().url("Invalid GitHub URL.").optional().or(z.literal('')),
   linkedinUrl: z.string().url("Invalid LinkedIn URL.").optional().or(z.literal('')),
   joiningDate: z.string().datetime({ message: "Invalid date format for joining date."}).optional(),
-}).partial(); // Using .partial() on the extended schema for update
-export type UpdateTeamMemberInput = z.infer<typeof UpdateTeamMemberInputSchema>;
+  // imageFile will be handled via FormData, not part of this schema for RHF's `data` object.
+  // `imageUrl` below is for displaying the current image path if editing.
+  imageUrl: z.string().optional(), 
+});
+export type FormTeamMemberInput = z.infer<typeof FormTeamMemberSchema>;
+
+
+// Types for server action inputs (will be derived from FormData in actions)
+// These are more for conceptual clarity; actions will parse FormData directly.
+export type CreateTeamMemberServerInput = Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'> & { imageFile?: File };
+export type UpdateTeamMemberServerInput = Partial<Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'>> & { imageFile?: File; existingImageUrl?: string };
 

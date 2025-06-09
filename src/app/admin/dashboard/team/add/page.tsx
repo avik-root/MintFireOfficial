@@ -6,16 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { addTeamMember } from "@/actions/team-member-actions";
 import TeamMemberForm from "../_components/TeamMemberForm";
 import { UserPlus } from "lucide-react";
-import type { CreateTeamMemberInput } from "@/lib/schemas/team-member-schemas";
 
 export default function AddTeamMemberPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: CreateTeamMemberInput) => {
+  const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
-    const result = await addTeamMember(data);
+    const result = await addTeamMember(formData);
     setIsSubmitting(false);
-    return result;
+    return result; // This result will be handled by TeamMemberForm's own submit handler
   };
 
   return (

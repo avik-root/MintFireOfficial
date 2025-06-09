@@ -28,10 +28,10 @@ export async function chatAssistant(input: ChatAssistantInput): Promise<ChatAssi
 
 const prompt = ai.definePrompt({
   name: 'chatAssistantPrompt',
-  model: 'googleai/gemini-pro', // Explicitly define the model
+  model: 'googleai/gemini-1.5-flash-latest', // Updated model
   input: {schema: ChatAssistantInputSchema},
   output: {schema: ChatAssistantOutputSchema},
-  prompt: `You are an AI chat assistant for MintFire, a company specializing in Cyber Security, Blockchain, AI, Industrial Software, and IoT Devices.
+  prompt: `You are an AI chat assistant for MintFire, a company specializing in Cyber Security, Blockchain, AI, and IoT Devices.
   Answer the following question about the company's products and services:
 
   {{query}}`,
@@ -48,3 +48,4 @@ const chatAssistantFlow = ai.defineFlow(
     return output!;
   }
 );
+

@@ -67,7 +67,24 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
     return "Paid (Details unavailable)";
   };
 
-  const isSimpleDeveloperName = product.developer && !product.developer.includes(' & ') && !product.developer.includes(',');
+  const renderDeveloperLinks = () => {
+    if (!product.developer) return null;
+    const developerNames = product.developer.split(/[,&]/).map(name => name.trim()).filter(name => name.length > 0);
+
+    return (
+      <>
+        {developerNames.map((name, index) => (
+          <React.Fragment key={name}>
+            <Link href={`/company?member=${encodeURIComponent(name)}`} className="hover:text-primary hover:underline">
+              {name}
+            </Link>
+            {index < developerNames.length - 1 && (developerNames.length > 1 && index === developerNames.length - 2 ? ' & ' : ', ')}
+          </React.Fragment>
+        ))}
+      </>
+    );
+  };
+
 
   return (
     <Card className="layered-card flex flex-col overflow-hidden group h-full transition-all duration-300 ease-in-out hover:shadow-accent/30">
@@ -82,12 +99,7 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
         {product.developer && (
           <CardDescription className="text-xs text-muted-foreground flex items-center">
             <Users className="w-3 h-3 mr-1.5 text-accent/80" /> 
-            By: {' '}
-            {isSimpleDeveloperName ? (
-              <Link href="/company" className="hover:text-primary hover:underline ml-1">{product.developer}</Link>
-            ) : (
-              <span className="ml-1">{product.developer}</span>
-            )}
+            By: <span className="ml-1">{renderDeveloperLinks()}</span>
           </CardDescription>
         )}
       </CardHeader>

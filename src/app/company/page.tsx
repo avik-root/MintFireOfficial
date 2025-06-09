@@ -11,9 +11,10 @@ import type { Founder } from '@/lib/schemas/founder-schema';
 import TeamMemberCard from './_components/TeamMemberCard';
 import FounderCard from './_components/FounderCard';
 import TeamMemberDetailModal from './_components/TeamMemberDetailModal';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 
-const CompanyPage = () => {
+const CompanyPageContent = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [founders, setFounders] = useState<Founder[]>([]);
   const [isLoadingTeam, setIsLoadingTeam] = useState(true);
@@ -22,6 +23,8 @@ const CompanyPage = () => {
   const [errorFounders, setErrorFounders] = useState<string | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -48,6 +51,21 @@ const CompanyPage = () => {
     fetchCompanyData();
   }, []);
 
+  useEffect(() => {
+    if (teamMembers.length > 0) {
+      const memberNameFromQuery = searchParams.get('member');
+      if (memberNameFromQuery) {
+        const decodedMemberName = decodeURIComponent(memberNameFromQuery);
+        const memberToOpen = teamMembers.find(tm => tm.name === decodedMemberName);
+        if (memberToOpen) {
+          setSelectedMember(memberToOpen);
+          setIsModalOpen(true);
+        }
+      }
+    }
+  }, [searchParams, teamMembers]);
+
+
   const handleViewDetails = (member: TeamMember) => {
     setSelectedMember(member);
     setIsModalOpen(true);
@@ -56,6 +74,8 @@ const CompanyPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedMember(null);
+    // Optionally, remove the query parameter from URL without navigation
+    // window.history.replaceState({}, '', window.location.pathname); 
   };
 
   return (
@@ -197,4 +217,12 @@ const CompanyPage = () => {
   );
 };
 
-export default CompanyPage;
+// Wrap CompanyPageContent with Suspense for useSearchParams
+export default function CompanyPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-[calc(100vh-200px)]"><Loader2 className="w-12 h-12 animate-spin text-primary" /><p className="ml-3">Loading Company Information...</p></div>}>
+      <CompanyPageContent />
+    </Suspense>
+  );
+}
+

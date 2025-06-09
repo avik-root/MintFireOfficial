@@ -12,6 +12,8 @@ const Footer = () => {
     { name: "Blockchain", href: "/services/blockchain" },
     { name: "Artificial Intelligence", href: "/services/ai" },
     { name: "IoT Devices", href: "/services/iot-devices" },
+    { name: "Industrial Software", href: "/services/industrial-software" },
+    { name: "Software Solutions", href: "/services/softwares" },
   ];
 
   const companyLinks = [
@@ -87,3 +89,4 @@ const Footer = () => {
 };
 
 export default Footer;
+

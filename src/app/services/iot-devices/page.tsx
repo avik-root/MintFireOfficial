@@ -1,7 +1,12 @@
-import ServicePageLayout from '@/components/ServicePageLayout';
-import { Smartphone } from 'lucide-react';
 
-const IotDevicesPage = () => {
+import ServicePageLayout from '@/components/ServicePageLayout';
+import ProductCard from '@/app/_components/ProductCard';
+import { getProducts } from '@/actions/product-actions';
+import type { Product } from '@/lib/schemas/product-schemas';
+import { Smartphone, AlertTriangle, PackageSearch } from 'lucide-react';
+import React from 'react';
+
+export default async function IotDevicesPage() {
   const features = [
     "Custom IoT Device Design and Prototyping",
     "Embedded Systems Development",
@@ -10,6 +15,8 @@ const IotDevicesPage = () => {
     "Edge Computing Solutions for IoT",
     "Secure Device Lifecycle Management"
   ];
+
+  const { products, error } = await getProducts({ tag: 'iot' });
 
   return (
     <ServicePageLayout
@@ -27,8 +34,34 @@ const IotDevicesPage = () => {
          MintFire provides end-to-end IoT solutions, from custom hardware design to sophisticated data analytics platforms. We enable businesses to harness the power of connected devices for enhanced efficiency, new revenue streams, and improved customer experiences.
         </p>
       </div>
+
+      <div className="mt-16">
+        <h3 className="font-headline text-3xl font-semibold mb-8 text-center text-primary">
+          Featured IoT Products
+        </h3>
+        {error && (
+          <div className="text-center text-destructive py-6">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
+            <p>Could not load IoT products: {error}</p>
+          </div>
+        )}
+        {!error && products && products.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} onViewDetailsClick={() => {
+                 if (product.productUrl) window.open(product.productUrl, '_blank');
+              }} />
+            ))}
+          </div>
+        ) : (
+          !error && (
+             <div className="text-center text-muted-foreground py-10">
+              <PackageSearch className="w-16 h-16 mx-auto mb-4" />
+              <p className="text-lg">No IoT products tagged for this section currently.</p>
+            </div>
+          )
+        )}
+      </div>
     </ServicePageLayout>
   );
 };
-
-export default IotDevicesPage;

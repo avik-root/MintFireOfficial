@@ -1,11 +1,13 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction, Info } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction, Info, Code2, Search, ArrowUpDown, Archive, Loader2, AlertTriangle, SlidersHorizontal, PackageSearch } from 'lucide-react';
 import Link from 'next/link';
 import { getSiteContentItems } from '@/actions/site-content-actions';
 import type { SiteContentItem } from '@/lib/schemas/site-content-schemas';
@@ -26,16 +28,29 @@ const coreTechnologiesData: CoreTechnology[] = [
   { id: "ct1", title: "Cyber Security", description: "Protecting digital assets with cutting-edge defense mechanisms.", icon: ShieldCheck, link: "/services/cyber-security" },
   { id: "ct2", title: "Blockchain", description: "Building transparent and secure decentralized solutions.", icon: Blocks, link: "/services/blockchain" },
   { id: "ct3", title: "Artificial Intelligence", description: "Leveraging AI to create intelligent systems and insights.", icon: Cpu, link: "/services/ai" },
-  { id: "ct5", title: "IoT Devices", description: "Connecting the physical world with smart, secure devices.", icon: Smartphone, link: "/services/iot-devices" },
+  { id: "ct4", title: "IoT Devices", description: "Connecting the physical world with smart, secure devices.", icon: Smartphone, link: "/services/iot-devices" },
+  { id: "ct5", title: "Industrial Software", description: "Optimizing industrial operations with robust software.", icon: Package, link: "/services/industrial-software" }, // Assuming Package is suitable
+  { id: "ct6", title: "Software Solutions", description: "Crafting bespoke software to meet diverse business needs.", icon: Code2, link: "/services/softwares" },
 ];
+
+type ProductSortKey = 'name' | 'releaseDate' | 'status' | 'pricingType' | 'isFeatured' | 'createdAt';
 
 
 export default function Home() {
   const [siteContent, setSiteContent] = useState<SiteContentItem[]>([]);
   const [siteContentError, setSiteContentError] = useState<string | null>(null);
   
-  const [latestProducts, setLatestProducts] = useState<Product[]>([]);
-  const [latestProductsError, setLatestProductsError] = useState<string | null>(null);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allProductsLoading, setAllProductsLoading] = useState(true);
+  const [allProductsError, setAllProductsError] = useState<string | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortKey, setSortKey] = useState<ProductSortKey>('releaseDate');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [featuredProductsError, setFeaturedProductsError] = useState<string | null>(null);
   
   const [upcomingProducts, setUpcomingProducts] = useState<Product[]>([]);
   const [upcomingProductsError, setUpcomingProductsError] = useState<string | null>(null);
@@ -51,13 +66,19 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchData() {
+      setAllProductsLoading(true);
       const scResult = await getSiteContentItems();
       if (scResult.items) setSiteContent(scResult.items);
       if (scResult.error) setSiteContentError(scResult.error);
 
-      const lpResult = await getProducts({ isFeatured: true, limit: 3 });
-      if (lpResult.products) setLatestProducts(lpResult.products);
-      if (lpResult.error) setLatestProductsError(lpResult.error);
+      const allProdResult = await getProducts();
+      if (allProdResult.products) setAllProducts(allProdResult.products);
+      if (allProdResult.error) setAllProductsError(allProdResult.error);
+      setAllProductsLoading(false);
+
+      const fpResult = await getProducts({ isFeatured: true, limit: 3 });
+      if (fpResult.products) setFeaturedProducts(fpResult.products);
+      if (fpResult.error) setFeaturedProductsError(fpResult.error);
       
       const upResult = await getProducts({ status: 'Upcoming', limit: 3 });
       if (upResult.products) setUpcomingProducts(upResult.products);
@@ -116,7 +137,7 @@ export default function Home() {
     </Card>
   );
 
-  const ProductSection = ({ title, products, error, icon: Icon, sectionId }: { title: string, products?: Product[], error?: string, icon: React.ElementType, sectionId: string }) => {
+  const ProductSection = ({ title, products, error, icon: Icon, sectionId, limit = 3 }: { title: string, products?: Product[], error?: string, icon: React.ElementType, sectionId: string, limit?: number }) => {
     if (error) {
       return (
         <section id={sectionId} className="py-12">
@@ -128,7 +149,8 @@ export default function Home() {
         </section>
       );
     }
-    if (!products || products.length === 0) {
+    const displayProducts = products?.slice(0, limit);
+    if (!displayProducts || displayProducts.length === 0) {
       return (
         <section id={sectionId} className="py-12">
           <div className="flex items-center mb-8">
@@ -146,13 +168,60 @@ export default function Home() {
           <h2 className="font-headline text-4xl font-bold">{title}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
+          {displayProducts.map((product) => (
             <ProductCard key={product.id} product={product} onViewDetailsClick={handleOpenProductModal} />
           ))}
         </div>
       </section>
     );
   };
+
+  const filteredAndSortedAllProducts = useMemo(() => {
+    let productsToDisplay = [...allProducts];
+
+    if (searchTerm) {
+      productsToDisplay = productsToDisplay.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.developer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.version && product.version.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.couponDetails && product.couponDetails.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.activationDetails && product.activationDetails.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        product.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    productsToDisplay.sort((a, b) => {
+      let valA = a[sortKey];
+      let valB = b[sortKey];
+
+      if (sortKey === 'releaseDate' || sortKey === 'createdAt') {
+        valA = a[sortKey] ? new Date(a[sortKey]!).getTime() : 0;
+        valB = b[sortKey] ? new Date(b[sortKey]!).getTime() : 0;
+      } else if (typeof valA === 'string' && typeof valB === 'string') {
+        valA = valA.toLowerCase();
+        valB = valB.toLowerCase();
+      } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+        valA = valA ? 1 : 0;
+        valB = valB ? 1 : 0;
+      }
+      
+      // For pricingType, handle potential nulls for priceAmount
+      if (sortKey === 'pricingType') {
+        valA = a.priceAmount ?? (a.pricingType === 'Free' ? 0 : Infinity);
+        valB = b.priceAmount ?? (b.pricingType === 'Free' ? 0 : Infinity);
+      }
+
+
+      let comparison = 0;
+      if (valA > valB) comparison = 1;
+      else if (valA < valB) comparison = -1;
+      
+      return sortDirection === 'desc' ? comparison * -1 : comparison;
+    });
+
+    return productsToDisplay;
+  }, [allProducts, searchTerm, sortKey, sortDirection]);
 
 
   return (
@@ -167,7 +236,7 @@ export default function Home() {
           </p>
           <div className="space-x-4">
             <Button asChild size="lg" variant="default" className="shadow-lg shadow-primary/50">
-              <Link href="#latest-releases">Explore Products</Link>
+              <Link href="#all-products-showcase">Explore Products</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="shadow-lg shadow-accent/30">
               <Link href="/company">About Us</Link>
@@ -177,11 +246,11 @@ export default function Home() {
       </section>
 
       <ProductSection 
-        title="Latest Releases"
-        products={latestProducts}
-        error={latestProductsError}
+        title="Featured Products"
+        products={featuredProducts}
+        error={featuredProductsError}
         icon={Sparkles}
-        sectionId="latest-releases"
+        sectionId="featured-products"
       />
 
       {/* Announcements Section */}
@@ -204,7 +273,7 @@ export default function Home() {
         title="Upcoming Products"
         products={upcomingProducts}
         error={upcomingProductsError}
-        icon={Cpu} // Was Package, using Cpu for "Upcoming"
+        icon={Cpu} 
         sectionId="upcoming-products"
       />
 
@@ -224,6 +293,83 @@ export default function Home() {
         sectionId="dev-testing"
       />
 
+      {/* All Products Showcase Section */}
+      <section id="all-products-showcase" className="py-12">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div className="flex items-center">
+            <Archive className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
+            <h2 className="font-headline text-4xl font-bold">All Products</h2>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            <div className="relative flex-grow sm:flex-grow-0 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search all products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+              <Select 
+                value={sortKey} 
+                onValueChange={(value) => {
+                  setSortKey(value as ProductSortKey);
+                  if (value === 'name' || value === 'status' || value === 'pricingType') {
+                    setSortDirection('asc');
+                  } else {
+                    setSortDirection('desc'); // Default to desc for dates or feature status
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SlidersHorizontal className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="status">Status</SelectItem>
+                  <SelectItem value="releaseDate">Release Date</SelectItem>
+                   <SelectItem value="createdAt">Date Added</SelectItem>
+                  <SelectItem value="pricingType">Price</SelectItem>
+                  <SelectItem value="isFeatured">Featured</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="icon" onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}>
+                  <ArrowUpDown className={`h-4 w-4 ${sortDirection === 'asc' ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {allProductsLoading && (
+          <div className="flex flex-col items-center justify-center min-h-[200px]">
+            <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading products...</p>
+          </div>
+        )}
+        {allProductsError && (
+          <div className="flex flex-col items-center justify-center min-h-[200px] text-destructive">
+            <AlertTriangle className="w-12 h-12 mb-4" />
+            <p>Error loading products: {allProductsError}</p>
+          </div>
+        )}
+        {!allProductsLoading && !allProductsError && filteredAndSortedAllProducts.length === 0 && (
+          <div className="text-center py-10 text-muted-foreground">
+            <PackageSearch className="w-16 h-16 mx-auto mb-4" />
+            <p className="text-lg">{searchTerm ? "No products match your search." : "No products available at the moment."}</p>
+          </div>
+        )}
+        {!allProductsLoading && !allProductsError && filteredAndSortedAllProducts.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredAndSortedAllProducts.map((product) => (
+              <ProductCard key={product.id} product={product} onViewDetailsClick={handleOpenProductModal} />
+            ))}
+          </div>
+        )}
+      </section>
+
 
       <section id="core-technologies" className="py-16">
         <div className="text-center mb-12">
@@ -233,7 +379,7 @@ export default function Home() {
             Driving innovation across key technology domains to build the future.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {coreTechnologiesData.map((tech) => (
             <Card key={tech.id} className="layered-card overflow-hidden group transition-all duration-300 ease-in-out hover:shadow-primary/30 flex flex-col">
               <CardHeader className="items-center text-center">
@@ -265,3 +411,4 @@ export default function Home() {
     </div>
   );
 }
+

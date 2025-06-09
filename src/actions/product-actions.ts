@@ -16,7 +16,7 @@ import { randomUUID } from 'crypto';
 
 const productsFilePath = path.join(process.cwd(), 'data', 'products.json');
 
-async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<Product[]> {
+async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus; tag?: string }): Promise<Product[]> {
   try {
     await fs.mkdir(path.dirname(productsFilePath), { recursive: true });
 
@@ -51,6 +51,13 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
     if (params?.status) {
       parsedItems = parsedItems.filter(product => product.status === params.status);
     }
+    if (params?.tag) {
+      const lowerCaseTag = params.tag.toLowerCase();
+      parsedItems = parsedItems.filter(product => 
+        product.tags.some(t => t.toLowerCase() === lowerCaseTag)
+      );
+    }
+
 
     parsedItems.sort((a, b) => {
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
@@ -62,7 +69,7 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
       return createdAtB - createdAtA;
     });
 
-    if (params?.limit) {
+    if (params?.limit && params.limit > 0) {
       parsedItems = parsedItems.slice(0, params.limit);
     }
     return parsedItems;
@@ -100,17 +107,17 @@ async function saveProducts(items: Product[]): Promise<void> {
 
 function transformTags(tagsString?: string): string[] {
   if (!tagsString || tagsString.trim() === "") return [];
-  return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+  return tagsString.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0);
 }
 
 function parseOptionalFloat(value: string | null | undefined): number | null {
   if (value === null || value === undefined || value.trim() === '') return null;
   const num = parseFloat(value);
-  return isNaN(num) ? null : num; // Or throw error if not a valid number string? Schema should catch this.
+  return isNaN(num) ? null : num; 
 }
 
 
-export async function getProducts(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<{ products?: Product[]; error?: string }> {
+export async function getProducts(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus; tag?: string }): Promise<{ products?: Product[]; error?: string }> {
   try {
     const products = await getProductsInternal(params);
     return { products };
@@ -169,7 +176,7 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
         if (validatedData.pricingTerm === 'Subscription') {
             finalBillingInterval = validatedData.billingInterval ?? null;
         }
-    } else if (validatedData.pricingType === 'Free' && validatedData.pricingTerm === 'Subscription') { // Free Trial
+    } else if (validatedData.pricingType === 'Free' && validatedData.pricingTerm === 'Subscription') { 
         finalTrialDuration = validatedData.trialDuration ?? null;
         if (postTrialPriceAmount && validatedData.postTrialBillingInterval) {
             finalPostTrialPriceAmount = postTrialPriceAmount;
@@ -209,6 +216,7 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     await saveProducts(products);
     revalidatePath('/admin/dashboard/products');
     revalidatePath('/');
+    revalidatePath('/services', 'layout'); // Revalidate service pages
     return { success: true, product: newProduct };
   } catch (error: any) {
     console.error("ADD_PRODUCT_ACTION_ERROR:", error);
@@ -306,16 +314,16 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
         // Clear paid fields
         finalPriceAmount = null;
         finalBillingInterval = null;
-        if (currentPricingTerm === 'Subscription') { // Free Trial
+        if (currentPricingTerm === 'Subscription') { 
             finalTrialDuration = validatedData.trialDuration ?? originalProduct.trialDuration;
             if (postTrialPriceAmount && (validatedData.postTrialBillingInterval !== undefined ? validatedData.postTrialBillingInterval : originalProduct.postTrialBillingInterval) ) {
                 finalPostTrialPriceAmount = postTrialPriceAmount;
                 finalPostTrialBillingInterval = validatedData.postTrialBillingInterval ?? originalProduct.postTrialBillingInterval;
-            } else { // If only one part of post-trial is set, or none, clear them
+            } else { 
                 finalPostTrialPriceAmount = null;
                 finalPostTrialBillingInterval = null;
             }
-        } else { // Free Lifetime
+        } else { 
              finalTrialDuration = null;
              finalPostTrialPriceAmount = null;
              finalPostTrialBillingInterval = null;
@@ -353,6 +361,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     revalidatePath('/admin/dashboard/products');
     revalidatePath(`/admin/dashboard/products/edit/${id}`);
     revalidatePath('/');
+    revalidatePath('/services', 'layout'); // Revalidate service pages
     return { success: true, product: updatedProductData };
   } catch (error: any) {
     console.error("UPDATE_PRODUCT_ACTION_ERROR:", error);
@@ -382,6 +391,7 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
 
     revalidatePath('/admin/dashboard/products');
     revalidatePath('/');
+    revalidatePath('/services', 'layout'); // Revalidate service pages
     return { success: true };
   } catch (error: any)
    {
@@ -397,3 +407,4 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     return { success: false, error: errorMessage };
   }
 }
+

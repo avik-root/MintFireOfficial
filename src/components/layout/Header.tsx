@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig, Briefcase, Mail } from 'lucide-react'; // Added Mail for Contact
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig, Briefcase, Mail, Code2 } from 'lucide-react'; 
 import React from 'react';
 
 const navLinks = [
@@ -20,7 +20,7 @@ const navLinks = [
   { href: "/company", label: "Company" },
   { href: "/blog", label: "Blog", icon: LibraryBig },
   { href: "/careers", label: "Careers", icon: Briefcase },
-  { href: "/contact", label: "Contact", icon: Mail }, // Added Contact link
+  { href: "/contact", label: "Contact", icon: Mail }, 
 ];
 
 const serviceLinks = [
@@ -28,6 +28,8 @@ const serviceLinks = [
   { href: "/services/blockchain", label: "Blockchain", icon: Blocks },
   { href: "/services/ai", label: "Artificial Intelligence", icon: Cpu },
   { href: "/services/iot-devices", label: "IoT Devices", icon: Smartphone },
+  { href: "/services/industrial-software", label: "Industrial Software", icon: Briefcase }, // Assuming Briefcase for Industrial
+  { href: "/services/softwares", label: "Software Solutions", icon: Code2 }, // New "Softwares"
 ];
 
 const Header = () => {
@@ -116,3 +118,4 @@ const Header = () => {
 };
 
 export default Header;
+

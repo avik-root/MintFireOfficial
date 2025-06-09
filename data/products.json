@@ -20,7 +20,8 @@
     "tags": [
       "blockchain",
       "developer tools",
-      "beta"
+      "beta",
+      "software"
     ],
     "isFeatured": true,
     "couponDetails": null,
@@ -48,7 +49,8 @@
     "tags": [
       "security",
       "enterprise",
-      "ai"
+      "ai",
+      "software"
     ],
     "isFeatured": true,
     "couponDetails": "NEWUSER15 for 15% off first year.",
@@ -76,12 +78,61 @@
     "tags": [
       "ai",
       "analytics",
-      "upcoming"
+      "upcoming",
+      "software"
     ],
     "isFeatured": true,
     "couponDetails": null,
     "activationDetails": "Join waitlist for early access notifications.",
     "createdAt": "2025-06-10T12:10:00.000Z",
     "updatedAt": "2025-06-10T09:30:00.000Z"
+  },
+  {
+    "id": "74d3a1a3-011a-4b5d-8f9c-1a2b3c4d5e6f",
+    "name": "SecureLedger IoT",
+    "version": "1.0.0",
+    "status": "Stable",
+    "releaseDate": "2025-07-01T00:00:00.000Z",
+    "description": "IoT device management platform with blockchain-backed security.",
+    "longDescription": "SecureLedger IoT provides a robust platform for managing and securing IoT devices, leveraging blockchain for immutable logging and enhanced data integrity. Ideal for industrial and smart city applications.",
+    "productUrl": "https://example.com/secureledger-iot",
+    "developer": "MintFire IoT Solutions",
+    "pricingType": "Paid",
+    "pricingTerm": "Subscription",
+    "priceAmount": 99.00,
+    "billingInterval": "Monthly",
+    "trialDuration": "14 days",
+    "postTrialPriceAmount": 99.00,
+    "postTrialBillingInterval": "Monthly",
+    "tags": ["iot", "blockchain", "security", "platform", "software"],
+    "isFeatured": false,
+    "couponDetails": "IOTLAUNCH20 for 20% off first 3 months.",
+    "activationDetails": "Device registration required. Portal access provided upon subscription.",
+    "createdAt": "2025-06-11T10:00:00.000Z",
+    "updatedAt": "2025-06-11T10:00:00.000Z"
+  },
+  {
+    "id": "b8e2f5c1-72a0-41e3-9e8b-0d1c2a3b4f5e",
+    "name": "FactoryOS Suite",
+    "version": "3.2.0",
+    "status": "Stable",
+    "releaseDate": "2025-04-10T00:00:00.000Z",
+    "description": "Comprehensive MES and SCADA solution for modern factories.",
+    "longDescription": "FactoryOS Suite integrates Manufacturing Execution Systems (MES) with SCADA capabilities for real-time monitoring, control, and optimization of industrial processes. Enhances efficiency and reduces downtime.",
+    "productUrl": "https://example.com/factoryos",
+    "developer": "MintFire Industrial",
+    "pricingType": "Paid",
+    "pricingTerm": "Subscription",
+    "priceAmount": 499.00,
+    "billingInterval": "Annually",
+    "trialDuration": null,
+    "postTrialPriceAmount": null,
+    "postTrialBillingInterval": null,
+    "tags": ["industrial", "mes", "scada", "software", "automation"],
+    "isFeatured": true,
+    "couponDetails": null,
+    "activationDetails": "On-premise installation and licensing. Contact sales for a quote.",
+    "createdAt": "2025-06-11T11:00:00.000Z",
+    "updatedAt": "2025-06-11T11:00:00.000Z"
   }
 ]

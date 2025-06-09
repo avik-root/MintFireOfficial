@@ -2,11 +2,11 @@
 "use client";
 
 import type { Product } from '@/lib/schemas/product-schemas';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink, Repeat, Clock, Layers } from 'lucide-react';
+import { Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink, Repeat, Clock, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
@@ -46,17 +46,22 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
   };
 
   const getPricingText = (pricingType: string, pricingTerm: string) => {
-    if (pricingType === 'Free') {
-        if (pricingTerm === 'Subscription' && product.trialDuration) {
-            return `Free Trial: ${product.trialDuration}`;
+    if (product.pricingType === 'Free') {
+        if (product.pricingTerm === 'Subscription' && product.trialDuration) {
+            let summary = `Free Trial: ${product.trialDuration}`;
+            if (product.postTrialPriceAmount && product.postTrialBillingInterval) {
+                summary += ` -> $${product.postTrialPriceAmount.toFixed(2)}/${product.postTrialBillingInterval.slice(0,2).toLowerCase()}`;
+            }
+            return summary;
         }
-        return `Free - ${pricingTerm}`;
+        return `Free - ${product.pricingTerm}`;
     }
-    if (pricingTerm === 'Lifetime' && product.priceAmount) {
+    if (product.pricingTerm === 'Lifetime' && product.priceAmount) {
         return `$${product.priceAmount.toFixed(2)} (Lifetime)`;
     }
-    if (pricingTerm === 'Subscription') {
-        return "Subscription Plans Available"; // Details will be listed below
+    if (product.pricingTerm === 'Subscription') {
+      // For "Paid" + "Subscription", specific plans are listed below this summary.
+      return "Subscription Plans Available"; 
     }
     return "Paid (Details unavailable)";
   };
@@ -94,23 +99,14 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-0 border-primary shadow-2xl shadow-primary/30 max-h-[90vh] flex flex-col">
         <DialogHeader className="p-6 pb-4 border-b border-border bg-card sticky top-0 z-10">
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="font-headline text-2xl md:text-3xl text-primary flex items-center gap-3">
-                <Package className="w-7 h-7 md:w-8 md:h-8 text-primary flex-shrink-0" />
-                {product.name}
-              </DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground mt-1">
-                Developed by: {product.developer}
-              </DialogDescription>
-            </div>
-            <DialogClose asChild>
-              <Button variant="ghost" size="icon" className="ml-auto -mt-2 -mr-2">
-                <X className="h-5 w-5" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </DialogClose>
-          </div>
+          {/* Removed the flex div and custom close button. The default DialogClose from DialogContent will be used. */}
+          <DialogTitle className="font-headline text-2xl md:text-3xl text-primary flex items-center gap-3">
+            <Package className="w-7 h-7 md:w-8 md:h-8 text-primary flex-shrink-0" />
+            {product.name}
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground mt-1">
+            Developed by: {product.developer}
+          </DialogDescription>
         </DialogHeader>
         
         <ScrollArea className="flex-grow">
@@ -172,9 +168,8 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
         <DialogFooter className="p-4 border-t border-border bg-card sticky bottom-0 z-10">
           <div className="flex w-full justify-between items-center gap-2">
-            <DialogClose asChild>
-                <Button variant="outline">Close</Button>
-            </DialogClose>
+            {/* Default DialogClose (from DialogContent) will handle closing. We just need a styled button for the user to click if they don't use the X */}
+             <Button variant="outline" onClick={onClose}>Close</Button>
             {productLinkProps && (
                 <Button asChild variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                     <Link href={productLinkProps.href} target={productLinkProps.target} rel={productLinkProps.rel}>
@@ -188,3 +183,4 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     </Dialog>
   );
 }
+

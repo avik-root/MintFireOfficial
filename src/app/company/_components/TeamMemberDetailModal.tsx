@@ -37,10 +37,7 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
                     <DialogDescription className="text-accent text-lg">{member.role}</DialogDescription>
                 </div>
             </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-primary">
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
-          </Button>
+          {/* Removed the manual X button, ShadCN DialogContent provides one by default in its top-right corner */}
         </DialogHeader>
         
         <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
@@ -51,9 +48,7 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 pt-2">
             <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground flex items-center">
-                    <Mail className="w-4 h-4 mr-2 text-accent"/>Email
-                </h4>
+                <h4 className="text-sm font-medium text-muted-foreground">Email</h4>
                 <Link href={`mailto:${member.email}`} className="text-sm text-primary hover:underline break-all flex items-center gap-1 group">
                     <Mail className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
                     {member.email}
@@ -61,31 +56,29 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
             </div>
             {member.githubUrl && (
                 <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground flex items-center">
-                        <Github className="w-4 h-4 mr-2 text-accent"/>GitHub
-                    </h4>
+                    <h4 className="text-sm font-medium text-muted-foreground">GitHub</h4>
                     <Link href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all flex items-center gap-1 group">
                         <Github className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
-                        {member.githubUrl.replace('https://github.com/', '')}
+                        {member.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/\/$/, '')}
                     </Link>
                 </div>
             )}
             {member.linkedinUrl && (
                 <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground flex items-center">
-                        <Linkedin className="w-4 h-4 mr-2 text-accent"/>LinkedIn
-                    </h4>
+                    <h4 className="text-sm font-medium text-muted-foreground">LinkedIn</h4>
                     <Link href={member.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all flex items-center gap-1 group">
                         <Linkedin className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
-                        {member.linkedinUrl.replace('https://www.linkedin.com/in/', '').replace(/\/$/, '')}
+                        {member.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '').replace(/\/$/, '')}
                     </Link>
                 </div>
             )}
             {member.joiningDate && (
                  <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground flex items-center">
-                        <CalendarDays className="w-4 h-4 mr-2 text-accent"/>Joined</h4>
-                    <p className="text-sm text-foreground/90">{format(new Date(member.joiningDate), "MMMM d, yyyy")}</p>
+                    <h4 className="text-sm font-medium text-muted-foreground">Joined</h4>
+                    <p className="text-sm text-foreground/90 flex items-center gap-1">
+                        <CalendarDays className="w-4 h-4 text-accent/70" />
+                        {format(new Date(member.joiningDate), "MMMM d, yyyy")}
+                    </p>
                 </div>
             )}
           </div>

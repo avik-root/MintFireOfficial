@@ -13,7 +13,7 @@ import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone } from 'lucide-react'
 const Header = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between">
+      <div className="container mx-auto px-4 flex h-16 max-w-screen-2xl items-center justify-between">
         <Logo />
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           <Link href="/" className="text-foreground/80 hover:text-primary transition-colors">

@@ -22,8 +22,8 @@ export const ApplicantSchema = z.object({
   coverLetter: z.string().min(1, "Cover letter or message is required."),
   resumeLink: z.string().url("Please provide a valid URL for your resume/CV."),
   portfolioUrl: z.string().url("Invalid portfolio URL.").optional().or(z.literal('')),
-  githubUrl: z.string().url("Invalid GitHub URL.").optional().or(z.literal('')),
-  linkedinUrl: z.string().url("Invalid LinkedIn URL.").optional().or(z.literal('')),
+  githubUrl: z.string().url("GitHub profile URL is required and must be a valid URL."),
+  linkedinUrl: z.string().url("LinkedIn profile URL is required and must be a valid URL."),
   status: ApplicantStatusSchema.default('Pending'),
   appliedAt: z.string().datetime(),
   notes: z.string().optional().nullable(), // Admin notes
@@ -43,3 +43,4 @@ export const UpdateApplicantStatusInputSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 export type UpdateApplicantStatusInput = z.infer<typeof UpdateApplicantStatusInputSchema>;
+

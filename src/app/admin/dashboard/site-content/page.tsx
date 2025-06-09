@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PlusCircle, Edit, ExternalLink, AlertTriangle, ListChecks } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import DeleteSiteContentItemButton from "./_components/DeleteSiteContentItemButton";
+import { SiteContentItem } from "@/lib/schemas/site-content-schemas";
 
 export default async function AdminSiteContentPage() {
   const { items: siteContentItems, error } = await getSiteContentItems();
@@ -68,7 +69,7 @@ export default async function AdminSiteContentPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-background divide-y divide-border">
-                  {siteContentItems.map((item) => (
+                  {siteContentItems.map((item: SiteContentItem) => (
                     <tr key={item.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{item.title}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
@@ -78,7 +79,7 @@ export default async function AdminSiteContentPage() {
                         } className="capitalize">{item.type}</Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Badge variant={item.isActive ? "default" : "destructive"} className="bg-opacity-70">
+                        <Badge variant={item.isActive ? "default" : "destructive"} className={item.isActive ? "bg-green-600/30 text-green-400 border-green-500" : "bg-red-600/30 text-red-400 border-red-500"}>
                           {item.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </td>

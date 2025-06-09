@@ -52,7 +52,7 @@ export async function getSiteContentItems(): Promise<{ items?: SiteContentItem[]
 }
 
 export async function addSiteContentItem(data: CreateSiteContentItemInput): Promise<{ success: boolean; item?: SiteContentItem; error?: string; errors?: z.ZodIssue[] }> {
-  const validation = SiteContentItemSchema.omit({ id: true, createdAt: true, updatedAt: true }).safeParse(data);
+  const validation = CreateSiteContentItemSchema.safeParse(data);
   if (!validation.success) {
     return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
   }
@@ -90,7 +90,10 @@ export async function getSiteContentItemById(id: string): Promise<{ item?: SiteC
 }
 
 export async function updateSiteContentItem(id: string, data: UpdateSiteContentItemInput): Promise<{ success: boolean; item?: SiteContentItem; error?: string, errors?: z.ZodIssue[] }> {
-  const validation = SiteContentItemSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).safeParse(data);
+  // Use CreateSiteContentItemSchema for validating the input for an update
+  // as all fields are expected, even if only some are changed by the user.
+  // The form should submit all fields.
+  const validation = CreateSiteContentItemSchema.safeParse(data);
    if (!validation.success) {
     return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
   }
@@ -103,24 +106,18 @@ export async function updateSiteContentItem(id: string, data: UpdateSiteContentI
       return { success: false, error: "Site content item not found." };
     }
 
-    const updatedItemData = {
-      ...items[itemIndex],
-      ...validation.data, // Use validated and potentially partial data
-      updatedAt: new Date().toISOString(),
+    const updatedItemData: SiteContentItem = {
+      ...items[itemIndex], // Keep existing id and createdAt
+      ...validation.data, // Apply all validated data from the form
+      updatedAt: new Date().toISOString(), // Update the updatedAt timestamp
     };
     
-    // Ensure all required fields are still present after merging partial data
-    const finalValidation = SiteContentItemSchema.safeParse(updatedItemData);
-    if (!finalValidation.success) {
-       return { success: false, error: "Update resulted in invalid item structure.", errors: finalValidation.error.issues };
-    }
-    
-    items[itemIndex] = finalValidation.data;
+    items[itemIndex] = updatedItemData;
     await saveSiteContentItems(items);
     revalidatePath('/admin/dashboard/site-content');
     revalidatePath(`/admin/dashboard/site-content/edit/${id}`);
     revalidatePath('/'); 
-    return { success: true, item: finalValidation.data };
+    return { success: true, item: updatedItemData };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update site content item." };
   }
@@ -143,3 +140,4 @@ export async function deleteSiteContentItem(id: string): Promise<{ success: bool
     return { success: false, error: error.message || "Failed to delete site content item." };
   }
 }
+

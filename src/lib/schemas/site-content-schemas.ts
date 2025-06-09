@@ -25,3 +25,4 @@ export type CreateSiteContentItemInput = z.infer<typeof CreateSiteContentItemSch
 
 export const UpdateSiteContentItemSchema = CreateSiteContentItemSchema.partial();
 export type UpdateSiteContentItemInput = z.infer<typeof UpdateSiteContentItemSchema>;
+

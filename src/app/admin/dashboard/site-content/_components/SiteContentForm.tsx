@@ -41,7 +41,7 @@ export default function SiteContentForm({
       linkUrl: initialData.linkUrl || undefined,
       isActive: initialData.isActive,
     } : {
-      type: "news",
+      type: "news", // Default to 'news', user can change
       title: "",
       content: "",
       imageUrl: "",
@@ -59,7 +59,9 @@ export default function SiteContentForm({
     } else {
       if (result.errors) {
         result.errors.forEach((err: any) => {
-          form.setError(err.path.join(".") as keyof CreateSiteContentItemInput, { message: err.message });
+          // Ensure path is a string, and handle potential array paths for nested errors if any in future
+          const fieldName = Array.isArray(err.path) ? err.path.join(".") : err.path;
+          form.setError(fieldName as keyof CreateSiteContentItemInput, { message: err.message });
         });
         toast({ variant: "destructive", title: "Validation Error", description: "Please check the form fields for errors." });
       } else {

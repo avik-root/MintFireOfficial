@@ -8,10 +8,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CreateTeamMemberInputSchema, type CreateTeamMemberInput, type TeamMember } from "@/lib/schemas/team-member-schemas";
-import { Loader2, Save, User, Briefcase, AlignLeft, Image as ImageIcon, Mail, Github, Linkedin } from "lucide-react";
+import { Loader2, Save, User, Briefcase, AlignLeft, Image as ImageIcon, Mail, Github, Linkedin, CalendarDays } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface TeamMemberFormProps {
   initialData?: TeamMember | null;
@@ -39,6 +43,7 @@ export default function TeamMemberForm({
       email: initialData.email,
       githubUrl: initialData.githubUrl || "",
       linkedinUrl: initialData.linkedinUrl || "",
+      joiningDate: initialData.joiningDate ? initialData.joiningDate : new Date().toISOString(),
     } : {
       name: "",
       role: "",
@@ -47,11 +52,17 @@ export default function TeamMemberForm({
       email: "",
       githubUrl: "",
       linkedinUrl: "",
+      joiningDate: new Date().toISOString(),
     },
   });
 
   const handleSubmit = async (data: CreateTeamMemberInput) => {
-    const result = await onSubmit(data);
+    // Ensure joiningDate is in ISO string format if it's a Date object from the picker
+    const payload = {
+      ...data,
+      joiningDate: data.joiningDate ? new Date(data.joiningDate).toISOString() : new Date().toISOString(),
+    };
+    const result = await onSubmit(payload);
     if (result.success) {
       toast({ title: "Success", description: `Team member ${initialData ? 'updated' : 'added'} successfully.` });
       router.push("/admin/dashboard/team");
@@ -130,6 +141,52 @@ export default function TeamMemberForm({
             </FormItem>
           )}
         />
+         <FormField
+            control={form.control}
+            name="joiningDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel className="flex items-center"><CalendarDays className="mr-2 h-4 w-4 text-muted-foreground"/>Joining Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                        disabled={isSubmitting}
+                      >
+                        {field.value ? (
+                          format(new Date(field.value), "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => field.onChange(date ? date.toISOString() : undefined)}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormDescription>
+                  The date the team member officially joined.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
 
         <FormField
             control={form.control}

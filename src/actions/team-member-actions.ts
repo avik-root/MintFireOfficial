@@ -20,7 +20,14 @@ async function getTeamMembersInternal(): Promise<TeamMember[]> {
     await fs.mkdir(path.dirname(teamMembersFilePath), { recursive: true });
     const data = await fs.readFile(teamMembersFilePath, 'utf-8');
     const items = JSON.parse(data) as unknown[];
-    return z.array(TeamMemberSchema).parse(items);
+    const parsedItems = z.array(TeamMemberSchema).parse(items);
+    // Sort by joiningDate ascending (oldest first), then by createdAt as a fallback
+    parsedItems.sort((a, b) => {
+      const dateA = a.joiningDate ? new Date(a.joiningDate).getTime() : new Date(a.createdAt).getTime();
+      const dateB = b.joiningDate ? new Date(b.joiningDate).getTime() : new Date(b.createdAt).getTime();
+      return dateA - dateB;
+    });
+    return parsedItems;
   } catch (error: any) {
     if (error.code === 'ENOENT') {
       await fs.writeFile(teamMembersFilePath, JSON.stringify([]), 'utf-8');
@@ -44,8 +51,6 @@ async function saveTeamMembers(items: TeamMember[]): Promise<void> {
 export async function getTeamMembers(): Promise<{ members?: TeamMember[]; error?: string }> {
   try {
     let members = await getTeamMembersInternal();
-    // Sort by newest first if needed, or by name, etc. For now, keeping insertion order.
-    // members.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return { members };
   } catch (error: any) {
     return { error: error.message || "Failed to fetch team members." };
@@ -60,17 +65,19 @@ export async function addTeamMember(data: CreateTeamMemberInput): Promise<{ succ
   
   try {
     const members = await getTeamMembersInternal();
+    const now = new Date().toISOString();
     const newMember: TeamMember = {
       ...validation.data,
       id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      joiningDate: validation.data.joiningDate || now, // Default joiningDate to now if not provided
+      createdAt: now,
+      updatedAt: now,
     };
     
     members.push(newMember);
-    await saveTeamMembers(members);
+    await saveTeamMembers(members); // This will save them unsorted, but getTeamMembersInternal will sort on read
     revalidatePath('/admin/dashboard/team');
-    revalidatePath('/company'); // Revalidate public company page
+    revalidatePath('/company'); 
     return { success: true, member: newMember };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to add team member." };
@@ -79,7 +86,7 @@ export async function addTeamMember(data: CreateTeamMemberInput): Promise<{ succ
 
 export async function getTeamMemberById(id: string): Promise<{ member?: TeamMember; error?: string }> {
   try {
-    const members = await getTeamMembersInternal();
+    const members = await getTeamMembersInternal(); // Already sorted
     const member = members.find(p => p.id === id);
     if (!member) {
       return { error: "Team member not found." };
@@ -91,9 +98,13 @@ export async function getTeamMemberById(id: string): Promise<{ member?: TeamMemb
 }
 
 export async function updateTeamMember(id: string, data: UpdateTeamMemberInput): Promise<{ success: boolean; member?: TeamMember; error?: string, errors?: z.ZodIssue[] }> {
-  const validation = CreateTeamMemberInputSchema.safeParse(data); // Use Create schema for full validation on update too
+  // Use CreateTeamMemberInputSchema for full validation on update, as partial doesn't enforce min lengths on existing fields if they are changed.
+  // Or, create a specific Update schema that re-validates existing fields if present.
+  // For now, we'll use Create... and rely on the form sending all fields or the .partial() for UpdateTeamMemberInput type.
+  // Let's make a more specific update validation
+   const validation = CreateTeamMemberInputSchema.partial().safeParse(data);
    if (!validation.success) {
-    return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
+    return { success: false, error: "Invalid data provided for update.", errors: validation.error.issues };
   }
 
   try {
@@ -108,14 +119,15 @@ export async function updateTeamMember(id: string, data: UpdateTeamMemberInput):
     const updatedMemberData: TeamMember = {
       ...originalMember, 
       ...validation.data, 
+      joiningDate: validation.data.joiningDate !== undefined ? validation.data.joiningDate : originalMember.joiningDate,
       updatedAt: new Date().toISOString(), 
     };
     
     members[memberIndex] = updatedMemberData;
-    await saveTeamMembers(members);
+    await saveTeamMembers(members); // Save unsorted, sort on read
     revalidatePath('/admin/dashboard/team');
     revalidatePath(`/admin/dashboard/team/edit/${id}`);
-    revalidatePath('/company'); // Revalidate public company page
+    revalidatePath('/company');
     return { success: true, member: updatedMemberData };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update team member." };
@@ -134,7 +146,7 @@ export async function deleteTeamMember(id: string): Promise<{ success: boolean; 
     await saveTeamMembers(filteredMembers);
 
     revalidatePath('/admin/dashboard/team');
-    revalidatePath('/company'); // Revalidate public company page
+    revalidatePath('/company'); 
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to delete team member." };

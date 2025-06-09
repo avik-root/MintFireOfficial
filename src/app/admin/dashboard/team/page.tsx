@@ -4,9 +4,10 @@ import { getTeamMembers } from "@/actions/team-member-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { PlusCircle, Edit, UsersRound, AlertTriangle, Mail, Github, Linkedin } from "lucide-react";
+import { PlusCircle, Edit, UsersRound, AlertTriangle, Mail, Github, Linkedin, CalendarDays } from "lucide-react";
 import DeleteTeamMemberButton from "./_components/DeleteTeamMemberButton";
 import type { TeamMember } from "@/lib/schemas/team-member-schemas";
+import { format } from 'date-fns';
 
 export default async function AdminTeamMembersPage() {
   const { members, error } = await getTeamMembers();
@@ -65,6 +66,7 @@ export default async function AdminTeamMembersPage() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Joining Date</th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -85,6 +87,9 @@ export default async function AdminTeamMembersPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{member.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{member.role}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{member.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                        {member.joiningDate ? format(new Date(member.joiningDate), "PPP") : 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1">
                         <Button variant="ghost" size="icon" asChild title="Edit Member">
                           <Link href={`/admin/dashboard/team/edit/${member.id}`}>

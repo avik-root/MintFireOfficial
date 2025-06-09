@@ -21,7 +21,7 @@ const CompanyPage = () => {
     const fetchTeam = async () => {
       setIsLoading(true);
       setError(null);
-      const result = await getTeamMembers();
+      const result = await getTeamMembers(); // Actions now handles sorting
       if (result.members) {
         setTeamMembers(result.members);
       } else {
@@ -87,7 +87,7 @@ const CompanyPage = () => {
           <UsersRound className="w-16 h-16 text-primary mb-4 glowing-icon-primary" />
           <h2 className="font-headline text-4xl font-bold">Meet Our Team</h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto mt-2">
-            The driving force behind MintFire's innovation and success.
+            The driving force behind MintFire's innovation and success. Oldest members first.
           </p>
         </div>
 

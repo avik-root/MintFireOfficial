@@ -4,9 +4,10 @@
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { User, Briefcase, AlignLeft, Mail, Github, Linkedin, X } from 'lucide-react';
+import { User, Briefcase, AlignLeft, Mail, Github, Linkedin, X, CalendarDays } from 'lucide-react';
 import type { TeamMember } from '@/lib/schemas/team-member-schemas';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 interface TeamMemberDetailModalProps {
   member: TeamMember | null;
@@ -48,27 +49,49 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
             <p className="text-sm text-foreground/90 whitespace-pre-wrap">{member.description}</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 pt-2">
             <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground flex items-center"><Mail className="w-4 h-4 mr-2 text-accent"/>Email</h4>
-                <Link href={`mailto:${member.email}`} className="text-sm text-primary hover:underline break-all">{member.email}</Link>
+                <h4 className="text-sm font-medium text-muted-foreground flex items-center">
+                    <Mail className="w-4 h-4 mr-2 text-accent"/>Email
+                </h4>
+                <Link href={`mailto:${member.email}`} className="text-sm text-primary hover:underline break-all flex items-center gap-1 group">
+                    <Mail className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
+                    {member.email}
+                </Link>
             </div>
             {member.githubUrl && (
                 <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground flex items-center"><Github className="w-4 h-4 mr-2 text-accent"/>GitHub</h4>
-                    <Link href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">{member.githubUrl}</Link>
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center">
+                        <Github className="w-4 h-4 mr-2 text-accent"/>GitHub
+                    </h4>
+                    <Link href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all flex items-center gap-1 group">
+                        <Github className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
+                        {member.githubUrl.replace('https://github.com/', '')}
+                    </Link>
                 </div>
             )}
             {member.linkedinUrl && (
                 <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground flex items-center"><Linkedin className="w-4 h-4 mr-2 text-accent"/>LinkedIn</h4>
-                    <Link href={member.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">{member.linkedinUrl}</Link>
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center">
+                        <Linkedin className="w-4 h-4 mr-2 text-accent"/>LinkedIn
+                    </h4>
+                    <Link href={member.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all flex items-center gap-1 group">
+                        <Linkedin className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
+                        {member.linkedinUrl.replace('https://www.linkedin.com/in/', '').replace(/\/$/, '')}
+                    </Link>
+                </div>
+            )}
+            {member.joiningDate && (
+                 <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center">
+                        <CalendarDays className="w-4 h-4 mr-2 text-accent"/>Joined</h4>
+                    <p className="text-sm text-foreground/90">{format(new Date(member.joiningDate), "MMMM d, yyyy")}</p>
                 </div>
             )}
           </div>
         </div>
         <DialogFooter className="p-4 border-t border-border bg-card/50">
-            <p className="text-xs text-muted-foreground">Member since: {new Date(member.createdAt).toLocaleDateString()}</p>
+             <p className="text-xs text-muted-foreground">Member registered on: {new Date(member.createdAt).toLocaleDateString()}</p>
         </DialogFooter>
       </DialogContent>
     </Dialog>

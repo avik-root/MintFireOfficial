@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { LayoutDashboard, Package, Newspaper, Settings, BarChart3, Users } from "lucide-react";
+import { LayoutDashboard, Package, Newspaper, Settings, BarChart3, Users, FileText } from "lucide-react"; // Added FileText for consistency
 
 interface DashboardCardProps {
   title: string;
@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
         <DashboardCard
           title="Products"
           description="Manage your product catalog. View, add, edit, or delete products."
-          link="/admin/dashboard/products"
+          link="/admin/dashboard/products" // Updated link
           linkText="Go to Products"
           icon={Package}
         />
@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
           description="Manage banners, news, and announcements."
           link="/admin/dashboard/site-content"
           linkText="Go to Site Content"
-          icon={Newspaper}
+          icon={FileText} // Changed to FileText for consistency
         />
         <DashboardCard
           title="Blog Posts"
@@ -88,5 +88,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    

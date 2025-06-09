@@ -1,2 +1,14 @@
-
-[]
+[
+  {
+    "id": "31a2ce41-bd07-4082-a50e-cca9d0faee57",
+    "name": "Jellymint",
+    "role": "Founder",
+    "description": "pretty cute girl ",
+    "email": "j@gmail.com",
+    "githubUrl": "",
+    "linkedinUrl": "",
+    "imageUrl": "/uploads/team-photos/3cdfdf43-4897-4607-b0b2-1795afe0b6f3.jpg",
+    "createdAt": "2025-06-09T20:39:11.883Z",
+    "updatedAt": "2025-06-09T20:39:11.883Z"
+  }
+]

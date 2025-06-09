@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   Users,
-  Package,
+  Package, // Icon for Products
   Newspaper, 
   ImageIcon, 
   FileText, 
@@ -22,15 +22,15 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Crown, // Icon for Founders/CEO
+  Crown, 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
 
 const sidebarNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/dashboard/products', label: 'Products', icon: Package }, // Added Products
   { href: '/admin/dashboard/users', label: 'Users', icon: Users },
-  { href: '/admin/dashboard/products', label: 'Products', icon: Package },
   { href: '/admin/dashboard/site-content', label: 'Site Content', icon: FileText },
   { href: '/admin/dashboard/blogs', label: 'Blog Posts', icon: Newspaper },
   { href: '/admin/dashboard/media', label: 'Media', icon: ImageIcon },

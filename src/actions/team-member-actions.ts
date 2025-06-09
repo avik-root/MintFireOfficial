@@ -17,6 +17,27 @@ const UPLOADS_DIR_NAME = 'uploads';
 const TEAM_PHOTOS_DIR_NAME = 'team-photos';
 const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, TEAM_PHOTOS_DIR_NAME);
 
+// Helper function to generate memberId
+function generateMemberId(name: string): string {
+  const nameParts = name.split(' ');
+  let prefix = '';
+  if (nameParts.length > 1) {
+    prefix = (nameParts[0].substring(0, 3) + nameParts[nameParts.length -1].substring(0, 3)).toUpperCase();
+  } else {
+    prefix = name.substring(0, Math.min(6, name.length)).toUpperCase();
+    while (prefix.length < 6) {
+      prefix += 'X'; // Pad if name is too short
+    }
+  }
+  
+  const randomNumbers1 = Math.floor(1000 + Math.random() * 9000).toString(); // 4 random digits
+  const randomChars = Array(2).fill(null).map(() => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join(''); // 2 random uppercase letters
+  const randomNumbers2 = Math.floor(10 + Math.random() * 90).toString(); // 2 random digits
+
+  return `${prefix}${randomNumbers1}${randomChars}${randomNumbers2}`;
+}
+
+
 async function getTeamMembersInternal(params?: { publicOnly?: boolean }): Promise<TeamMember[]> {
   try {
     await fs.mkdir(path.dirname(teamMembersFilePath), { recursive: true });
@@ -138,8 +159,11 @@ export async function addTeamMember(formData: FormData): Promise<{ success: bool
 
     const members = await getTeamMembersInternal();
     const now = new Date().toISOString();
+    const newMemberId = generateMemberId(validatedData.name);
+
     const newMember: TeamMember = {
       id: randomUUID(),
+      memberId: newMemberId,
       name: validatedData.name,
       role: validatedData.role,
       description: validatedData.description,
@@ -209,7 +233,6 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
     const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null;
 
     if (imageFile && imageFile.size > 0) {
-      // Delete old image if it exists and a new one is uploaded
       if (originalMember.imageUrl && originalMember.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
         try {
           const oldImagePath = path.join(process.cwd(), 'public', originalMember.imageUrl);
@@ -220,7 +243,6 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
       }
       imageUrlToSave = await handleImageUpload(imageFile);
     } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "" && originalMember.imageUrl) { 
-      // User wants to remove the existing image
       if (originalMember.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
         try {
           const oldImagePath = path.join(process.cwd(), 'public', originalMember.imageUrl);
@@ -229,9 +251,9 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
           console.warn(`Failed to delete old image ${originalMember.imageUrl}: ${imgDelError.message}`);
         }
       }
-      imageUrlToSave = ""; // Set to empty string
+      imageUrlToSave = "";
     } else if (existingImageUrlFromForm !== null) {
-      imageUrlToSave = existingImageUrlFromForm; // Keep existing if no new file and not explicitly removed
+      imageUrlToSave = existingImageUrlFromForm;
     }
 
 
@@ -247,6 +269,7 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
       isPublic: validatedData.isPublic !== undefined ? validatedData.isPublic : originalMember.isPublic,
       imageUrl: imageUrlToSave || "",
       updatedAt: new Date().toISOString(), 
+      // memberId is NOT updated
     };
     
     members[memberIndex] = updatedMemberData;

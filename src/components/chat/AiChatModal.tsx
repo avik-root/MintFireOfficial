@@ -46,7 +46,7 @@ const AiChatModal = () => {
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen, messages]); // Changed messages.length to messages
+  }, [isOpen, messages]); 
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
@@ -95,7 +95,7 @@ const AiChatModal = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px] md:max-w-[600px] lg:max-w-[700px] h-[80vh] flex flex-col p-0 border-primary shadow-2xl shadow-primary/30">
-        <DialogHeader className="p-4 border-b border-border sticky top-0 bg-card z-10">
+        <DialogHeader className="p-4 border-b border-border bg-card">
           <DialogTitle className="flex items-center font-headline text-xl">
             <Bot className="mr-2 text-accent" /> MintFire AI Assistant
           </DialogTitle>
@@ -142,7 +142,7 @@ const AiChatModal = () => {
             )}
           </div>
         </ScrollArea>
-        <DialogFooter className="p-4 border-t border-primary sticky bottom-0 bg-card z-10">
+        <DialogFooter className="p-4 border-t border-primary bg-card">
           <div className="flex w-full space-x-2">
             <Input
               type="text"
@@ -165,4 +165,3 @@ const AiChatModal = () => {
 };
 
 export default AiChatModal;
-

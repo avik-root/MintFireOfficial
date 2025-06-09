@@ -27,31 +27,7 @@ const sectionsData: Array<{ title: string; items: FeatureItem[]; sectionIcon: Re
       { id: "lr2", title: "NovaChain Ledger", description: "Next-gen decentralized ledger technology.", icon: CheckCircle, image: "https://placehold.co/600x400.png", dataAiHint: "blockchain network", link: "/services/blockchain"},
     ],
   },
-  {
-    title: "Upcoming Products",
-    sectionIcon: Clock,
-    sectionId: "upcoming-products",
-    items: [
-      { id: "up1", title: "Project Chimera AI", description: "Adaptive AI core for industrial automation.", icon: Cpu, image: "https://placehold.co/600x400.png", dataAiHint: "artificial intelligence", link: "/services/ai" },
-      { id: "up2", title: "Helios IoT Platform", description: "Scalable platform for interconnected smart devices.", icon: Smartphone, image: "https://placehold.co/600x400.png", dataAiHint: "iot devices", link: "/services/iot-devices" },
-    ],
-  },
-  {
-    title: "Early Access Programs",
-    sectionIcon: GitBranch,
-    sectionId: "early-access",
-    items: [
-      { id: "ea1", title: "QuantumLeap OS", description: "Join the beta for our revolutionary operating system.", icon: TestTube2, image: "https://placehold.co/600x400.png", dataAiHint: "software code" },
-    ],
-  },
-  {
-    title: "Developer Testing",
-    sectionIcon: TestTube2,
-    sectionId: "dev-testing",
-    items: [
-      { id: "dt1", title: "ForgeSDK Alpha", description: "Access our latest SDK for AI model development.", icon: Cpu, image: "https://placehold.co/600x400.png", dataAiHint: "developer tools" },
-    ],
-  },
+  // "Upcoming Products", "Early Access Programs", and "Developer Testing" sections are removed by not including them here.
 ];
 
 interface CoreTechnology {
@@ -107,7 +83,12 @@ export default async function Home() {
   );
 
   const LatestReleasesSection = sectionsData.find(sec => sec.sectionId === "latest-releases");
-  const OtherProductSections = sectionsData.filter(sec => sec.sectionId !== "latest-releases");
+  const OtherProductSections = sectionsData.filter(sec => 
+    sec.sectionId !== "latest-releases" &&
+    sec.sectionId !== "upcoming-products" && // Explicitly ensure these are not picked up if accidentally left in sectionsData
+    sec.sectionId !== "early-access" &&
+    sec.sectionId !== "dev-testing"
+  );
 
 
   return (
@@ -187,7 +168,7 @@ export default async function Home() {
         )}
       </section>
 
-      {/* Other Product Sections (Upcoming, Early Access, Dev Testing) */}
+      {/* Other Product Sections (Upcoming, Early Access, Dev Testing) - These will not render if sectionsData is empty */}
       {OtherProductSections.map((section) => (
         <section key={section.sectionId} id={section.sectionId} className="py-12">
           <div className="flex items-center mb-8">

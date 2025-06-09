@@ -63,7 +63,7 @@ export default function Home() {
             Pioneering the future of Cyber Security, Blockchain, AI, Industrial Software, and IoT Devices.
           </p>
           <div className="space-x-4">
-            <Button asChild size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground glowing-icon-primary shadow-lg shadow-primary/50">
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-lg shadow-primary/50">
               <Link href="#latest-releases">Explore Products</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="border-accent text-accent hover:bg-accent/10 hover:text-accent glowing-icon shadow-lg shadow-accent/30">

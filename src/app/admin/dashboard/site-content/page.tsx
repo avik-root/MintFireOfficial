@@ -3,15 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getSiteContentItems } from "@/actions/site-content-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ExternalLink, AlertTriangle, ListChecks } from "lucide-react";
+import { PlusCircle, Edit, ExternalLink, AlertTriangle, ListChecks } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import DeleteSiteContentItemButton from "./_components/DeleteSiteContentItemButton";
 
 export default async function AdminSiteContentPage() {
   const { items: siteContentItems, error } = await getSiteContentItems();
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-destructive">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
         <AlertTriangle className="w-16 h-16 mb-4" />
         <h2 className="text-2xl font-semibold mb-2">Error Loading Site Content</h2>
         <p>{error}</p>
@@ -20,12 +21,17 @@ export default async function AdminSiteContentPage() {
   }
 
   if (!siteContentItems) {
-    return <p>Loading site content...</p>; 
+    return (
+       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <ListChecks className="w-16 h-16 mb-4 text-muted-foreground animate-pulse" />
+        <p className="text-muted-foreground">Loading site content...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 md:px-6">
-      <Card className="layered-card">
+    <div className="container mx-auto py-8 px-4 md:px-6 w-full">
+      <Card className="layered-card w-full">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -35,7 +41,7 @@ export default async function AdminSiteContentPage() {
               </CardTitle>
               <CardDescription>View, add, edit, or delete banners, news, and announcements.</CardDescription>
             </div>
-            <Button asChild variant="default">
+            <Button asChild variant="default" className="shrink-0">
               <Link href="/admin/dashboard/site-content/add">
                 <PlusCircle className="mr-2 h-5 w-5" /> Add New Item
               </Link>
@@ -77,7 +83,7 @@ export default async function AdminSiteContentPage() {
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1">
                         {item.linkUrl && (
                           <Button variant="ghost" size="icon" asChild>
                             <a href={item.linkUrl} target="_blank" rel="noopener noreferrer" title="View Live">
@@ -90,10 +96,7 @@ export default async function AdminSiteContentPage() {
                             <Edit className="h-4 w-4 text-accent" />
                           </Link>
                         </Button>
-                        {/* Delete button would require client component for confirmation dialog */}
-                        <Button variant="ghost" size="icon" title="Delete Item (Not Implemented)">
-                           <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <DeleteSiteContentItemButton itemId={item.id} />
                       </td>
                     </tr>
                   ))}
@@ -103,9 +106,7 @@ export default async function AdminSiteContentPage() {
           )}
         </CardContent>
       </Card>
-      <p className="mt-8 text-center text-sm text-muted-foreground">
-        This is a foundational page for site content management. Full CRUD operations, especially for editing and deleting with confirmations, will be implemented in subsequent steps.
-      </p>
     </div>
   );
 }
+

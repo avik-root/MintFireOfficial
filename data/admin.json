@@ -1,2 +1,8 @@
-
-[]
+[
+  {
+    "adminName": "Test",
+    "adminId": "@test",
+    "email": "test@gmail.com",
+    "password": "Test@2005#"
+  }
+]

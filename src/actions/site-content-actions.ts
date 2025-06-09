@@ -4,7 +4,13 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import { CreateSiteContentItemInput, SiteContentItem, SiteContentItemSchema } from '@/lib/schemas/site-content-schemas';
+import { 
+  SiteContentItemSchema,
+  type SiteContentItem,
+  type CreateSiteContentItemInput,
+  type UpdateSiteContentItemInput
+} from '@/lib/schemas/site-content-schemas';
+import { revalidatePath } from 'next/cache';
 
 const siteContentFilePath = path.join(process.cwd(), 'data', 'site_content.json');
 
@@ -37,30 +43,34 @@ async function saveSiteContentItems(items: SiteContentItem[]): Promise<void> {
 export async function getSiteContentItems(): Promise<{ items?: SiteContentItem[]; error?: string }> {
   try {
     const items = await getSiteContentItemsInternal();
+    // Sort by newest first
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return { items };
   } catch (error: any) {
     return { error: error.message || "Failed to fetch site content items." };
   }
 }
 
-export async function addSiteContentItem(data: CreateSiteContentItemInput): Promise<{ success: boolean; item?: SiteContentItem; error?: string }> {
+export async function addSiteContentItem(data: CreateSiteContentItemInput): Promise<{ success: boolean; item?: SiteContentItem; error?: string; errors?: z.ZodIssue[] }> {
+  const validation = SiteContentItemSchema.omit({ id: true, createdAt: true, updatedAt: true }).safeParse(data);
+  if (!validation.success) {
+    return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
+  }
+  
   try {
     const items = await getSiteContentItemsInternal();
     const newItem: SiteContentItem = {
-      ...data,
+      ...validation.data,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     
-    const validation = SiteContentItemSchema.safeParse(newItem);
-    if (!validation.success) {
-      return { success: false, error: validation.error.flatten().fieldErrors.toString() };
-    }
-
-    items.push(validation.data);
+    items.push(newItem);
     await saveSiteContentItems(items);
-    return { success: true, item: validation.data };
+    revalidatePath('/admin/dashboard/site-content');
+    revalidatePath('/'); // Also revalidate home page if content is displayed there
+    return { success: true, item: newItem };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to add site content item." };
   }
@@ -79,7 +89,12 @@ export async function getSiteContentItemById(id: string): Promise<{ item?: SiteC
   }
 }
 
-export async function updateSiteContentItem(id: string, data: Partial<CreateSiteContentItemInput>): Promise<{ success: boolean; item?: SiteContentItem; error?: string }> {
+export async function updateSiteContentItem(id: string, data: UpdateSiteContentItemInput): Promise<{ success: boolean; item?: SiteContentItem; error?: string, errors?: z.ZodIssue[] }> {
+  const validation = SiteContentItemSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).safeParse(data);
+   if (!validation.success) {
+    return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
+  }
+
   try {
     let items = await getSiteContentItemsInternal();
     const itemIndex = items.findIndex(p => p.id === id);
@@ -88,20 +103,24 @@ export async function updateSiteContentItem(id: string, data: Partial<CreateSite
       return { success: false, error: "Site content item not found." };
     }
 
-    const updatedItem = {
+    const updatedItemData = {
       ...items[itemIndex],
-      ...data,
+      ...validation.data, // Use validated and potentially partial data
       updatedAt: new Date().toISOString(),
     };
     
-    const validation = SiteContentItemSchema.safeParse(updatedItem);
-    if (!validation.success) {
-      return { success: false, error: validation.error.flatten().fieldErrors.toString() };
+    // Ensure all required fields are still present after merging partial data
+    const finalValidation = SiteContentItemSchema.safeParse(updatedItemData);
+    if (!finalValidation.success) {
+       return { success: false, error: "Update resulted in invalid item structure.", errors: finalValidation.error.issues };
     }
-
-    items[itemIndex] = validation.data;
+    
+    items[itemIndex] = finalValidation.data;
     await saveSiteContentItems(items);
-    return { success: true, item: validation.data };
+    revalidatePath('/admin/dashboard/site-content');
+    revalidatePath(`/admin/dashboard/site-content/edit/${id}`);
+    revalidatePath('/'); 
+    return { success: true, item: finalValidation.data };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update site content item." };
   }
@@ -117,6 +136,8 @@ export async function deleteSiteContentItem(id: string): Promise<{ success: bool
     }
 
     await saveSiteContentItems(filteredItems);
+    revalidatePath('/admin/dashboard/site-content');
+    revalidatePath('/');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to delete site content item." };

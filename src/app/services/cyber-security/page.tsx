@@ -19,7 +19,7 @@ export default async function CyberSecurityPage() {
   let productsToDisplay: Product[] = [];
   let errorLoading: string | null = null;
   let sectionTitle = "Related Security Products";
-  let sectionIcon = ShieldCheck;
+  let SectionIcon = ShieldCheck; // Renamed to uppercase
 
   const { products: taggedProducts, error: taggedError } = await getProducts({ tag: 'security' });
 
@@ -34,7 +34,7 @@ export default async function CyberSecurityPage() {
     } else if (featuredProducts && featuredProducts.length > 0) {
       productsToDisplay = featuredProducts;
       sectionTitle = "Featured Products";
-      sectionIcon = Sparkles;
+      SectionIcon = Sparkles; // Renamed to uppercase
     }
   }
 
@@ -57,7 +57,7 @@ export default async function CyberSecurityPage() {
 
        <div className="mt-16">
         <h3 className="font-headline text-3xl font-semibold mb-8 text-center text-primary flex items-center justify-center">
-          <sectionIcon className="w-8 h-8 mr-3 glowing-icon-primary" />
+          <SectionIcon className="w-8 h-8 mr-3 glowing-icon-primary" />
           {sectionTitle}
         </h3>
         {errorLoading && (
@@ -84,3 +84,4 @@ export default async function CyberSecurityPage() {
     </ServicePageLayout>
   );
 };
+

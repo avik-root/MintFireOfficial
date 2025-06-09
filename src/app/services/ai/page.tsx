@@ -19,7 +19,7 @@ export default async function AiPage() {
   let productsToDisplay: Product[] = [];
   let errorLoading: string | null = null;
   let sectionTitle = "Related AI Products";
-  let sectionIcon = Cpu;
+  let SectionIcon = Cpu; // Renamed to uppercase
 
   const { products: taggedProducts, error: taggedError } = await getProducts({ tag: 'ai' });
 
@@ -35,7 +35,7 @@ export default async function AiPage() {
     } else if (featuredProducts && featuredProducts.length > 0) {
       productsToDisplay = featuredProducts;
       sectionTitle = "Featured Products"; // Update title for fallback
-      sectionIcon = Sparkles;
+      SectionIcon = Sparkles; // Renamed to uppercase
     }
   }
 
@@ -58,7 +58,7 @@ export default async function AiPage() {
 
       <div className="mt-16">
         <h3 className="font-headline text-3xl font-semibold mb-8 text-center text-primary flex items-center justify-center">
-          <sectionIcon className="w-8 h-8 mr-3 glowing-icon-primary" />
+          <SectionIcon className="w-8 h-8 mr-3 glowing-icon-primary" />
           {sectionTitle}
         </h3>
         {errorLoading && (
@@ -85,3 +85,4 @@ export default async function AiPage() {
     </ServicePageLayout>
   );
 };
+

@@ -1,11 +1,11 @@
 
 import ServicePageLayout from '@/components/ServicePageLayout';
 import ProductCard from '@/app/_components/ProductCard';
-import ProductDetailModal from '@/app/_components/ProductDetailModal';
+// ProductDetailModal removed as it's handled by homepage, service pages link directly
 import { getProducts } from '@/actions/product-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
 import { Code2, AlertTriangle, PackageSearch } from 'lucide-react';
-import React from 'react'; // Removed useState, useEffect as this is now a Server Component
+import React from 'react'; 
 
 export default async function SoftwaresPage() {
   const features = [
@@ -49,13 +49,7 @@ export default async function SoftwaresPage() {
         {!error && products && products.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} onViewDetailsClick={() => {
-                // Modal opening will be handled by a client component wrapper if needed,
-                // or this page needs to be converted to client component to handle modal state.
-                // For now, clicking "View Details" on a server component ProductCard won't open a modal.
-                // Consider linking directly to product.productUrl or a dedicated product page.
-                if (product.productUrl) window.open(product.productUrl, '_blank');
-              }} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (

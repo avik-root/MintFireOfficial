@@ -1,15 +1,17 @@
 
+"use client";
+
 import type { Product } from '@/lib/schemas/product-schemas';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package, Ticket, KeyRound, Info, Eye } from 'lucide-react';
+import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package, Ticket, KeyRound, Info, Eye, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProductCardProps {
   product: Product;
-  onViewDetailsClick: (product: Product) => void;
+  onViewDetailsClick?: (product: Product) => void; // Make optional
 }
 
 export default function ProductCard({ product, onViewDetailsClick }: ProductCardProps) {
@@ -88,13 +90,23 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
         </div>
       </CardContent>
       <CardFooter className="pt-4">
-        <Button 
-            variant="link" 
-            className="text-accent p-0 hover:text-foreground" 
-            onClick={() => onViewDetailsClick(product)}
-        >
-            View Details <Eye className="ml-2 w-4 h-4" />
-        </Button>
+        {onViewDetailsClick ? (
+            <Button 
+                variant="link" 
+                className="text-accent p-0 hover:text-foreground" 
+                onClick={() => onViewDetailsClick(product)}
+            >
+                View Details <Eye className="ml-2 w-4 h-4" />
+            </Button>
+        ) : product.productUrl ? (
+            <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
+                <Link href={product.productUrl} target="_blank" rel="noopener noreferrer">
+                    View Details <ExternalLink className="ml-2 w-4 h-4" />
+                </Link>
+            </Button>
+        ) : (
+             <span className="text-sm text-muted-foreground italic">Details unavailable</span>
+        )}
       </CardFooter>
     </Card>
   );

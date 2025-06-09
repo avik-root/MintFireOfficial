@@ -1,7 +1,6 @@
 
 import ServicePageLayout from '@/components/ServicePageLayout';
-import ProductCard from '@/app/_components/ProductCard'; // Re-add if needed for client component modal
-// import ProductDetailModal from '@/app/_components/ProductDetailModal'; // Re-add if needed
+import ProductCard from '@/app/_components/ProductCard'; 
 import { getProducts } from '@/actions/product-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
 import { Cpu, AlertTriangle, PackageSearch } from 'lucide-react';
@@ -49,10 +48,7 @@ export default async function AiPage() {
         {!error && products && products.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} onViewDetailsClick={() => {
-                // For Server Component, modal needs client-side handling strategy or direct link
-                if (product.productUrl) window.open(product.productUrl, '_blank');
-              }} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (

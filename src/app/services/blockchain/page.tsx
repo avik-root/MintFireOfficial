@@ -1,4 +1,6 @@
 
+"use client"; // This page uses hooks, so it must be a client component
+
 import ServicePageLayout from '@/components/ServicePageLayout';
 import ProductCard from '@/app/_components/ProductCard';
 import { getProducts } from '@/actions/product-actions';
@@ -16,7 +18,6 @@ const BlockchainPage = () => {
     "Secure Identity Verification Systems"
   ];
   
-  // This page is a server component, so we fetch data directly
   const [productsData, setProductsData] = React.useState<{ products?: Product[]; error?: string }>({});
   React.useEffect(() => {
     async function fetchData() {
@@ -58,9 +59,7 @@ const BlockchainPage = () => {
         {!error && products && products.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} onViewDetailsClick={() => {
-                if (product.productUrl) window.open(product.productUrl, '_blank');
-              }} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (

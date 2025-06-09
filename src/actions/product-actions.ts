@@ -9,6 +9,7 @@ import {
   FormProductSchema, 
   type Product,
   type ProductStatus,
+  type BillingInterval,
 } from '@/lib/schemas/product-schemas';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
@@ -27,11 +28,11 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
         await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8');
         return [];
       }
-      throw readError; // Re-throw other read errors
+      throw readError; 
     }
 
     if (fileContent.trim() === '') {
-      return []; // Treat empty file as empty array
+      return []; 
     }
 
     const items = JSON.parse(fileContent);
@@ -56,7 +57,6 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
       if (dateB !== dateA) return dateB - dateA;
 
-      // Fallback sort by createdAt if release dates are the same or not present
       const createdAtA = new Date(a.createdAt).getTime();
       const createdAtB = new Date(b.createdAt).getTime();
       return createdAtB - createdAtA;
@@ -103,6 +103,12 @@ function transformTags(tagsString?: string): string[] {
   return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 }
 
+function parseOptionalFloat(value: string | null | undefined): number | null {
+  if (value === null || value === undefined || value.trim() === '') return null;
+  const num = parseFloat(value);
+  return isNaN(num) ? null : num; // Or throw error if not a valid number string? Schema should catch this.
+}
+
 
 export async function getProducts(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<{ products?: Product[]; error?: string }> {
   try {
@@ -120,7 +126,9 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
-      } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails'].includes(key)) {
+      } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails', 
+                  'priceAmountString', 'billingInterval', 'trialDuration', 
+                  'postTrialPriceAmountString', 'postTrialBillingInterval'].includes(key)) {
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
@@ -147,6 +155,29 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     const products = await getProductsInternal(); 
     const now = new Date().toISOString();
 
+    let priceAmount = parseOptionalFloat(validatedData.priceAmountString);
+    let postTrialPriceAmount = parseOptionalFloat(validatedData.postTrialPriceAmountString);
+
+    let finalPriceAmount: number | null = null;
+    let finalBillingInterval: BillingInterval | null = null;
+    let finalTrialDuration: string | null = null;
+    let finalPostTrialPriceAmount: number | null = null;
+    let finalPostTrialBillingInterval: BillingInterval | null = null;
+
+    if (validatedData.pricingType === 'Paid') {
+        finalPriceAmount = priceAmount;
+        if (validatedData.pricingTerm === 'Subscription') {
+            finalBillingInterval = validatedData.billingInterval ?? null;
+        }
+    } else if (validatedData.pricingType === 'Free' && validatedData.pricingTerm === 'Subscription') { // Free Trial
+        finalTrialDuration = validatedData.trialDuration ?? null;
+        if (postTrialPriceAmount && validatedData.postTrialBillingInterval) {
+            finalPostTrialPriceAmount = postTrialPriceAmount;
+            finalPostTrialBillingInterval = validatedData.postTrialBillingInterval;
+        }
+    }
+
+
     const newProduct: Product = {
       id: randomUUID(),
       name: validatedData.name,
@@ -155,10 +186,17 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       releaseDate: validatedData.releaseDate,
       description: validatedData.description,
       longDescription: validatedData.longDescription,
-      productUrl: validatedData.productUrl || "",
+      productUrl: validatedData.productUrl || "", 
       developer: validatedData.developer,
       pricingType: validatedData.pricingType,
       pricingTerm: validatedData.pricingTerm,
+      
+      priceAmount: finalPriceAmount,
+      billingInterval: finalBillingInterval,
+      trialDuration: finalTrialDuration,
+      postTrialPriceAmount: finalPostTrialPriceAmount,
+      postTrialBillingInterval: finalPostTrialBillingInterval,
+
       tags: transformTags(validatedData.tagsString),
       isFeatured: validatedData.isFeatured, 
       couponDetails: validatedData.couponDetails,
@@ -206,7 +244,9 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
-      } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails'].includes(key)) {
+      } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails',
+                  'priceAmountString', 'billingInterval', 'trialDuration', 
+                  'postTrialPriceAmountString', 'postTrialBillingInterval'].includes(key)) {
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
@@ -238,6 +278,49 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     }
 
     const originalProduct = products[productIndex];
+    
+    let priceAmount = validatedData.priceAmountString !== undefined 
+        ? parseOptionalFloat(validatedData.priceAmountString) 
+        : originalProduct.priceAmount;
+    let postTrialPriceAmount = validatedData.postTrialPriceAmountString !== undefined
+        ? parseOptionalFloat(validatedData.postTrialPriceAmountString)
+        : originalProduct.postTrialPriceAmount;
+
+    let finalPriceAmount: number | null = originalProduct.priceAmount;
+    let finalBillingInterval: BillingInterval | null = originalProduct.billingInterval;
+    let finalTrialDuration: string | null = originalProduct.trialDuration;
+    let finalPostTrialPriceAmount: number | null = originalProduct.postTrialPriceAmount;
+    let finalPostTrialBillingInterval: BillingInterval | null = originalProduct.postTrialBillingInterval;
+
+    const currentPricingType = validatedData.pricingType ?? originalProduct.pricingType;
+    const currentPricingTerm = validatedData.pricingTerm ?? originalProduct.pricingTerm;
+
+    if (currentPricingType === 'Paid') {
+        finalPriceAmount = priceAmount;
+        finalBillingInterval = currentPricingTerm === 'Subscription' ? (validatedData.billingInterval ?? originalProduct.billingInterval) : null;
+        // Clear free trial fields
+        finalTrialDuration = null;
+        finalPostTrialPriceAmount = null;
+        finalPostTrialBillingInterval = null;
+    } else if (currentPricingType === 'Free') {
+        // Clear paid fields
+        finalPriceAmount = null;
+        finalBillingInterval = null;
+        if (currentPricingTerm === 'Subscription') { // Free Trial
+            finalTrialDuration = validatedData.trialDuration ?? originalProduct.trialDuration;
+            if (postTrialPriceAmount && (validatedData.postTrialBillingInterval !== undefined ? validatedData.postTrialBillingInterval : originalProduct.postTrialBillingInterval) ) {
+                finalPostTrialPriceAmount = postTrialPriceAmount;
+                finalPostTrialBillingInterval = validatedData.postTrialBillingInterval ?? originalProduct.postTrialBillingInterval;
+            } else { // If only one part of post-trial is set, or none, clear them
+                finalPostTrialPriceAmount = null;
+                finalPostTrialBillingInterval = null;
+            }
+        } else { // Free Lifetime
+             finalTrialDuration = null;
+             finalPostTrialPriceAmount = null;
+             finalPostTrialBillingInterval = null;
+        }
+    }
    
     const updatedProductData: Product = {
       ...originalProduct,
@@ -249,8 +332,15 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       longDescription: validatedData.longDescription !== undefined ? validatedData.longDescription : originalProduct.longDescription, 
       productUrl: validatedData.productUrl !== undefined ? (validatedData.productUrl ?? "") : originalProduct.productUrl, 
       developer: validatedData.developer ?? originalProduct.developer,
-      pricingType: validatedData.pricingType ?? originalProduct.pricingType,
-      pricingTerm: validatedData.pricingTerm ?? originalProduct.pricingTerm,
+      
+      pricingType: currentPricingType,
+      pricingTerm: currentPricingTerm,
+      priceAmount: finalPriceAmount,
+      billingInterval: finalBillingInterval,
+      trialDuration: finalTrialDuration,
+      postTrialPriceAmount: finalPostTrialPriceAmount,
+      postTrialBillingInterval: finalPostTrialBillingInterval,
+      
       tags: validatedData.tagsString !== undefined ? transformTags(validatedData.tagsString) : originalProduct.tags,
       isFeatured: validatedData.isFeatured !== undefined ? validatedData.isFeatured : originalProduct.isFeatured,
       couponDetails: validatedData.couponDetails !== undefined ? validatedData.couponDetails : originalProduct.couponDetails,

@@ -1,25 +1,5 @@
+
 [
-  {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "InsightAI Engine",
-    "version": "Pre-Alpha",
-    "status": "Upcoming",
-    "releaseDate": "2025-09-01T10:00:00.000Z",
-    "description": "Next-gen AI engine for predictive analytics and real-time decision making.",
-    "longDescription": "InsightAI Engine leverages advanced machine learning models to provide actionable insights from complex datasets. Designed for scalability and ease of integration. Coming soon!",
-    "productUrl": "https://la-interior.onrender.com",
-    "developer": "MintFire AI Division",
-    "pricingType": "Paid",
-    "pricingTerm": "Subscription",
-    "tags": [
-      "ai",
-      "analytics",
-      "upcoming"
-    ],
-    "isFeatured": true,
-    "createdAt": "2025-06-10T12:10:00.000Z",
-    "updatedAt": "2025-06-09T22:07:18.433Z"
-  },
   {
     "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
     "name": "ChainWeaver Studio",
@@ -32,14 +12,21 @@
     "developer": "MintFire Labs",
     "pricingType": "Free",
     "pricingTerm": "Lifetime",
+    "priceAmount": null,
+    "billingInterval": null,
+    "trialDuration": null,
+    "postTrialPriceAmount": null,
+    "postTrialBillingInterval": null,
     "tags": [
       "blockchain",
       "developer tools",
       "beta"
     ],
     "isFeatured": true,
+    "couponDetails": null,
+    "activationDetails": "Register for beta access. Keys distributed weekly.",
     "createdAt": "2025-06-10T12:05:00.000Z",
-    "updatedAt": "2025-06-09T21:51:50.669Z"
+    "updatedAt": "2025-06-10T09:30:00.000Z"
   },
   {
     "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
@@ -53,13 +40,48 @@
     "developer": "MintFire R&D",
     "pricingType": "Paid",
     "pricingTerm": "Subscription",
+    "priceAmount": 49.99,
+    "billingInterval": "Monthly",
+    "trialDuration": null,
+    "postTrialPriceAmount": null,
+    "postTrialBillingInterval": null,
     "tags": [
       "security",
       "enterprise",
       "ai"
     ],
     "isFeatured": true,
+    "couponDetails": "NEWUSER15 for 15% off first year.",
+    "activationDetails": "License key required. Purchase confirmation email contains details.",
     "createdAt": "2025-06-10T12:00:00.000Z",
-    "updatedAt": "2025-06-10T12:00:00.000Z"
+    "updatedAt": "2025-06-10T09:30:00.000Z"
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "InsightAI Engine",
+    "version": "Pre-Alpha",
+    "status": "Upcoming",
+    "releaseDate": "2025-09-01T10:00:00.000Z",
+    "description": "Next-gen AI engine for predictive analytics and real-time decision making.",
+    "longDescription": "InsightAI Engine leverages advanced machine learning models to provide actionable insights from complex datasets. Designed for scalability and ease of integration. Coming soon!",
+    "productUrl": "https://la-interior.onrender.com",
+    "developer": "MintFire AI Division",
+    "pricingType": "Paid",
+    "pricingTerm": "Subscription",
+    "priceAmount": 199.00,
+    "billingInterval": "Monthly",
+    "trialDuration": null,
+    "postTrialPriceAmount": null,
+    "postTrialBillingInterval": null,
+    "tags": [
+      "ai",
+      "analytics",
+      "upcoming"
+    ],
+    "isFeatured": true,
+    "couponDetails": null,
+    "activationDetails": "Join waitlist for early access notifications.",
+    "createdAt": "2025-06-10T12:10:00.000Z",
+    "updatedAt": "2025-06-10T09:30:00.000Z"
   }
 ]

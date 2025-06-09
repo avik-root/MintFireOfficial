@@ -19,23 +19,32 @@ export type ProductPricingType = z.infer<typeof ProductPricingTypeSchema>;
 export const ProductPricingTermSchema = z.enum([
   'Subscription',
   'Lifetime',
-  // 'One-Time' could be an alias for Lifetime if Paid
 ]);
 export type ProductPricingTerm = z.infer<typeof ProductPricingTermSchema>;
+
+export const BillingIntervalSchema = z.enum(['Monthly', 'Annually']);
+export type BillingInterval = z.infer<typeof BillingIntervalSchema>;
 
 export const ProductSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, "Product name is required."),
-  version: z.string().optional().nullable(), // e.g., "1.0.0", "2.1 Beta"
+  version: z.string().optional().nullable(),
   status: ProductStatusSchema.default('Upcoming'),
   releaseDate: z.string().datetime({ message: "Invalid date format for release date." }).optional().nullable(),
   description: z.string().min(1, "Description is required."),
-  longDescription: z.string().optional().nullable(), // For more detailed product page
-  productUrl: z.string().url("Invalid product URL.").optional().or(z.literal('')),
+  longDescription: z.string().optional().nullable(),
+  productUrl: z.string().url("Invalid product URL.").optional().or(z.literal('')), // No image URL here
   developer: z.string().min(1, "Developer name is required (e.g., MintFire R&D)."),
   
   pricingType: ProductPricingTypeSchema.default('Free'),
   pricingTerm: ProductPricingTermSchema.default('Lifetime'), 
+
+  priceAmount: z.number().positive("Price must be a positive number.").optional().nullable(),
+  billingInterval: BillingIntervalSchema.optional().nullable(),
+
+  trialDuration: z.string().min(1, "Trial duration must be specified for free trials.").optional().nullable(),
+  postTrialPriceAmount: z.number().positive("Post-trial price must be a positive number.").optional().nullable(),
+  postTrialBillingInterval: BillingIntervalSchema.optional().nullable(),
 
   tags: z.array(z.string()).optional().default([]),
   isFeatured: z.boolean().default(false),
@@ -61,10 +70,60 @@ export const FormProductSchema = z.object({
   pricingType: ProductPricingTypeSchema,
   pricingTerm: ProductPricingTermSchema,
 
+  priceAmountString: z.string().optional().nullable(),
+  billingInterval: BillingIntervalSchema.optional().nullable(),
+
+  trialDuration: z.string().optional().nullable(),
+  postTrialPriceAmountString: z.string().optional().nullable(),
+  postTrialBillingInterval: BillingIntervalSchema.optional().nullable(),
+
   tagsString: z.string().optional(), 
   isFeatured: z.boolean().default(false),
   
   couponDetails: z.string().optional().nullable(),
   activationDetails: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+    const parseAndValidateAmount = (value: string | null | undefined, path: (string | number)[], fieldName: string) => {
+        if (value && value.trim() !== '') {
+            const num = parseFloat(value);
+            if (isNaN(num) || num <= 0) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${fieldName} must be a positive number.`, path });
+            }
+        }
+    };
+
+    parseAndValidateAmount(data.priceAmountString, ["priceAmountString"], "Price amount");
+    parseAndValidateAmount(data.postTrialPriceAmountString, ["postTrialPriceAmountString"], "Post-trial price amount");
+
+    if (data.pricingType === 'Paid') {
+        if (data.pricingTerm === 'Subscription') {
+            if (!data.priceAmountString || data.priceAmountString.trim() === '') {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Price amount is required for paid subscriptions.", path: ["priceAmountString"] });
+            }
+            if (!data.billingInterval) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Billing interval is required for paid subscriptions.", path: ["billingInterval"] });
+            }
+        } else if (data.pricingTerm === 'Lifetime') {
+            if (!data.priceAmountString || data.priceAmountString.trim() === '') {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Price amount is required for paid lifetime products.", path: ["priceAmountString"] });
+            }
+        }
+    } else if (data.pricingType === 'Free') {
+        if (data.pricingTerm === 'Subscription') { // This is the "Free Trial" case
+            if (!data.trialDuration || data.trialDuration.trim() === '') {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Trial duration is required for free trials.", path: ["trialDuration"] });
+            }
+            // If post-trial price is set, interval is required. If interval is set, price is required.
+            const hasPostTrialPrice = data.postTrialPriceAmountString && data.postTrialPriceAmountString.trim() !== '';
+            const hasPostTrialInterval = !!data.postTrialBillingInterval;
+
+            if (hasPostTrialPrice && !hasPostTrialInterval) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial billing interval is required if post-trial price is set.", path: ["postTrialBillingInterval"] });
+            }
+            if (hasPostTrialInterval && !hasPostTrialPrice) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial price is required if post-trial billing interval is set.", path: ["postTrialPriceAmountString"] });
+            }
+        }
+    }
 });
 export type FormProductInput = z.infer<typeof FormProductSchema>;

@@ -1,88 +1,36 @@
+
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
-type Theme = "light" | "dark" | "system";
+type Theme = "dark"; // Only dark theme is supported
 
 interface ThemeProviderProps {
   children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
-  attribute?: string;
-  enableSystem?: boolean;
-  disableTransitionOnChange?: boolean; // Placeholder for API compatibility with next-themes
 }
 
 interface ThemeProviderContextValue {
   theme: Theme;
-  setTheme: (theme: Theme) => void;
-  resolvedTheme: "light" | "dark";
+  setTheme: (theme: Theme) => void; // Will be a no-op
+  resolvedTheme: "dark";
 }
 
 const ThemeContext = createContext<ThemeProviderContextValue | undefined>(undefined);
 
-export function ThemeProvider({
-  children,
-  defaultTheme = "system",
-  storageKey = "vite-ui-theme", // Adapted from shadcn example, can be any key
-  attribute = "class",
-  enableSystem = true,
-}: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return defaultTheme;
-    try {
-      const storedTheme = localStorage.getItem(storageKey) as Theme | null;
-      return storedTheme || defaultTheme;
-    } catch (e) {
-      return defaultTheme;
-    }
-  });
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const theme: Theme = "dark";
+  const resolvedTheme: "dark" = "dark";
 
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
-
-  const applyTheme = useCallback((currentTheme: Theme) => {
+  useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+    root.classList.remove("light"); // Ensure light class is removed
+    root.classList.add("dark");   // Apply dark class
+    // The attribute 'class' is assumed as per original functionality for ShadCN.
+  }, []);
 
-    let newResolvedTheme: "light" | "dark";
-
-    if (currentTheme === "system" && enableSystem) {
-      const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      newResolvedTheme = systemPrefersDark ? "dark" : "light";
-    } else {
-      newResolvedTheme = currentTheme === "dark" ? "dark" : "light";
-    }
-    
-    root.classList.add(newResolvedTheme);
-    setResolvedTheme(newResolvedTheme);
-
-    if (attribute === 'class') {
-      root.classList.add(newResolvedTheme);
-    } else {
-      root.setAttribute(attribute, newResolvedTheme);
-    }
-  }, [attribute, enableSystem]);
-
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme, applyTheme]);
-
-  useEffect(() => {
-    if (theme === "system" && enableSystem) {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handleChange = () => applyTheme("system");
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
-  }, [theme, enableSystem, applyTheme]);
-
-  const setTheme = (newTheme: Theme) => {
-    try {
-      localStorage.setItem(storageKey, newTheme);
-    } catch (e) {
-      // Failsafe
-    }
-    setThemeState(newTheme);
+  // setTheme is a no-op as the theme is fixed to dark.
+  const setTheme = (_newTheme: Theme) => {
+    // Theme is fixed, so this function does nothing.
   };
 
   return (

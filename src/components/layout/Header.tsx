@@ -1,6 +1,7 @@
+
 import Link from 'next/link';
 import Logo from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
+// ThemeToggle is removed as theme is now fixed
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Briefcase, Users, ShieldCheck, Blocks, Cpu, Smartphone, Bot, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, Briefcase, ShieldCheck, Blocks, Cpu, Smartphone } from 'lucide-react';
 
 const Header = () => {
   return (
@@ -61,7 +62,7 @@ const Header = () => {
           </Link>
         </nav>
         <div className="flex items-center space-x-2">
-          <ThemeToggle />
+          {/* ThemeToggle component is removed */}
           {/* Placeholder for mobile menu trigger if needed */}
         </div>
       </div>

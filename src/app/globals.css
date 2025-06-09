@@ -8,7 +8,7 @@ body {
 }
 
 @layer base {
-  :root {
+  :root { /* This effectively becomes the dark theme */
     --background: 0 0% 0%; /* Deep Black */
     --foreground: 0 0% 98%; /* White */
 
@@ -18,19 +18,19 @@ body {
     --popover: 0 0% 5%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 182 100% 74.7%; /* Electric Blue */
+    --primary: 182 100% 74.7%; /* Electric Blue / Cyan-like */
     --primary-foreground: 182 100% 10%; /* Dark Blue/Black for text on Electric Blue */
 
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 25%; /* Adjusted for better visibility on black */
-    --muted-foreground: 0 0% 70%; /* Adjusted for better visibility on black */
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 70%;
 
     --accent: 110 100% 54.3%; /* Neon Green */
     --accent-foreground: 110 100% 10%; /* Dark Green/Black for text on Neon Green */
 
-    --destructive: 0 72.2% 50.6%; /* Adjusted for dark theme */
+    --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 0 0% 20%;
@@ -55,44 +55,7 @@ body {
     --sidebar-ring: 110 100% 54.3%;
   }
 
-  .light {
-    --background: 0 0% 100%; /* White */
-    --foreground: 0 70% 35%; /* Blood Red (for text) */
-
-    --card: 0 0% 97%; /* Off-white cards */
-    --card-foreground: var(--foreground); /* Blood Red text on cards */
-
-    --popover: 0 0% 98%; /* Off-white popovers */
-    --popover-foreground: var(--foreground); /* Blood Red text on popovers */
-
-    --primary: 220 75% 55%; /* Prime Blue */
-    --primary-foreground: 0 0% 100%; /* White text on Prime Blue */
-
-    --secondary: 0 0% 92%; /* Light grey for secondary elements */
-    --secondary-foreground: 0 70% 25%; /* Darker Blood Red on secondary */
-
-    --muted: 0 0% 88%; /* Lighter grey for muted elements */
-    --muted-foreground: 0 0% 50%; /* Neutral Medium Grey for muted text */
-
-    --accent: 210 80% 70%; /* Vibrant Light Blue */
-    --accent-foreground: 0 0% 100%; /* White text on Accent */
-
-    --destructive: 0 80% 55%; /* Saturated Red for destructive actions */
-    --destructive-foreground: 0 0% 100%; /* White text on destructive */
-
-    --border: 0 0% 80%; /* Slightly darker light grey border */
-    --input: 0 0% 95%; /* Very light grey for input backgrounds */
-    --ring: 220 75% 55%; /* Prime Blue for focus rings */
-    
-    --sidebar-background: 0 0% 98%; /* Off-white sidebar */
-    --sidebar-foreground: var(--foreground); /* Blood red text in sidebar */
-    --sidebar-primary: var(--primary); /* Prime blue for primary sidebar elements */
-    --sidebar-primary-foreground: var(--primary-foreground); /* White text on prime blue */
-    --sidebar-accent: var(--accent); /* Vibrant light blue for sidebar accents */
-    --sidebar-accent-foreground: var(--accent-foreground); /* White text on accent */
-    --sidebar-border: 0 0% 85%; /* Light grey border for sidebar */
-    --sidebar-ring: var(--ring); /* Prime blue for focus rings in sidebar */
-  }
+  /* .light class styles are removed as the app is now dark-theme only */
 }
 
 @layer base {
@@ -157,7 +120,7 @@ body {
 }
 
 .glowing-icon-primary {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary)); /* This sets the icon color itself to primary if not overridden by text-somecolor */
   filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.7)) drop-shadow(0 0 8px hsl(var(--primary) / 0.5));
   transition: filter 0.3s ease-in-out;
 }

@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from 'react'; // Added this line
 import type { Product } from '@/lib/schemas/product-schemas';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -111,7 +112,7 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
                 {product.pricingType === 'Paid' ? <DollarSign className="w-3.5 h-3.5 text-accent flex-shrink-0" /> : <Layers className="w-3.5 h-3.5 text-accent flex-shrink-0" />}
                 <span>{getPricingDisplay()}</span>
             </div>
-            {product.releaseDate && (
+            {product.releaseDate && (typeof product.releaseDate === 'string' || product.releaseDate instanceof Date) && (
                 <div className="flex items-center gap-1.5">
                     <CalendarDays className="w-3.5 h-3.5 text-accent" />
                     <span>
@@ -156,4 +157,3 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
     </Card>
   );
 }
-

@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package, Ticket, KeyRound, Info, Eye, ExternalLink } from 'lucide-react';
+import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package, Ticket, KeyRound, Info, Eye, ExternalLink, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProductCardProps {
   product: Product;
-  onViewDetailsClick?: (product: Product) => void; // Make optional
+  onViewDetailsClick?: (product: Product) => void;
 }
 
 export default function ProductCard({ product, onViewDetailsClick }: ProductCardProps) {
@@ -35,11 +35,26 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
     );
   };
 
-  const getPricingText = (pricingType: string, pricingTerm: string) => {
-    if (pricingType === 'Free') {
-      return `Free - ${pricingTerm}`;
+  const getPricingDisplay = () => {
+    if (product.pricingType === 'Free') {
+      if (product.pricingTerm === 'Subscription' && product.trialDuration) {
+        return `Free Trial: ${product.trialDuration}`;
+      }
+      return `Free - ${product.pricingTerm}`;
     }
-    return `Paid - ${pricingTerm}`;
+    // Paid
+    if (product.pricingTerm === 'Lifetime' && product.priceAmount) {
+      return `$${product.priceAmount.toFixed(2)} (Lifetime)`;
+    }
+    if (product.pricingTerm === 'Subscription') {
+      const plans = [];
+      if (product.monthlyPrice) plans.push(`$${product.monthlyPrice.toFixed(2)}/mo`);
+      if (product.sixMonthPrice) plans.push(`$${product.sixMonthPrice.toFixed(2)}/6-mo`);
+      if (product.annualPrice) plans.push(`$${product.annualPrice.toFixed(2)}/yr`);
+      if (plans.length > 0) return plans.join(' | ');
+      return "Subscription (Contact for pricing)";
+    }
+    return "Paid (Details unavailable)";
   };
 
   return (
@@ -64,7 +79,7 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
         <div className="space-y-1.5 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-accent" />
-                <span>{getPricingText(product.pricingType, product.pricingTerm)}</span>
+                <span>{getPricingDisplay()}</span>
             </div>
             {product.releaseDate && (
                 <div className="flex items-center gap-1.5">

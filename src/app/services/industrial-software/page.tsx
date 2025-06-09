@@ -3,7 +3,7 @@ import ServicePageLayout from '@/components/ServicePageLayout';
 import ProductCard from '@/app/_components/ProductCard';
 import { getProducts } from '@/actions/product-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
-import { Briefcase, AlertTriangle, PackageSearch } from 'lucide-react';
+import { Briefcase, AlertTriangle, PackageSearch, Sparkles } from 'lucide-react';
 import React from 'react';
 
 export default async function IndustrialSoftwarePage() {
@@ -16,7 +16,27 @@ export default async function IndustrialSoftwarePage() {
     "Robotics Process Automation (RPA)"
   ];
 
-  const { products, error } = await getProducts({ tag: 'industrial' });
+  let productsToDisplay: Product[] = [];
+  let errorLoading: string | null = null;
+  let sectionTitle = "Related Industrial Software";
+  let sectionIcon = Briefcase;
+
+  const { products: taggedProducts, error: taggedError } = await getProducts({ tag: 'industrial' });
+
+  if (taggedError) {
+    errorLoading = taggedError;
+  } else if (taggedProducts && taggedProducts.length > 0) {
+    productsToDisplay = taggedProducts;
+  } else {
+    const { products: featuredProducts, error: featuredError } = await getProducts({ isFeatured: true, limit: 3 });
+    if (featuredError) {
+      errorLoading = featuredError;
+    } else if (featuredProducts && featuredProducts.length > 0) {
+      productsToDisplay = featuredProducts;
+      sectionTitle = "Featured Products";
+      sectionIcon = Sparkles;
+    }
+  }
 
   return (
     <ServicePageLayout
@@ -36,26 +56,27 @@ export default async function IndustrialSoftwarePage() {
       </div>
 
       <div className="mt-16">
-        <h3 className="font-headline text-3xl font-semibold mb-8 text-center text-primary">
-          Featured Industrial Software
+        <h3 className="font-headline text-3xl font-semibold mb-8 text-center text-primary flex items-center justify-center">
+          <sectionIcon className="w-8 h-8 mr-3 glowing-icon-primary" />
+          {sectionTitle}
         </h3>
-        {error && (
+        {errorLoading && (
           <div className="text-center text-destructive py-6">
             <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
-            <p>Could not load Industrial Software products: {error}</p>
+            <p>Could not load products: {errorLoading}</p>
           </div>
         )}
-        {!error && products && products.length > 0 ? (
+        {!errorLoading && productsToDisplay.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product) => (
+            {productsToDisplay.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          !error && (
+          !errorLoading && (
              <div className="text-center text-muted-foreground py-10">
               <PackageSearch className="w-16 h-16 mx-auto mb-4" />
-              <p className="text-lg">No Industrial Software products tagged for this section currently.</p>
+              <p className="text-lg">No relevant products to display currently.</p>
             </div>
           )
         )}

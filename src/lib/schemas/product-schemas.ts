@@ -22,6 +22,7 @@ export const ProductPricingTermSchema = z.enum([
 ]);
 export type ProductPricingTerm = z.infer<typeof ProductPricingTermSchema>;
 
+// Used for post-trial billing interval for Free Trials
 export const BillingIntervalSchema = z.enum(['Monthly', 'Annually']);
 export type BillingInterval = z.infer<typeof BillingIntervalSchema>;
 
@@ -33,15 +34,21 @@ export const ProductSchema = z.object({
   releaseDate: z.string().datetime({ message: "Invalid date format for release date." }).optional().nullable(),
   description: z.string().min(1, "Description is required."),
   longDescription: z.string().optional().nullable(),
-  productUrl: z.string().url("Invalid product URL.").optional().or(z.literal('')), // No image URL here
+  productUrl: z.string().url("Invalid product URL.").optional().or(z.literal('')),
   developer: z.string().min(1, "Developer name is required (e.g., MintFire R&D)."),
   
   pricingType: ProductPricingTypeSchema.default('Free'),
   pricingTerm: ProductPricingTermSchema.default('Lifetime'), 
 
-  priceAmount: z.number().positive("Price must be a positive number.").optional().nullable(),
-  billingInterval: BillingIntervalSchema.optional().nullable(),
+  // For "Paid" + "Lifetime"
+  priceAmount: z.number().positive("Price must be a positive number for Lifetime.").optional().nullable(),
 
+  // For "Paid" + "Subscription"
+  monthlyPrice: z.number().positive("Monthly price must be a positive number.").optional().nullable(),
+  sixMonthPrice: z.number().positive("6-Month price must be a positive number.").optional().nullable(),
+  annualPrice: z.number().positive("Annual price must be a positive number.").optional().nullable(),
+
+  // For "Free" + "Subscription" (Free Trial)
   trialDuration: z.string().min(1, "Trial duration must be specified for free trials.").optional().nullable(),
   postTrialPriceAmount: z.number().positive("Post-trial price must be a positive number.").optional().nullable(),
   postTrialBillingInterval: BillingIntervalSchema.optional().nullable(),
@@ -70,8 +77,11 @@ export const FormProductSchema = z.object({
   pricingType: ProductPricingTypeSchema,
   pricingTerm: ProductPricingTermSchema,
 
-  priceAmountString: z.string().optional().nullable(),
-  billingInterval: BillingIntervalSchema.optional().nullable(),
+  // String inputs from form, to be parsed and validated
+  priceAmountString: z.string().optional().nullable(), // For Paid Lifetime
+  monthlyPriceString: z.string().optional().nullable(),
+  sixMonthPriceString: z.string().optional().nullable(),
+  annualPriceString: z.string().optional().nullable(),
 
   trialDuration: z.string().optional().nullable(),
   postTrialPriceAmountString: z.string().optional().nullable(),
@@ -83,45 +93,44 @@ export const FormProductSchema = z.object({
   couponDetails: z.string().optional().nullable(),
   activationDetails: z.string().optional().nullable(),
 }).superRefine((data, ctx) => {
-    const parseAndValidateAmount = (value: string | null | undefined, path: (string | number)[], fieldName: string) => {
+    const parseAndValidateAmount = (value: string | null | undefined, path: (string | number)[], fieldName: string, isRequired: boolean) => {
+        if (isRequired && (!value || value.trim() === '')) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${fieldName} is required.`, path });
+            return false; // Indicate failure
+        }
         if (value && value.trim() !== '') {
             const num = parseFloat(value);
             if (isNaN(num) || num <= 0) {
                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${fieldName} must be a positive number.`, path });
+                return false; // Indicate failure
             }
         }
+        return true; // Indicate success or not applicable
     };
-
-    parseAndValidateAmount(data.priceAmountString, ["priceAmountString"], "Price amount");
-    parseAndValidateAmount(data.postTrialPriceAmountString, ["postTrialPriceAmountString"], "Post-trial price amount");
 
     if (data.pricingType === 'Paid') {
         if (data.pricingTerm === 'Subscription') {
-            if (!data.priceAmountString || data.priceAmountString.trim() === '') {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Price amount is required for paid subscriptions.", path: ["priceAmountString"] });
-            }
-            if (!data.billingInterval) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Billing interval is required for paid subscriptions.", path: ["billingInterval"] });
-            }
+            const mpValid = parseAndValidateAmount(data.monthlyPriceString, ["monthlyPriceString"], "Monthly price", true);
+            const smpValid = parseAndValidateAmount(data.sixMonthPriceString, ["sixMonthPriceString"], "6-Month price", true);
+            const apValid = parseAndValidateAmount(data.annualPriceString, ["annualPriceString"], "Annual price", true);
+            if (!mpValid || !smpValid || !apValid) return z.NEVER; // Stop further validation if any price is invalid
         } else if (data.pricingTerm === 'Lifetime') {
-            if (!data.priceAmountString || data.priceAmountString.trim() === '') {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Price amount is required for paid lifetime products.", path: ["priceAmountString"] });
-            }
+            if(!parseAndValidateAmount(data.priceAmountString, ["priceAmountString"], "Price amount", true)) return z.NEVER;
         }
     } else if (data.pricingType === 'Free') {
-        if (data.pricingTerm === 'Subscription') { // This is the "Free Trial" case
+        if (data.pricingTerm === 'Subscription') { // Free Trial
             if (!data.trialDuration || data.trialDuration.trim() === '') {
                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Trial duration is required for free trials.", path: ["trialDuration"] });
             }
-            // If post-trial price is set, interval is required. If interval is set, price is required.
+            // If post-trial price is set, interval is required and price must be valid.
             const hasPostTrialPrice = data.postTrialPriceAmountString && data.postTrialPriceAmountString.trim() !== '';
-            const hasPostTrialInterval = !!data.postTrialBillingInterval;
-
-            if (hasPostTrialPrice && !hasPostTrialInterval) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial billing interval is required if post-trial price is set.", path: ["postTrialBillingInterval"] });
-            }
-            if (hasPostTrialInterval && !hasPostTrialPrice) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial price is required if post-trial billing interval is set.", path: ["postTrialPriceAmountString"] });
+            if (hasPostTrialPrice) {
+                if(!parseAndValidateAmount(data.postTrialPriceAmountString, ["postTrialPriceAmountString"], "Post-trial price", true)) return z.NEVER;
+                if (!data.postTrialBillingInterval) {
+                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial billing interval is required if post-trial price is set.", path: ["postTrialBillingInterval"] });
+                }
+            } else if (data.postTrialBillingInterval) { // If interval is set, price must be set
+                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial price is required if post-trial billing interval is set.", path: ["postTrialPriceAmountString"] });
             }
         }
     }

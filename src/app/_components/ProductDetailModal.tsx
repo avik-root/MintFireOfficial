@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink } from 'lucide-react';
+import { X, Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink, Repeat, Clock, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -40,25 +40,37 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
   };
 
   const getPricingText = (pricingType: string, pricingTerm: string) => {
-    if (pricingType === 'Free') return `Free - ${pricingTerm}`;
-    return `Paid - ${pricingTerm}`;
+    if (pricingType === 'Free') {
+        if (pricingTerm === 'Subscription' && product.trialDuration) {
+            return `Free Trial: ${product.trialDuration}`;
+        }
+        return `Free - ${pricingTerm}`;
+    }
+    if (pricingTerm === 'Lifetime' && product.priceAmount) {
+        return `$${product.priceAmount.toFixed(2)} (Lifetime)`;
+    }
+    if (pricingTerm === 'Subscription') {
+        return "Subscription Plans Available"; // Details will be listed below
+    }
+    return "Paid (Details unavailable)";
   };
-
-  const DetailItem = ({ icon: Icon, label, value, isHtml = false }: { icon: React.ElementType, label: string, value?: string | null | string[], isHtml?: boolean }) => {
-    if (!value || (Array.isArray(value) && value.length === 0)) return null;
+  
+  const DetailItem = ({ icon: Icon, label, value, isHtml = false, className = "" }: { icon?: React.ElementType, label: string, value?: string | number | null | string[] | React.ReactNode, isHtml?: boolean, className?: string }) => {
+    if (value === null || value === undefined || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === '')) return null;
+    
     return (
-      <div className="mb-3">
+      <div className={cn("mb-3", className)}>
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5 flex items-center">
-          <Icon className="w-3.5 h-3.5 mr-1.5 text-accent" /> {label}
+          {Icon && <Icon className="w-3.5 h-3.5 mr-1.5 text-accent" />} {label}
         </p>
         {Array.isArray(value) ? (
           <div className="flex flex-wrap gap-1.5">
             {value.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
           </div>
-        ) : isHtml ? (
+        ) : isHtml && typeof value === 'string' ? (
           <div className="text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: value }} />
         ) : (
-          <p className="text-sm text-foreground/90">{value}</p>
+          <p className="text-sm text-foreground/90">{typeof value === 'number' ? value.toFixed(2) : value}</p>
         )}
       </div>
     );
@@ -71,7 +83,6 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     return { href: `https://${url}`, target: '_blank', rel: 'noopener noreferrer' };
   };
   const productLinkProps = getSafeLinkProps(product.productUrl);
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -108,7 +119,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
             )}
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                <DetailItem icon={DollarSign} label="Pricing" value={getPricingText(product.pricingType, product.pricingTerm)} />
+                <DetailItem icon={DollarSign} label="Pricing Overview" value={getPricingText(product.pricingType, product.pricingTerm)} />
                 {product.releaseDate && (
                     <DetailItem 
                         icon={CalendarDays} 
@@ -116,13 +127,33 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                         value={format(new Date(product.releaseDate), "MMMM d, yyyy")} 
                     />
                 )}
-                {product.tags && product.tags.length > 0 && (
-                    <DetailItem icon={Tag} label="Tags" value={product.tags} />
-                )}
             </div>
 
+            {/* Conditional Pricing Details */}
+            {product.pricingType === 'Paid' && product.pricingTerm === 'Subscription' && (
+                <div className="pt-2 border-t border-border mt-4">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Layers className="w-4 h-4 mr-1.5 text-accent" />Subscription Plans</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {product.monthlyPrice && <DetailItem label="Monthly" value={`$${product.monthlyPrice.toFixed(2)}`} />}
+                        {product.sixMonthPrice && <DetailItem label="6-Month Plan" value={`$${product.sixMonthPrice.toFixed(2)}`} />}
+                        {product.annualPrice && <DetailItem label="Annual Plan" value={`$${product.annualPrice.toFixed(2)}`} />}
+                    </div>
+                </div>
+            )}
+
+            {product.pricingType === 'Free' && product.pricingTerm === 'Subscription' && product.postTrialPriceAmount && product.postTrialBillingInterval && (
+                 <div className="pt-2 border-t border-border mt-4">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Repeat className="w-4 h-4 mr-1.5 text-accent" />Post-Trial Pricing</h4>
+                    <DetailItem label="After Trial" value={`$${product.postTrialPriceAmount.toFixed(2)} / ${product.postTrialBillingInterval.toLowerCase()}`} />
+                </div>
+            )}
+
+            { (product.tags && product.tags.length > 0) && (
+              <DetailItem icon={Tag} label="Tags" value={product.tags} />
+            )}
+
             { (product.couponDetails || product.activationDetails) && (
-                <div className="pt-2 border-t border-border">
+                <div className="pt-2 border-t border-border mt-4">
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3">Additional Info</h4>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                         <DetailItem icon={Ticket} label="Coupon Details" value={product.couponDetails} />

@@ -15,6 +15,9 @@ import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 
 const productsFilePath = path.join(process.cwd(), 'data', 'products.json');
+const UPLOADS_DIR_NAME = 'uploads';
+const PRODUCT_IMAGES_DIR_NAME = 'product-images'; 
+const publicUploadsDir = path.join(process.cwd(), UPLOADS_DIR_NAME, PRODUCT_IMAGES_DIR_NAME);
 
 async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus; tag?: string }): Promise<Product[]> {
   try {
@@ -32,6 +35,7 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
     }
 
     if (fileContent.trim() === '') {
+      await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8'); // Ensure it's an empty array if file is just whitespace
       return []; 
     }
 
@@ -57,7 +61,6 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
         product.tags.some(t => t.toLowerCase() === lowerCaseTag)
       );
     }
-
 
     parsedItems.sort((a, b) => {
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
@@ -90,7 +93,6 @@ async function saveProducts(items: Product[]): Promise<void> {
   try {
     await fs.mkdir(path.dirname(productsFilePath), { recursive: true });
     await fs.writeFile(productsFilePath, JSON.stringify(items, null, 2), 'utf-8');
-    console.log('Products data successfully saved to:', productsFilePath);
   } catch (error: any) {
     console.error("Error writing products file:", productsFilePath, error); 
     let message = 'Could not save product data. ';
@@ -116,7 +118,6 @@ function parseOptionalFloat(value: string | null | undefined): number | null {
   return isNaN(num) ? null : num; 
 }
 
-
 export async function getProducts(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus; tag?: string }): Promise<{ products?: Product[]; error?: string }> {
   try {
     const products = await getProductsInternal(params);
@@ -134,8 +135,8 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
       } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails', 
-                  'priceAmountString', 'billingInterval', 'trialDuration', 
-                  'postTrialPriceAmountString', 'postTrialBillingInterval'].includes(key)) {
+                  'priceAmountString', 'monthlyPriceString', 'sixMonthPriceString', 'annualPriceString',
+                  'trialDuration', 'postTrialPriceAmountString', 'postTrialBillingInterval'].includes(key)) {
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
@@ -162,28 +163,30 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     const products = await getProductsInternal(); 
     const now = new Date().toISOString();
 
-    let priceAmount = parseOptionalFloat(validatedData.priceAmountString);
-    let postTrialPriceAmount = parseOptionalFloat(validatedData.postTrialPriceAmountString);
-
-    let finalPriceAmount: number | null = null;
-    let finalBillingInterval: BillingInterval | null = null;
-    let finalTrialDuration: string | null = null;
-    let finalPostTrialPriceAmount: number | null = null;
-    let finalPostTrialBillingInterval: BillingInterval | null = null;
+    let priceAmount = null;
+    let monthlyPrice = null;
+    let sixMonthPrice = null;
+    let annualPrice = null;
+    let trialDuration = null;
+    let postTrialPriceAmount = null;
+    let postTrialBillingInterval = null;
 
     if (validatedData.pricingType === 'Paid') {
-        finalPriceAmount = priceAmount;
-        if (validatedData.pricingTerm === 'Subscription') {
-            finalBillingInterval = validatedData.billingInterval ?? null;
+        if (validatedData.pricingTerm === 'Lifetime') {
+            priceAmount = parseOptionalFloat(validatedData.priceAmountString);
+        } else if (validatedData.pricingTerm === 'Subscription') {
+            monthlyPrice = parseOptionalFloat(validatedData.monthlyPriceString);
+            sixMonthPrice = parseOptionalFloat(validatedData.sixMonthPriceString);
+            annualPrice = parseOptionalFloat(validatedData.annualPriceString);
         }
     } else if (validatedData.pricingType === 'Free' && validatedData.pricingTerm === 'Subscription') { 
-        finalTrialDuration = validatedData.trialDuration ?? null;
-        if (postTrialPriceAmount && validatedData.postTrialBillingInterval) {
-            finalPostTrialPriceAmount = postTrialPriceAmount;
-            finalPostTrialBillingInterval = validatedData.postTrialBillingInterval;
+        trialDuration = validatedData.trialDuration ?? null;
+        const parsedPostTrialPrice = parseOptionalFloat(validatedData.postTrialPriceAmountString);
+        if (parsedPostTrialPrice && validatedData.postTrialBillingInterval) {
+            postTrialPriceAmount = parsedPostTrialPrice;
+            postTrialBillingInterval = validatedData.postTrialBillingInterval;
         }
     }
-
 
     const newProduct: Product = {
       id: randomUUID(),
@@ -198,11 +201,13 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       pricingType: validatedData.pricingType,
       pricingTerm: validatedData.pricingTerm,
       
-      priceAmount: finalPriceAmount,
-      billingInterval: finalBillingInterval,
-      trialDuration: finalTrialDuration,
-      postTrialPriceAmount: finalPostTrialPriceAmount,
-      postTrialBillingInterval: finalPostTrialBillingInterval,
+      priceAmount,
+      monthlyPrice,
+      sixMonthPrice,
+      annualPrice,
+      trialDuration,
+      postTrialPriceAmount,
+      postTrialBillingInterval,
 
       tags: transformTags(validatedData.tagsString),
       isFeatured: validatedData.isFeatured, 
@@ -216,17 +221,13 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     await saveProducts(products);
     revalidatePath('/admin/dashboard/products');
     revalidatePath('/');
-    revalidatePath('/services', 'layout'); // Revalidate service pages
+    revalidatePath('/services', 'layout'); 
     return { success: true, product: newProduct };
   } catch (error: any) {
     console.error("ADD_PRODUCT_ACTION_ERROR:", error);
     let errorMessage = "An unexpected error occurred while adding the product.";
     if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error && typeof error.toString === 'function') {
-      errorMessage = error.toString();
     }
     return { success: false, error: errorMessage };
   }
@@ -253,8 +254,8 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
       } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails',
-                  'priceAmountString', 'billingInterval', 'trialDuration', 
-                  'postTrialPriceAmountString', 'postTrialBillingInterval'].includes(key)) {
+                  'priceAmountString', 'monthlyPriceString', 'sixMonthPriceString', 'annualPriceString',
+                  'trialDuration', 'postTrialPriceAmountString', 'postTrialBillingInterval'].includes(key)) {
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
@@ -271,7 +272,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       }
     });
 
-    const validation = FormProductSchema.partial().safeParse(rawData);
+    const validation = FormProductSchema.safeParse(rawData);
 
     if (!validation.success) {
       return { success: false, error: "Invalid data provided for update.", errors: validation.error.issues };
@@ -287,46 +288,41 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
 
     const originalProduct = products[productIndex];
     
-    let priceAmount = validatedData.priceAmountString !== undefined 
-        ? parseOptionalFloat(validatedData.priceAmountString) 
-        : originalProduct.priceAmount;
-    let postTrialPriceAmount = validatedData.postTrialPriceAmountString !== undefined
-        ? parseOptionalFloat(validatedData.postTrialPriceAmountString)
-        : originalProduct.postTrialPriceAmount;
-
-    let finalPriceAmount: number | null = originalProduct.priceAmount;
-    let finalBillingInterval: BillingInterval | null = originalProduct.billingInterval;
-    let finalTrialDuration: string | null = originalProduct.trialDuration;
-    let finalPostTrialPriceAmount: number | null = originalProduct.postTrialPriceAmount;
-    let finalPostTrialBillingInterval: BillingInterval | null = originalProduct.postTrialBillingInterval;
+    let priceAmount = originalProduct.priceAmount;
+    let monthlyPrice = originalProduct.monthlyPrice;
+    let sixMonthPrice = originalProduct.sixMonthPrice;
+    let annualPrice = originalProduct.annualPrice;
+    let trialDuration = originalProduct.trialDuration;
+    let postTrialPriceAmount = originalProduct.postTrialPriceAmount;
+    let postTrialBillingInterval = originalProduct.postTrialBillingInterval;
 
     const currentPricingType = validatedData.pricingType ?? originalProduct.pricingType;
     const currentPricingTerm = validatedData.pricingTerm ?? originalProduct.pricingTerm;
 
+    // Reset all pricing fields before setting new ones based on type/term
+    priceAmount = null;
+    monthlyPrice = null;
+    sixMonthPrice = null;
+    annualPrice = null;
+    trialDuration = null;
+    postTrialPriceAmount = null;
+    postTrialBillingInterval = null;
+
     if (currentPricingType === 'Paid') {
-        finalPriceAmount = priceAmount;
-        finalBillingInterval = currentPricingTerm === 'Subscription' ? (validatedData.billingInterval ?? originalProduct.billingInterval) : null;
-        // Clear free trial fields
-        finalTrialDuration = null;
-        finalPostTrialPriceAmount = null;
-        finalPostTrialBillingInterval = null;
-    } else if (currentPricingType === 'Free') {
-        // Clear paid fields
-        finalPriceAmount = null;
-        finalBillingInterval = null;
-        if (currentPricingTerm === 'Subscription') { 
-            finalTrialDuration = validatedData.trialDuration ?? originalProduct.trialDuration;
-            if (postTrialPriceAmount && (validatedData.postTrialBillingInterval !== undefined ? validatedData.postTrialBillingInterval : originalProduct.postTrialBillingInterval) ) {
-                finalPostTrialPriceAmount = postTrialPriceAmount;
-                finalPostTrialBillingInterval = validatedData.postTrialBillingInterval ?? originalProduct.postTrialBillingInterval;
-            } else { 
-                finalPostTrialPriceAmount = null;
-                finalPostTrialBillingInterval = null;
-            }
-        } else { 
-             finalTrialDuration = null;
-             finalPostTrialPriceAmount = null;
-             finalPostTrialBillingInterval = null;
+        if (currentPricingTerm === 'Lifetime') {
+            priceAmount = parseOptionalFloat(validatedData.priceAmountString ?? originalProduct.priceAmount?.toString());
+        } else if (currentPricingTerm === 'Subscription') {
+            monthlyPrice = parseOptionalFloat(validatedData.monthlyPriceString ?? originalProduct.monthlyPrice?.toString());
+            sixMonthPrice = parseOptionalFloat(validatedData.sixMonthPriceString ?? originalProduct.sixMonthPrice?.toString());
+            annualPrice = parseOptionalFloat(validatedData.annualPriceString ?? originalProduct.annualPrice?.toString());
+        }
+    } else if (currentPricingType === 'Free' && currentPricingTerm === 'Subscription') { 
+        trialDuration = validatedData.trialDuration ?? originalProduct.trialDuration;
+        const parsedPostTrialPrice = parseOptionalFloat(validatedData.postTrialPriceAmountString ?? originalProduct.postTrialPriceAmount?.toString());
+        const newPostTrialInterval = validatedData.postTrialBillingInterval ?? originalProduct.postTrialBillingInterval;
+        if (parsedPostTrialPrice && newPostTrialInterval) {
+            postTrialPriceAmount = parsedPostTrialPrice;
+            postTrialBillingInterval = newPostTrialInterval;
         }
     }
    
@@ -343,11 +339,13 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       
       pricingType: currentPricingType,
       pricingTerm: currentPricingTerm,
-      priceAmount: finalPriceAmount,
-      billingInterval: finalBillingInterval,
-      trialDuration: finalTrialDuration,
-      postTrialPriceAmount: finalPostTrialPriceAmount,
-      postTrialBillingInterval: finalPostTrialBillingInterval,
+      priceAmount,
+      monthlyPrice,
+      sixMonthPrice,
+      annualPrice,
+      trialDuration,
+      postTrialPriceAmount,
+      postTrialBillingInterval,
       
       tags: validatedData.tagsString !== undefined ? transformTags(validatedData.tagsString) : originalProduct.tags,
       isFeatured: validatedData.isFeatured !== undefined ? validatedData.isFeatured : originalProduct.isFeatured,
@@ -361,17 +359,13 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     revalidatePath('/admin/dashboard/products');
     revalidatePath(`/admin/dashboard/products/edit/${id}`);
     revalidatePath('/');
-    revalidatePath('/services', 'layout'); // Revalidate service pages
+    revalidatePath('/services', 'layout'); 
     return { success: true, product: updatedProductData };
   } catch (error: any) {
     console.error("UPDATE_PRODUCT_ACTION_ERROR:", error);
     let errorMessage = "An unexpected error occurred while updating the product.";
     if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error && typeof error.toString === 'function') {
-      errorMessage = error.toString();
     }
     return { success: false, error: errorMessage };
   }
@@ -391,20 +385,14 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
 
     revalidatePath('/admin/dashboard/products');
     revalidatePath('/');
-    revalidatePath('/services', 'layout'); // Revalidate service pages
+    revalidatePath('/services', 'layout'); 
     return { success: true };
-  } catch (error: any)
-   {
+  } catch (error: any) {
     console.error("DELETE_PRODUCT_ACTION_ERROR:", error);
     let errorMessage = "Failed to delete product.";
      if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error && typeof error.toString === 'function') {
-      errorMessage = error.toString();
     }
     return { success: false, error: errorMessage };
   }
 }
-

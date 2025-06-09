@@ -1,12 +1,12 @@
 
-"use client"; // This page uses hooks, so it must be a client component
+"use client"; 
 
 import ServicePageLayout from '@/components/ServicePageLayout';
 import ProductCard from '@/app/_components/ProductCard';
 import { getProducts } from '@/actions/product-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
-import { Blocks, AlertTriangle, PackageSearch } from 'lucide-react';
-import React from 'react';
+import { Blocks, AlertTriangle, PackageSearch, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 const BlockchainPage = () => {
   const features = [
@@ -18,15 +18,44 @@ const BlockchainPage = () => {
     "Secure Identity Verification Systems"
   ];
   
-  const [productsData, setProductsData] = React.useState<{ products?: Product[]; error?: string }>({});
-  React.useEffect(() => {
+  const [productsToDisplay, setProductsToDisplay] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorLoading, setErrorLoading] = useState<string | null>(null);
+  const [sectionTitle, setSectionTitle] = useState("Related Blockchain Products");
+  const [SectionIcon, setSectionIcon] = useState(() => Blocks);
+
+
+  useEffect(() => {
     async function fetchData() {
-      const data = await getProducts({ tag: 'blockchain' });
-      setProductsData(data);
+      setIsLoading(true);
+      setErrorLoading(null);
+      let finalProducts: Product[] = [];
+      let currentTitle = "Related Blockchain Products";
+      let currentIcon = Blocks;
+
+      const { products: taggedProducts, error: taggedError } = await getProducts({ tag: 'blockchain' });
+
+      if (taggedError) {
+        setErrorLoading(taggedError);
+      } else if (taggedProducts && taggedProducts.length > 0) {
+        finalProducts = taggedProducts;
+      } else {
+        const { products: featuredProducts, error: featuredError } = await getProducts({ isFeatured: true, limit: 3 });
+        if (featuredError) {
+          setErrorLoading(featuredError);
+        } else if (featuredProducts && featuredProducts.length > 0) {
+          finalProducts = featuredProducts;
+          currentTitle = "Featured Products";
+          currentIcon = Sparkles;
+        }
+      }
+      setProductsToDisplay(finalProducts);
+      setSectionTitle(currentTitle);
+      setSectionIcon(() => currentIcon); // Store the component type itself
+      setIsLoading(false);
     }
     fetchData();
   }, []);
-  const { products, error } = productsData;
 
 
   return (
@@ -47,26 +76,28 @@ const BlockchainPage = () => {
       </div>
 
       <div className="mt-16">
-        <h3 className="font-headline text-3xl font-semibold mb-8 text-center text-primary">
-          Featured Blockchain Products
+        <h3 className="font-headline text-3xl font-semibold mb-8 text-center text-primary flex items-center justify-center">
+            <SectionIcon className="w-8 h-8 mr-3 glowing-icon-primary" />
+            {sectionTitle}
         </h3>
-        {error && (
+        {isLoading && <p className="text-center text-muted-foreground">Loading products...</p>}
+        {errorLoading && (
           <div className="text-center text-destructive py-6">
             <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
-            <p>Could not load Blockchain products: {error}</p>
+            <p>Could not load products: {errorLoading}</p>
           </div>
         )}
-        {!error && products && products.length > 0 ? (
+        {!isLoading && !errorLoading && productsToDisplay.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product) => (
+            {productsToDisplay.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          !error && (
+          !isLoading && !errorLoading && (
              <div className="text-center text-muted-foreground py-10">
               <PackageSearch className="w-16 h-16 mx-auto mb-4" />
-              <p className="text-lg">No Blockchain products tagged for this section currently.</p>
+              <p className="text-lg">No relevant products to display currently.</p>
             </div>
           )
         )}

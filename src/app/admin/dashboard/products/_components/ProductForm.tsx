@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { FormProductSchema, type FormProductInput, type Product, ProductStatusSchema, ProductPricingTypeSchema, ProductPricingTermSchema, BillingIntervalSchema } from "@/lib/schemas/product-schemas";
-import { Loader2, Save, Package, Tag, GitBranch, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Eye, EyeOff, Ticket, KeyRound, Clock, Repeat } from "lucide-react";
+import { Loader2, Save, Package, Tag, GitBranch, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Eye, EyeOff, Ticket, KeyRound, Clock, Repeat, Edit3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
@@ -50,7 +50,9 @@ export default function ProductForm({
       pricingType: initialData.pricingType,
       pricingTerm: initialData.pricingTerm,
       priceAmountString: initialData.priceAmount?.toString() || "",
-      billingInterval: initialData.billingInterval || undefined,
+      monthlyPriceString: initialData.monthlyPrice?.toString() || "",
+      sixMonthPriceString: initialData.sixMonthPrice?.toString() || "",
+      annualPriceString: initialData.annualPrice?.toString() || "",
       trialDuration: initialData.trialDuration || "",
       postTrialPriceAmountString: initialData.postTrialPriceAmount?.toString() || "",
       postTrialBillingInterval: initialData.postTrialBillingInterval || undefined,
@@ -70,7 +72,9 @@ export default function ProductForm({
       pricingType: "Free",
       pricingTerm: "Lifetime",
       priceAmountString: "",
-      billingInterval: undefined,
+      monthlyPriceString: "",
+      sixMonthPriceString: "",
+      annualPriceString: "",
       trialDuration: "",
       postTrialPriceAmountString: "",
       postTrialBillingInterval: undefined,
@@ -108,7 +112,6 @@ export default function ProductForm({
           if (fieldName in form.getValues()) {
             form.setError(fieldName as keyof FormProductInput, { message: err.message });
           } else {
-            console.warn("Error for unmapped field:", fieldName, err.message);
              toast({ variant: "destructive", title: "Form Error", description: `Error on field ${fieldName}: ${err.message}` });
           }
         });
@@ -121,41 +124,59 @@ export default function ProductForm({
 
   const renderConditionalPricingFields = () => {
     if (watchedPricingType === 'Paid') {
-      return (
-        <>
-          <FormField
-            control={form.control}
-            name="priceAmountString"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground"/>Price Amount</FormLabel>
-                <FormControl><Input type="number" step="0.01" placeholder="e.g., 29.99" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {watchedPricingTerm === 'Subscription' && (
+      if (watchedPricingTerm === 'Subscription') {
+        return (
+          <>
             <FormField
               control={form.control}
-              name="billingInterval"
+              name="monthlyPriceString"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><Repeat className="mr-2 h-4 w-4 text-muted-foreground"/>Billing Interval</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined} value={field.value ?? undefined} disabled={isSubmitting}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select interval" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {BillingIntervalSchema.options.map(option => (
-                        <SelectItem key={option} value={option}>{option}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground"/>Monthly Price</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder="e.g., 9.99" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          )}
-        </>
-      );
+            <FormField
+              control={form.control}
+              name="sixMonthPriceString"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground"/>6-Month Price</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder="e.g., 49.99" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="annualPriceString"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground"/>Annual Price</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder="e.g., 89.99" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        );
+      } else if (watchedPricingTerm === 'Lifetime') {
+        return (
+          <FormField
+            control={form.control}
+            name="priceAmountString"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground"/>Lifetime Price</FormLabel>
+                <FormControl><Input type="number" step="0.01" placeholder="e.g., 299.99" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+      }
     } else if (watchedPricingType === 'Free' && watchedPricingTerm === 'Subscription') { // Free Trial
       return (
         <>
@@ -176,9 +197,9 @@ export default function ProductForm({
             name="postTrialPriceAmountString"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground"/>Post-Trial Price Amount (Optional)</FormLabel>
+                <FormLabel className="flex items-center"><DollarSign className="mr-2 h-4 w-4 text-muted-foreground"/>Post-Trial Price (Optional)</FormLabel>
                 <FormControl><Input type="number" step="0.01" placeholder="e.g., 9.99" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
-                <FormDescription>Price after the trial ends. Leave blank if it remains free or converts to a different plan manually.</FormDescription>
+                <FormDescription>Price after trial. Leave blank if it remains free.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -308,7 +329,7 @@ export default function ProductForm({
           name="longDescription"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center"><MessageSquare className="mr-2 h-4 w-4 text-muted-foreground"/>Long Description (Optional)</FormLabel>
+              <FormLabel className="flex items-center"><Edit3 className="mr-2 h-4 w-4 text-muted-foreground"/>Long Description (Optional)</FormLabel>
               <FormControl><Textarea placeholder="Detailed product information, features, etc. (Markdown supported for future use)" {...field} value={field.value ?? ""} rows={8} disabled={isSubmitting} /></FormControl>
                <FormDescription>Provide more details for the dedicated product page (if applicable).</FormDescription>
               <FormMessage />
@@ -388,7 +409,7 @@ export default function ProductForm({
             />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {renderConditionalPricingFields()}
         </div>
 

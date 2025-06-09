@@ -4,14 +4,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package, Ticket, KeyRound, Info } from 'lucide-react';
+import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package, Ticket, KeyRound, Info, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProductCardProps {
   product: Product;
+  onViewDetailsClick: (product: Product) => void;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, onViewDetailsClick }: ProductCardProps) {
   const getStatusBadge = (status: string) => {
     let colorClass = 'bg-slate-600/30 text-slate-400 border-slate-500';
     let Icon = Zap;
@@ -38,20 +39,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
     return `Paid - ${pricingTerm}`;
   };
-
-  const getSafeLinkProps = (url: string | null | undefined): { href: string; target?: string; rel?: string } | null => {
-    if (!url || url.trim() === "") return null;
-
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return { href: url, target: '_blank', rel: 'noopener noreferrer' };
-    }
-    if (url.startsWith('/')) {
-      return { href: url, target: '_self' };
-    }
-    return { href: `https://${url}`, target: '_blank', rel: 'noopener noreferrer' };
-  };
-
-  const linkProps = getSafeLinkProps(product.productUrl);
 
   return (
     <Card className="layered-card flex flex-col overflow-hidden group h-full transition-all duration-300 ease-in-out hover:shadow-accent/30">
@@ -101,17 +88,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </CardContent>
       <CardFooter className="pt-4">
-        {linkProps ? (
-          <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
-            <Link href={linkProps.href} target={linkProps.target} rel={linkProps.rel}>
-                View Details <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
-          </Button>
-        ) : (
-          <span className="text-sm text-muted-foreground italic flex items-center">
-            <Info className="w-3.5 h-3.5 mr-1.5 text-muted-foreground/70" /> More details soon
-            </span>
-        )}
+        <Button 
+            variant="link" 
+            className="text-accent p-0 hover:text-foreground" 
+            onClick={() => onViewDetailsClick(product)}
+        >
+            View Details <Eye className="ml-2 w-4 h-4" />
+        </Button>
       </CardFooter>
     </Card>
   );

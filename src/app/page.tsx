@@ -1,14 +1,18 @@
 
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction } from 'lucide-react';
+import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction, Info } from 'lucide-react';
 import Link from 'next/link';
 import { getSiteContentItems } from '@/actions/site-content-actions';
 import type { SiteContentItem } from '@/lib/schemas/site-content-schemas';
 import { getProducts } from '@/actions/product-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
 import ProductCard from './_components/ProductCard'; 
+import ProductDetailModal from './_components/ProductDetailModal';
 
 interface CoreTechnology {
   id: string;
@@ -26,14 +30,59 @@ const coreTechnologiesData: CoreTechnology[] = [
 ];
 
 
-export default async function Home() {
-  const { items: siteContent, error: siteContentError } = await getSiteContentItems();
+export default function Home() {
+  const [siteContent, setSiteContent] = useState<SiteContentItem[]>([]);
+  const [siteContentError, setSiteContentError] = useState<string | null>(null);
   
-  // Fetch products for different sections
-  const { products: latestProducts, error: latestProductsError } = await getProducts({ isFeatured: true, limit: 3 });
-  const { products: upcomingProducts, error: upcomingProductsError } = await getProducts({ status: 'Upcoming', limit: 3 });
-  const { products: betaProducts, error: betaProductsError } = await getProducts({ status: 'Beta', limit: 3 });
-  const { products: alphaProducts, error: alphaProductsError } = await getProducts({ status: 'Alpha', limit: 3 });
+  const [latestProducts, setLatestProducts] = useState<Product[]>([]);
+  const [latestProductsError, setLatestProductsError] = useState<string | null>(null);
+  
+  const [upcomingProducts, setUpcomingProducts] = useState<Product[]>([]);
+  const [upcomingProductsError, setUpcomingProductsError] = useState<string | null>(null);
+
+  const [betaProducts, setBetaProducts] = useState<Product[]>([]);
+  const [betaProductsError, setBetaProductsError] = useState<string | null>(null);
+  
+  const [alphaProducts, setAlphaProducts] = useState<Product[]>([]);
+  const [alphaProductsError, setAlphaProductsError] = useState<string | null>(null);
+
+  const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+      const scResult = await getSiteContentItems();
+      if (scResult.items) setSiteContent(scResult.items);
+      if (scResult.error) setSiteContentError(scResult.error);
+
+      const lpResult = await getProducts({ isFeatured: true, limit: 3 });
+      if (lpResult.products) setLatestProducts(lpResult.products);
+      if (lpResult.error) setLatestProductsError(lpResult.error);
+      
+      const upResult = await getProducts({ status: 'Upcoming', limit: 3 });
+      if (upResult.products) setUpcomingProducts(upResult.products);
+      if (upResult.error) setUpcomingProductsError(upResult.error);
+
+      const betaResult = await getProducts({ status: 'Beta', limit: 3 });
+      if (betaResult.products) setBetaProducts(betaResult.products);
+      if (betaResult.error) setBetaProductsError(betaResult.error);
+
+      const alphaResult = await getProducts({ status: 'Alpha', limit: 3 });
+      if (alphaResult.products) setAlphaProducts(alphaResult.products);
+      if (alphaResult.error) setAlphaProductsError(alphaResult.error);
+    }
+    fetchData();
+  }, []);
+
+  const handleOpenProductModal = (product: Product) => {
+    setSelectedProductForModal(product);
+    setIsProductModalOpen(true);
+  };
+
+  const handleCloseProductModal = () => {
+    setIsProductModalOpen(false);
+    setSelectedProductForModal(null);
+  };
 
   const announcementItems = siteContent?.filter(item => item.type === 'announcement' && item.isActive).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
 
@@ -98,7 +147,7 @@ export default async function Home() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} onViewDetailsClick={handleOpenProductModal} />
           ))}
         </div>
       </section>
@@ -155,7 +204,7 @@ export default async function Home() {
         title="Upcoming Products"
         products={upcomingProducts}
         error={upcomingProductsError}
-        icon={Cpu}
+        icon={Cpu} // Was Package, using Cpu for "Upcoming"
         sectionId="upcoming-products"
       />
 
@@ -205,10 +254,14 @@ export default async function Home() {
           ))}
         </div>
       </section>
-
+      
+      {selectedProductForModal && (
+        <ProductDetailModal
+          product={selectedProductForModal}
+          isOpen={isProductModalOpen}
+          onClose={handleCloseProductModal}
+        />
+      )}
     </div>
   );
 }
-
-
-    

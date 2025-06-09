@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { FormProductSchema, type FormProductInput, type Product, ProductStatusSchema, ProductPricingTypeSchema, ProductPricingTermSchema } from "@/lib/schemas/product-schemas";
-import { Loader2, Save, Package, Tag, Version, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
+import { Loader2, Save, Package, Tag, GitBranch, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import React, { useState, ChangeEvent } from "react";
@@ -150,7 +150,7 @@ export default function ProductForm({
                 name="version"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel className="flex items-center"><Version className="mr-2 h-4 w-4 text-muted-foreground"/>Version (Optional)</FormLabel>
+                    <FormLabel className="flex items-center"><GitBranch className="mr-2 h-4 w-4 text-muted-foreground"/>Version (Optional)</FormLabel>
                     <FormControl><Input placeholder="e.g., 1.0.0, 2.1 Beta" {...field} value={field.value ?? ""} disabled={isSubmitting} /></FormControl>
                     <FormMessage />
                     </FormItem>
@@ -376,3 +376,5 @@ export default function ProductForm({
     </Form>
   );
 }
+
+    

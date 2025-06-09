@@ -34,7 +34,6 @@ const AiChatModal = () => {
   };
 
   useEffect(() => {
-    // Add welcome message only when dialog opens and there are no messages
     if (isOpen && messages.length === 0) {
       const welcomeMessage: Message = {
         id: 'welcome-' + Date.now(),
@@ -43,7 +42,7 @@ const AiChatModal = () => {
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen]); // Effect runs when isOpen changes
+  }, [isOpen, messages.length]); 
 
   useEffect(() => {
     scrollToBottom();
@@ -143,7 +142,7 @@ const AiChatModal = () => {
             )}
           </div>
         </ScrollArea>
-        <DialogFooter className="p-4 border-t border-border sticky bottom-0 bg-card z-10">
+        <DialogFooter className="p-4 border-t border-primary sticky bottom-0 bg-card z-10">
           <div className="flex w-full space-x-2">
             <Input
               type="text"

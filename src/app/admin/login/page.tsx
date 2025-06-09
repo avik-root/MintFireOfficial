@@ -2,14 +2,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // For redirection
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, Mail, UserPlus, LogIn, AlertTriangle, Loader2 } from 'lucide-react';
+import { Lock, Mail, UserPlus, LogIn, AlertTriangle, Loader2, UserSquare2, Fingerprint } from 'lucide-react';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
   checkAdminExists, 
@@ -24,6 +23,7 @@ import {
 } from '@/lib/schemas/admin-schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
 
 type ViewMode = 'loading' | 'login' | 'create';
 
@@ -39,7 +39,7 @@ export default function AdminPage() {
       const { exists, error } = await checkAdminExists();
       if (error) {
         setServerError(error);
-        setViewMode('login'); // Default to login on error, admin might exist
+        setViewMode('login'); 
         toast({ variant: "destructive", title: "Error", description: error });
         return;
       }
@@ -50,7 +50,8 @@ export default function AdminPage() {
 
   const createForm = useForm<CreateAdminInput>({
     resolver: zodResolver(CreateAdminSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '' },
+    defaultValues: { adminName: '', adminId: '', email: '', password: '', confirmPassword: '' },
+    mode: 'onBlur', // Validate on blur for better UX with password strength
   });
 
   const loginForm = useForm<LoginAdminInput>({
@@ -61,12 +62,18 @@ export default function AdminPage() {
   const isSubmittingCreate = createForm.formState.isSubmitting;
   const isSubmittingLogin = loginForm.formState.isSubmitting;
 
+  // Watch password field for strength meter
+  const passwordValue = useWatch({
+    control: createForm.control,
+    name: 'password',
+  });
+
   const handleCreateSubmit = async (data: CreateAdminInput) => {
     setServerError(null);
     const result = await createAdminAccount(data);
     if (result.success) {
       toast({ title: "Success", description: result.message });
-      setViewMode('login'); // Switch to login view after creation
+      setViewMode('login'); 
       createForm.reset();
     } else {
       setServerError(result.message);
@@ -79,9 +86,8 @@ export default function AdminPage() {
     const result = await loginAdmin(data);
     if (result.success) {
       toast({ title: "Success", description: result.message });
-      // TODO: Implement actual session management and redirect to dashboard
       console.log("Login successful, redirecting (placeholder)...");
-      router.push('/admin/dashboard'); // Placeholder redirect
+      router.push('/admin/dashboard'); 
     } else {
       setServerError(result.message);
       toast({ variant: "destructive", title: "Login Failed", description: result.message });
@@ -109,7 +115,37 @@ export default function AdminPage() {
             </CardHeader>
             <Form {...createForm}>
               <form onSubmit={createForm.handleSubmit(handleCreateSubmit)}>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={createForm.control}
+                    name="adminName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center">
+                          <UserSquare2 className="mr-2 h-4 w-4 text-muted-foreground" /> Admin Name
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Jane Doe" {...field} disabled={isSubmittingCreate} className="focus-visible:ring-accent" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={createForm.control}
+                    name="adminId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center">
+                          <Fingerprint className="mr-2 h-4 w-4 text-muted-foreground" /> Admin ID
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., mintfire_admin01" {...field} disabled={isSubmittingCreate} className="focus-visible:ring-accent" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={createForm.control}
                     name="email"
@@ -140,6 +176,7 @@ export default function AdminPage() {
                       </FormItem>
                     )}
                   />
+                  <PasswordStrengthMeter password={passwordValue} />
                   <FormField
                     control={createForm.control}
                     name="confirmPassword"
@@ -161,7 +198,7 @@ export default function AdminPage() {
                     </p>
                   )}
                 </CardContent>
-                <CardFooter className="flex flex-col gap-4">
+                <CardFooter className="flex flex-col gap-4 pt-4">
                   <Button type="submit" className="w-full" variant="default" disabled={isSubmittingCreate}>
                     {isSubmittingCreate ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : 'Create Account'}
                   </Button>

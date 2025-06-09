@@ -12,6 +12,8 @@ const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
 
 // Schema for admin user stored in JSON
 const AdminUserStoredSchema = z.object({
+  adminName: z.string(),
+  adminId: z.string(),
   email: z.string().email(),
   // In a real app, this would be a password hash
   // For prototype simplicity, storing password directly.
@@ -67,6 +69,8 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
     // In a real app, hash the password before saving
     // const hashedPassword = await bcrypt.hash(data.password, 10);
     const newAdmin: AdminUserStored = { 
+      adminName: data.adminName,
+      adminId: data.adminId,
       email: data.email, 
       password: data.password // Store plain password (NOT FOR PRODUCTION)
       // password: hashedPassword 

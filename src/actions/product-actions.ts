@@ -27,25 +27,21 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
       fileContent = await fs.readFile(productsFilePath, 'utf-8');
     } catch (readError: any) {
       if (readError.code === 'ENOENT') {
-        // File doesn't exist, create it with an empty array
         await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8');
         return [];
       }
-      // For other read errors, re-throw
       throw readError;
     }
 
-    // If file is empty or just whitespace, treat as empty array
     if (fileContent.trim() === '') {
       return [];
     }
 
     const items = JSON.parse(fileContent);
 
-    // Ensure items is an array before parsing with Zod
     if (!Array.isArray(items)) {
       console.error(`Data in ${productsFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array to prevent further errors.`);
-      await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8'); // Self-heal by resetting
+      await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8'); 
       return [];
     }
     
@@ -58,12 +54,10 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
       parsedItems = parsedItems.filter(product => product.status === params.status);
     }
 
-    // Sort by releaseDate (descending), then by createdAt (descending) as fallback
     parsedItems.sort((a, b) => {
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
       if (dateB !== dateA) return dateB - dateA;
-      // Fallback sort by createdAt if releaseDates are same or absent
       const createdAtA = new Date(a.createdAt).getTime();
       const createdAtB = new Date(b.createdAt).getTime();
       return createdAtB - createdAtA;
@@ -76,12 +70,10 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
 
   } catch (error: any) {
     console.error(`Error processing products file (${productsFilePath}):`, error);
-    // Construct a more informative error message
     let errorMessage = `Could not process product data from ${productsFilePath}.`;
     if (error instanceof z.ZodError) {
       errorMessage = `Product data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
     } else if (error.message) {
-      // Use the error's message if available
       errorMessage = `Error reading product data: ${error.message}`;
     }
     throw new Error(errorMessage);
@@ -94,8 +86,16 @@ async function saveProducts(items: Product[]): Promise<void> {
     await fs.writeFile(productsFilePath, JSON.stringify(items, null, 2), 'utf-8');
     console.log('Products data successfully saved to:', productsFilePath);
   } catch (error: any) {
-    console.error("Error writing products file:", error);
-    throw new Error('Could not save product data. Please ensure the data directory is writable and has sufficient space.');
+    console.error("Error writing products file:", productsFilePath, error); 
+    let message = 'Could not save product data. ';
+    if (error.code === 'EACCES') {
+      message += 'Permission denied. Please check file/folder permissions.';
+    } else if (error.code === 'ENOSPC') {
+      message += 'No space left on device.';
+    } else {
+      message += `An unexpected error occurred: ${error.message || 'Unknown error'}`;
+    }
+    throw new Error(message);
   }
 }
 
@@ -112,7 +112,7 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
   }
 
   await fs.mkdir(publicUploadsDir, { recursive: true });
-  const fileExtension = path.extname(imageFile.name) || '.png'; // Default to .png if no extension
+  const fileExtension = path.extname(imageFile.name) || '.png'; 
   const uniqueFilename = `${randomUUID()}${fileExtension}`;
   const filePath = path.join(publicUploadsDir, uniqueFilename);
 
@@ -152,7 +152,7 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
             rawData[key] = strValue;
           }
         } else if (key === 'productUrl') {
-          if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
+          if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined' || strValue === '') {
             rawData[key] = ""; 
           } else {
             rawData[key] = strValue;
@@ -163,8 +163,6 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       }
     });
 
-    // Use FormProductSchema directly for parsing rawData intended for new product creation.
-    // Omit imageUrl as it's derived from imageFile, not directly from form data fields.
     const FormProductParseSchema = FormProductSchema.omit({ imageUrl: true });
     const validation = FormProductParseSchema.safeParse(rawData);
 
@@ -180,24 +178,24 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       imageUrlFromServer = await handleImageUpload(imageFile);
     }
 
-    const products = await getProductsInternal(); // Fetch current products to append
+    const products = await getProductsInternal(); 
     const now = new Date().toISOString();
 
     const newProduct: Product = {
       id: randomUUID(),
       name: validatedData.name,
-      version: validatedData.version, // Will be null if not provided or empty
+      version: validatedData.version, 
       status: validatedData.status,
-      releaseDate: validatedData.releaseDate, // Will be null if not provided or empty
+      releaseDate: validatedData.releaseDate, 
       description: validatedData.description,
-      longDescription: validatedData.longDescription, // Will be null if not provided or empty
-      imageUrl: imageUrlFromServer || "", // Use uploaded image or empty string
-      productUrl: validatedData.productUrl || "", // Will be "" if not provided or empty
+      longDescription: validatedData.longDescription, 
+      imageUrl: imageUrlFromServer || "", 
+      productUrl: validatedData.productUrl || "", 
       developer: validatedData.developer,
       pricingType: validatedData.pricingType,
       pricingTerm: validatedData.pricingTerm,
       tags: transformTags(validatedData.tagsString),
-      isFeatured: validatedData.isFeatured, // Will default to false if not in formData
+      isFeatured: validatedData.isFeatured, 
       createdAt: now,
       updatedAt: now,
     };
@@ -241,7 +239,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
-      } else if (key !== 'imageFile' && key !== 'existingImageUrl') { // Don't put file or existing path directly into rawData for Zod
+      } else if (key !== 'imageFile' && key !== 'existingImageUrl') { 
         if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
           if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
             rawData[key] = null;
@@ -249,7 +247,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
             rawData[key] = strValue;
           }
         } else if (key === 'productUrl') {
-           if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
+           if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined' || strValue === '') {
             rawData[key] = "";
           } else {
             rawData[key] = strValue;
@@ -260,7 +258,6 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       }
     });
 
-    // For updates, use the partial schema as not all fields might be sent
     const FormProductParseSchema = FormProductSchema.omit({ imageUrl: true }).partial();
     const validation = FormProductParseSchema.safeParse(rawData);
 
@@ -277,23 +274,21 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     }
 
     const originalProduct = products[productIndex];
-    let imageUrlToSave = originalProduct.imageUrl; // Default to original
+    let imageUrlToSave = originalProduct.imageUrl; 
     const imageFile = formData.get('imageFile') as File | null;
     const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null; 
 
-    if (imageFile && imageFile.size > 0) { // New image uploaded
-      // Delete old image if it exists and seems to be one we manage
+    if (imageFile && imageFile.size > 0) { 
       if (originalProduct.imageUrl && originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
         try {
           const oldImagePath = path.join(process.cwd(), 'public', originalProduct.imageUrl);
           await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
         } catch (imgDelError: any) {
-          // Log non-critical error, proceed with update
           console.warn(`Failed to delete old product image ${originalProduct.imageUrl}: ${imgDelError.message}`);
         }
       }
       imageUrlToSave = await handleImageUpload(imageFile); 
-    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "") { // Image explicitly removed by client (e.g. imagePreview set to null)
+    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "") { 
       if (originalProduct.imageUrl && originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
          try {
           const oldImagePath = path.join(process.cwd(), 'public', originalProduct.imageUrl);
@@ -302,33 +297,26 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
           console.warn(`Failed to delete old product image ${originalProduct.imageUrl}: ${imgDelError.message}`);
         }
       }
-      imageUrlToSave = ""; // Set to empty string
+      imageUrlToSave = ""; 
     } else if (existingImageUrlFromForm !== null) {
-      // This case implies the user didn't upload a new file, and didn't explicitly remove the image
-      // So, we keep the image path that was on the form (which should be originalProduct.imageUrl if unchanged)
       imageUrlToSave = existingImageUrlFromForm;
     }
-    // If existingImageUrlFromForm is null, it means the 'existingImageUrl' field wasn't sent,
-    // which implies the form didn't have an initial image or the logic sending it changed.
-    // In this situation, if no new imageFile, imageUrlToSave remains originalProduct.imageUrl from above.
-
    
-    // Merge validated data with original product data
     const updatedProductData: Product = {
       ...originalProduct,
       name: validatedData.name ?? originalProduct.name,
-      version: validatedData.version !== undefined ? validatedData.version : originalProduct.version, // handles null or new string
+      version: validatedData.version !== undefined ? validatedData.version : originalProduct.version, 
       status: validatedData.status ?? originalProduct.status,
-      releaseDate: validatedData.releaseDate !== undefined ? validatedData.releaseDate : originalProduct.releaseDate, // handles null or new string
+      releaseDate: validatedData.releaseDate !== undefined ? validatedData.releaseDate : originalProduct.releaseDate, 
       description: validatedData.description ?? originalProduct.description,
-      longDescription: validatedData.longDescription !== undefined ? validatedData.longDescription : originalProduct.longDescription, // handles null or new string
-      productUrl: validatedData.productUrl !== undefined ? (validatedData.productUrl ?? "") : originalProduct.productUrl, // handles "" or new string
+      longDescription: validatedData.longDescription !== undefined ? validatedData.longDescription : originalProduct.longDescription, 
+      productUrl: validatedData.productUrl !== undefined ? (validatedData.productUrl ?? "") : originalProduct.productUrl, 
       developer: validatedData.developer ?? originalProduct.developer,
       pricingType: validatedData.pricingType ?? originalProduct.pricingType,
       pricingTerm: validatedData.pricingTerm ?? originalProduct.pricingTerm,
       tags: validatedData.tagsString !== undefined ? transformTags(validatedData.tagsString) : originalProduct.tags,
       isFeatured: validatedData.isFeatured !== undefined ? validatedData.isFeatured : originalProduct.isFeatured,
-      imageUrl: imageUrlToSave || "", // Ensure it's a string
+      imageUrl: imageUrlToSave || "", 
       updatedAt: new Date().toISOString(),
     };
 
@@ -336,7 +324,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     await saveProducts(products);
     revalidatePath('/admin/dashboard/products');
     revalidatePath(`/admin/dashboard/products/edit/${id}`);
-    revalidatePath('/'); // Revalidate homepage if products are shown there
+    revalidatePath('/'); 
     return { success: true, product: updatedProductData };
   } catch (error: any) {
     console.error("UPDATE_PRODUCT_ACTION_ERROR:", error);
@@ -361,7 +349,6 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
       return { success: false, error: "Product not found for deletion." };
     }
 
-    // Attempt to delete the image file if it exists and is managed by us
     if (productToDelete.imageUrl && productToDelete.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
       try {
         const imagePath = path.join(process.cwd(), 'public', productToDelete.imageUrl);
@@ -369,7 +356,6 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
       }
       catch (imgDelError: any)
       {
-        // Log non-critical error, proceed with deleting product entry
         console.warn(`Failed to delete product image ${productToDelete.imageUrl}: ${imgDelError.message}`);
       }
     }
@@ -378,7 +364,7 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     await saveProducts(filteredProducts);
 
     revalidatePath('/admin/dashboard/products');
-    revalidatePath('/'); // Revalidate homepage
+    revalidatePath('/'); 
     return { success: true };
   } catch (error: any)
    {
@@ -394,4 +380,4 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     return { success: false, error: errorMessage };
   }
 }
-
+    

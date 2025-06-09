@@ -23,9 +23,9 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
       <DialogContent className="sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] p-0 border-primary shadow-2xl shadow-primary/30">
         <DialogHeader className="p-6 pb-0 relative">
             <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-accent shadow-lg flex-shrink-0">
+                <div className="relative w-32 h-40 md:w-40 md:h-52 rounded-md overflow-hidden border-4 border-accent shadow-lg flex-shrink-0 aspect-[3/4]">
                     <Image
-                        src={member.imageUrl || `https://placehold.co/160x160.png?text=${member.name.charAt(0)}`}
+                        src={member.imageUrl || `https://placehold.co/120x160.png?text=${member.name.charAt(0)}`}
                         alt={member.name}
                         fill
                         className="object-cover"
@@ -37,7 +37,6 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
                     <DialogDescription className="text-accent text-lg">{member.role}</DialogDescription>
                 </div>
             </div>
-          {/* Removed the manual X button, ShadCN DialogContent provides one by default in its top-right corner */}
         </DialogHeader>
         
         <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
@@ -83,9 +82,7 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
             )}
           </div>
         </div>
-        <DialogFooter className="p-4 border-t border-border bg-card/50">
-             <p className="text-xs text-muted-foreground">Member registered on: {new Date(member.createdAt).toLocaleDateString()}</p>
-        </DialogFooter>
+        {/* Footer removed to hide "Member registered on" */}
       </DialogContent>
     </Dialog>
   );

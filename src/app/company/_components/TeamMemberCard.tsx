@@ -19,9 +19,9 @@ export default function TeamMemberCard({ member, onViewDetails }: TeamMemberCard
       aria-label={`Profile card for ${member.name}`}
     >
       <CardHeader className="p-0">
-        <div className="relative w-full aspect-[3/4] md:aspect-square">
+        <div className="relative w-full aspect-[3/4]"> {/* Aspect ratio 3:4 */}
           <Image
-            src={member.imageUrl || `https://placehold.co/400x500.png?text=${member.name.charAt(0)}`}
+            src={member.imageUrl || `https://placehold.co/300x400.png?text=${member.name.charAt(0)}`}
             alt={member.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"

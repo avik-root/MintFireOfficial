@@ -32,7 +32,7 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
     parsedItems.sort((a, b) => {
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : new Date(a.createdAt).getTime();
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : new Date(b.createdAt).getTime();
-      return dateB - dateA; 
+      return dateB - dateA;
     });
 
     if (params?.limit) {
@@ -76,7 +76,7 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
   const fileExtension = path.extname(imageFile.name) || '.png';
   const uniqueFilename = `${randomUUID()}${fileExtension}`;
   const filePath = path.join(publicUploadsDir, uniqueFilename);
-  
+
   const buffer = Buffer.from(await imageFile.arrayBuffer());
   await fs.writeFile(filePath, buffer);
 
@@ -102,31 +102,37 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
   try {
     const rawData: Record<string, any> = {};
     formData.forEach((value, key) => {
-      const strValue = String(value); // Ensure value is a string for checks
+      const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
-      } else if (key !== 'imageFile') {
-        if (key === 'releaseDate') {
+      } else if (key !== 'imageFile') { // existingImageUrl is not relevant for add
+        if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
+          // These fields are .optional().nullable()
           if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
             rawData[key] = null;
           } else {
-            rawData[key] = strValue; // Assume it's an ISO string
+            rawData[key] = strValue;
           }
-        } else if ((key === 'productUrl' || key === 'version' || key === 'longDescription') && strValue === '') {
-          rawData[key] = null;
+        } else if (key === 'productUrl') {
+          // This field is .optional().or(z.literal('')) - allows "" or undefined, not null
+          if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
+            rawData[key] = ""; // Map empty/nullish from form to ""
+          } else {
+            rawData[key] = strValue;
+          }
         } else {
           rawData[key] = strValue;
         }
       }
     });
-    
+
     const FormProductParseSchema = FormProductSchema.omit({ imageUrl: true });
     const validation = FormProductParseSchema.safeParse(rawData);
 
     if (!validation.success) {
       return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
     }
-    
+
     const validatedData = validation.data;
     const imageFile = formData.get('imageFile') as File | null;
     let imageUrl: string | null = null;
@@ -141,13 +147,13 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     const newProduct: Product = {
       id: randomUUID(),
       name: validatedData.name,
-      version: validatedData.version, // Already null if empty and processed, or string
+      version: validatedData.version,
       status: validatedData.status,
-      releaseDate: validatedData.releaseDate, // Already ISO string or null from validation
+      releaseDate: validatedData.releaseDate,
       description: validatedData.description,
-      longDescription: validatedData.longDescription, // Already null if empty and processed, or string
+      longDescription: validatedData.longDescription,
       imageUrl: imageUrl || "",
-      productUrl: validatedData.productUrl || "", // productUrl is optional().or(z.literal(''))
+      productUrl: validatedData.productUrl || "",
       developer: validatedData.developer,
       pricingType: validatedData.pricingType,
       pricingTerm: validatedData.pricingTerm,
@@ -156,15 +162,15 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       createdAt: now,
       updatedAt: now,
     };
-    
+
     products.push(newProduct);
     await saveProducts(products);
     revalidatePath('/admin/dashboard/products');
-    revalidatePath('/'); 
+    revalidatePath('/');
     return { success: true, product: newProduct };
   } catch (error: any) {
-    console.error("Add product server error:", error); // Log actual server errors
-    return { success: false, error: error.message || "Failed to add product." };
+    console.error("Add product server error:", error);
+    return { success: false, error: error.message || "An unexpected error occurred while adding the product." };
   }
 }
 
@@ -185,18 +191,24 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
   try {
     const rawData: Record<string, any> = {};
      formData.forEach((value, key) => {
-      const strValue = String(value);
+      const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
       } else if (key !== 'imageFile' && key !== 'existingImageUrl') {
-        if (key === 'releaseDate') {
-           if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
+        if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
+          // These fields are .optional().nullable()
+          if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
             rawData[key] = null;
           } else {
             rawData[key] = strValue;
           }
-        } else if ((key === 'productUrl' || key === 'version' || key === 'longDescription') && strValue === '') {
-          rawData[key] = null; 
+        } else if (key === 'productUrl') {
+          // This field is .optional().or(z.literal('')) - allows "" or undefined, not null
+          if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
+            rawData[key] = ""; // Map empty/nullish from form to ""
+          } else {
+            rawData[key] = strValue;
+          }
         } else {
           rawData[key] = strValue;
         }
@@ -204,12 +216,12 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     });
 
     const FormProductParseSchema = FormProductSchema.omit({ imageUrl: true }).partial();
-    const validation = FormProductParseSchema.safeParse(rawData); 
-    
+    const validation = FormProductParseSchema.safeParse(rawData);
+
     if (!validation.success) {
       return { success: false, error: "Invalid data provided for update.", errors: validation.error.issues };
     }
-    
+
     const validatedData = validation.data;
     let products = await getProductsInternal();
     const productIndex = products.findIndex(p => p.id === id);
@@ -217,29 +229,38 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     if (productIndex === -1) {
       return { success: false, error: "Product not found." };
     }
-    
+
     const originalProduct = products[productIndex];
-    let imageUrlToSave = originalProduct.imageUrl; 
+    let imageUrlToSave = originalProduct.imageUrl;
     const imageFile = formData.get('imageFile') as File | null;
-    const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null;
+    const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null; // Sent from form
 
-
-    if (imageFile && imageFile.size > 0) {
-      if (originalProduct.imageUrl) {
+    if (imageFile && imageFile.size > 0) { // New image uploaded
+      if (originalProduct.imageUrl && originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
         try {
           const oldImagePath = path.join(process.cwd(), 'public', originalProduct.imageUrl);
-          if (originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) { // Basic check
-             await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
-          }
+          await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
         } catch (imgDelError: any) {
           console.warn(`Failed to delete old product image ${originalProduct.imageUrl}: ${imgDelError.message}`);
         }
       }
-      imageUrlToSave = await handleImageUpload(imageFile);
-    } else if (existingImageUrlFromForm !== null) { 
-       imageUrlToSave = existingImageUrlFromForm; 
+      imageUrlToSave = await handleImageUpload(imageFile); // Returns path or null
+    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "") {
+      // User explicitly removed the image (existingImageUrl sent as empty string)
+      if (originalProduct.imageUrl && originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
+         try {
+          const oldImagePath = path.join(process.cwd(), 'public', originalProduct.imageUrl);
+          await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
+        } catch (imgDelError: any) {
+          console.warn(`Failed to delete old product image ${originalProduct.imageUrl}: ${imgDelError.message}`);
+        }
+      }
+      imageUrlToSave = ""; // Set to empty string if removed
+    } else if (existingImageUrlFromForm !== null) {
+      // User kept the existing image, existingImageUrlFromForm contains the path
+      imageUrlToSave = existingImageUrlFromForm;
     }
-
+    // If imageFile is null AND existingImageUrlFromForm is null, imageUrlToSave remains originalProduct.imageUrl
 
     const updatedProductData: Product = {
       ...originalProduct,
@@ -255,19 +276,19 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       pricingTerm: validatedData.pricingTerm ?? originalProduct.pricingTerm,
       tags: validatedData.tagsString !== undefined ? transformTags(validatedData.tagsString) : originalProduct.tags,
       isFeatured: validatedData.isFeatured !== undefined ? validatedData.isFeatured : originalProduct.isFeatured,
-      imageUrl: imageUrlToSave || "",
-      updatedAt: new Date().toISOString(), 
+      imageUrl: imageUrlToSave || "", // Ensure it's always a string
+      updatedAt: new Date().toISOString(),
     };
-    
+
     products[productIndex] = updatedProductData;
     await saveProducts(products);
     revalidatePath('/admin/dashboard/products');
     revalidatePath(`/admin/dashboard/products/edit/${id}`);
-    revalidatePath('/'); 
+    revalidatePath('/');
     return { success: true, product: updatedProductData };
   } catch (error: any) {
-    console.error("Update product server error:", error); // Log actual server errors
-    return { success: false, error: error.message || "Failed to update product." };
+    console.error("Update product server error:", error);
+    return { success: false, error: error.message || "An unexpected error occurred while updating the product." };
   }
 }
 
@@ -279,13 +300,12 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
       return { success: false, error: "Product not found for deletion." };
     }
 
-    if (productToDelete.imageUrl) {
+    if (productToDelete.imageUrl && productToDelete.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
       try {
         const imagePath = path.join(process.cwd(), 'public', productToDelete.imageUrl);
-        if (productToDelete.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) { // Basic check
-            await fs.unlink(imagePath).catch(e => console.warn(`Non-critical: Failed to delete image ${imagePath}: ${e.message}`));
-        }
-      } catch (imgDelError: any)
+        await fs.unlink(imagePath).catch(e => console.warn(`Non-critical: Failed to delete image ${imagePath}: ${e.message}`));
+      }
+      catch (imgDelError: any)
       {
         console.warn(`Failed to delete product image ${productToDelete.imageUrl}: ${imgDelError.message}`);
       }
@@ -295,10 +315,11 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     await saveProducts(filteredProducts);
 
     revalidatePath('/admin/dashboard/products');
-    revalidatePath('/'); 
+    revalidatePath('/');
     return { success: true };
-  } catch (error: any) {
+  } catch (error: any)
+   {
+    console.error("Delete product server error:", error);
     return { success: false, error: error.message || "Failed to delete product." };
   }
 }
-

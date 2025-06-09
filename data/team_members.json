@@ -1,2 +1,14 @@
-
-[]
+[
+  {
+    "name": "Test Hacker",
+    "role": "CEO",
+    "description": "Hack today fun tomorrow ",
+    "imageUrl": "",
+    "email": "hacker@gmail.com",
+    "githubUrl": "https://github.com/avik-root",
+    "linkedinUrl": "https://www.linkedin.com/in/avik-samanta-root/",
+    "id": "eff6d8eb-4e27-49ca-9616-aa98bcad0062",
+    "createdAt": "2025-06-09T19:30:46.795Z",
+    "updatedAt": "2025-06-09T19:30:46.795Z"
+  }
+]

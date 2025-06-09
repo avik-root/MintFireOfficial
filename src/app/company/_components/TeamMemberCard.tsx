@@ -2,9 +2,7 @@
 "use client";
 
 import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { TeamMember } from '@/lib/schemas/team-member-schemas';
 
 interface TeamMemberCardProps {
@@ -14,7 +12,14 @@ interface TeamMemberCardProps {
 
 export default function TeamMemberCard({ member, onViewDetails }: TeamMemberCardProps) {
   return (
-    <Card className="layered-card flex flex-col overflow-hidden group h-full">
+    <Card 
+      className="layered-card flex flex-col overflow-hidden group h-full cursor-pointer hover:shadow-primary/40 transition-all duration-300"
+      onClick={() => onViewDetails(member)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onViewDetails(member);}}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${member.name}`}
+    >
       <CardHeader className="p-0">
         <div className="relative w-full aspect-[3/4] md:aspect-square">
           <Image
@@ -31,11 +36,8 @@ export default function TeamMemberCard({ member, onViewDetails }: TeamMemberCard
         <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors">{member.name}</CardTitle>
         <CardDescription className="text-accent">{member.role}</CardDescription>
       </CardContent>
-      <CardFooter className="justify-center p-4 pt-0">
-        <Button variant="outline" size="sm" onClick={() => onViewDetails(member)}>
-          <Eye className="mr-2 h-4 w-4" /> View Details
-        </Button>
-      </CardFooter>
+      {/* CardFooter with button removed */}
     </Card>
   );
 }
+

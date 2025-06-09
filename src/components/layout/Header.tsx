@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Briefcase, ShieldCheck, Blocks, Cpu, Smartphone } from 'lucide-react';
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone } from 'lucide-react';
 
 const Header = () => {
   return (
@@ -24,7 +24,7 @@ const Header = () => {
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="text-foreground/80 hover:text-primary transition-colors px-2">
+              <Button variant="ghost" className="text-foreground/80 hover:text-primary transition-colors px-2 hover:bg-primary/10">
                 Services <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -42,11 +42,6 @@ const Header = () => {
               <DropdownMenuItem asChild>
                 <Link href="/services/ai" className="flex items-center">
                   <Cpu className="mr-2 h-4 w-4 text-accent glowing-icon" /> Artificial Intelligence
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/services/industrial-software" className="flex items-center">
-                  <Briefcase className="mr-2 h-4 w-4 text-accent glowing-icon" /> Industrial Software
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

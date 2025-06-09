@@ -11,7 +11,6 @@ const Footer = () => {
     { name: "Cyber Security", href: "/services/cyber-security" },
     { name: "Blockchain", href: "/services/blockchain" },
     { name: "Artificial Intelligence", href: "/services/ai" },
-    { name: "Industrial Software", href: "/services/industrial-software" },
     { name: "IoT Devices", href: "/services/iot-devices" },
   ];
 

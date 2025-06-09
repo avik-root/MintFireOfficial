@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Briefcase, Activity } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Activity } from 'lucide-react';
 import Link from 'next/link';
 
 interface FeatureItem {
@@ -64,7 +64,6 @@ const coreTechnologiesData: CoreTechnology[] = [
   { id: "ct1", title: "Cyber Security", description: "Protecting digital assets with cutting-edge defense mechanisms.", icon: ShieldCheck, link: "/services/cyber-security" },
   { id: "ct2", title: "Blockchain", description: "Building transparent and secure decentralized solutions.", icon: Blocks, link: "/services/blockchain" },
   { id: "ct3", title: "Artificial Intelligence", description: "Leveraging AI to create intelligent systems and insights.", icon: Cpu, link: "/services/ai" },
-  { id: "ct4", title: "Industrial Software", description: "Optimizing industrial operations with robust software.", icon: Briefcase, link: "/services/industrial-software" },
   { id: "ct5", title: "IoT Devices", description: "Connecting the physical world with smart, secure devices.", icon: Smartphone, link: "/services/iot-devices" },
 ];
 
@@ -78,7 +77,7 @@ export default function Home() {
             <span className="glitch-text" data-text="MintFire">MintFire</span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-            Pioneering the future of Cyber Security, Blockchain, AI, Industrial Software, and IoT Devices.
+            Pioneering the future of Cyber Security, Blockchain, AI, and IoT Devices.
           </p>
           <div className="space-x-4">
             <Button asChild size="lg" variant="default" className="shadow-lg shadow-primary/50">
@@ -134,7 +133,7 @@ export default function Home() {
             Driving innovation across key technology domains to build the future.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
           {coreTechnologiesData.map((tech) => (
             <Card key={tech.id} className="layered-card overflow-hidden group transition-all duration-300 ease-in-out hover:shadow-primary/30 flex flex-col">
               <CardHeader className="items-center text-center">

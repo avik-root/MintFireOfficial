@@ -2,26 +2,28 @@
   {
     "id": "eff6d8eb-4e27-49ca-9616-aa98bcad0062",
     "name": "Test Hacker",
-    "role": "CEO",
+    "role": "CEO & Co-Founder",
     "description": "Hack today fun tomorrow ",
     "imageUrl": "/uploads/team-photos/5239531b-81a6-437c-92eb-96c554e37fb7.jpg",
     "email": "hacker@gmail.com",
     "githubUrl": "https://github.com/avik-root",
     "linkedinUrl": "https://www.linkedin.com/in/avik-samanta-root/",
     "joiningDate": "2024-10-23T18:30:00.000Z",
+    "isPublic": true,
     "createdAt": "2025-06-09T19:30:46.795Z",
-    "updatedAt": "2025-06-09T20:16:38.756Z"
+    "updatedAt": "2025-06-09T20:25:46.694Z"
   },
   {
     "id": "f280ed92-ea89-49c0-b0c1-3455c308f105",
     "name": "Jellymint",
     "role": "CEO & Founder",
     "description": "Happy ",
+    "imageUrl": "/uploads/team-photos/c9495387-3687-478e-86c9-a954c20a2f48.jpg",
     "email": "mint@gmail.com",
     "githubUrl": "https://github.com/anushagupta11",
     "linkedinUrl": "https://www.linkedin.com/in/anusha-gupta-ofc/",
     "joiningDate": "2025-06-09T20:17:59.326Z",
-    "imageUrl": "/uploads/team-photos/c9495387-3687-478e-86c9-a954c20a2f48.jpg",
+    "isPublic": true,
     "createdAt": "2025-06-09T20:19:42.414Z",
     "updatedAt": "2025-06-09T20:19:42.414Z"
   }

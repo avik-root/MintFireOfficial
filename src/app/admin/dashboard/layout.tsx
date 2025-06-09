@@ -11,17 +11,18 @@ import {
   LayoutDashboard,
   Users,
   Package,
-  Newspaper, // For Blog Posts & Site Content
-  ImageIcon, // For Media
-  FileText, // For Site Content (if distinct icon needed, using Newspaper for now)
-  Briefcase, // For Applicants
-  UsersRound, // For Team
-  MessageSquareWarning, // For Feedback
-  BarChart3, // For Analytics
+  Newspaper, 
+  ImageIcon, 
+  FileText, 
+  Briefcase, 
+  UsersRound, 
+  MessageSquareWarning, 
+  BarChart3, 
   Settings,
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Crown, // Icon for Founders/CEO
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
@@ -35,6 +36,7 @@ const sidebarNavItems = [
   { href: '/admin/dashboard/media', label: 'Media', icon: ImageIcon },
   { href: '/admin/dashboard/applicants', label: 'Applicants', icon: Briefcase },
   { href: '/admin/dashboard/team', label: 'Team', icon: UsersRound },
+  { href: '/admin/dashboard/founders', label: 'Founders', icon: Crown },
   { href: '/admin/dashboard/feedback', label: 'Feedback', icon: MessageSquareWarning },
   { href: '/admin/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ];

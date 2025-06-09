@@ -3,34 +3,49 @@
 
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Zap, Target, Lightbulb, UsersRound, AlertTriangle, Loader2 } from 'lucide-react';
+import { Users, Zap, Target, Lightbulb, UsersRound, Crown, AlertTriangle, Loader2 } from 'lucide-react';
 import { getTeamMembers } from '@/actions/team-member-actions';
+import { getFounders } from '@/actions/founder-actions';
 import type { TeamMember } from '@/lib/schemas/team-member-schemas';
+import type { Founder } from '@/lib/schemas/founder-schema';
 import TeamMemberCard from './_components/TeamMemberCard';
+import FounderCard from './_components/FounderCard';
 import TeamMemberDetailModal from './_components/TeamMemberDetailModal';
 import React, { useEffect, useState } from 'react';
 
 const CompanyPage = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [founders, setFounders] = useState<Founder[]>([]);
+  const [isLoadingTeam, setIsLoadingTeam] = useState(true);
+  const [isLoadingFounders, setIsLoadingFounders] = useState(true);
+  const [errorTeam, setErrorTeam] = useState<string | null>(null);
+  const [errorFounders, setErrorFounders] = useState<string | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchTeam = async () => {
-      setIsLoading(true);
-      setError(null);
-      // Fetch only public members for the company page
-      const result = await getTeamMembers({ publicOnly: true }); 
-      if (result.members) {
-        setTeamMembers(result.members);
+    const fetchCompanyData = async () => {
+      setIsLoadingTeam(true);
+      setErrorTeam(null);
+      const teamResult = await getTeamMembers({ publicOnly: true }); 
+      if (teamResult.members) {
+        setTeamMembers(teamResult.members);
       } else {
-        setError(result.error || "Failed to load team members.");
+        setErrorTeam(teamResult.error || "Failed to load team members.");
       }
-      setIsLoading(false);
+      setIsLoadingTeam(false);
+
+      setIsLoadingFounders(true);
+      setErrorFounders(null);
+      const founderResult = await getFounders();
+      if (founderResult.founders) {
+        setFounders(founderResult.founders);
+      } else {
+        setErrorFounders(founderResult.error || "Failed to load founder profiles.");
+      }
+      setIsLoadingFounders(false);
     };
-    fetchTeam();
+    fetchCompanyData();
   }, []);
 
   const handleViewDetails = (member: TeamMember) => {
@@ -83,6 +98,43 @@ const CompanyPage = () => {
         </div>
       </section>
 
+      {/* Meet Our Founders Section */}
+      <section id="our-founders" className="py-12">
+        <div className="flex items-center mb-10 text-center flex-col">
+          <Crown className="w-16 h-16 text-primary mb-4 glowing-icon-primary" />
+          <h2 className="font-headline text-4xl font-bold">Meet Our Founders</h2>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto mt-2">
+            The visionary leaders guiding MintFire.
+          </p>
+        </div>
+        {isLoadingFounders && (
+          <div className="flex justify-center items-center py-10">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+            <p className="ml-3 text-muted-foreground">Loading founder profiles...</p>
+          </div>
+        )}
+        {errorFounders && (
+          <div className="flex flex-col items-center text-destructive py-10">
+            <AlertTriangle className="w-12 h-12 mb-3" />
+            <p className="text-lg font-semibold">Error loading founder profiles</p>
+            <p>{errorFounders}</p>
+          </div>
+        )}
+        {!isLoadingFounders && !errorFounders && founders.length === 0 && (
+          <p className="text-center text-muted-foreground text-lg">
+            Founder profiles are being curated. Check back soon!
+          </p>
+        )}
+        {!isLoadingFounders && !errorFounders && founders.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+            {founders.map(founder => (
+              <FounderCard key={founder.id} founder={founder} />
+            ))}
+          </div>
+        )}
+      </section>
+
+
       <section id="our-team" className="py-12">
         <div className="flex items-center mb-10 text-center flex-col">
           <UsersRound className="w-16 h-16 text-primary mb-4 glowing-icon-primary" />
@@ -92,25 +144,25 @@ const CompanyPage = () => {
           </p>
         </div>
 
-        {isLoading && (
+        {isLoadingTeam && (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
             <p className="ml-3 text-muted-foreground">Loading team members...</p>
           </div>
         )}
-        {error && (
+        {errorTeam && (
           <div className="flex flex-col items-center text-destructive py-10">
             <AlertTriangle className="w-12 h-12 mb-3" />
             <p className="text-lg font-semibold">Error loading team members</p>
-            <p>{error}</p>
+            <p>{errorTeam}</p>
           </div>
         )}
-        {!isLoading && !error && teamMembers.length === 0 && (
+        {!isLoadingTeam && !errorTeam && teamMembers.length === 0 && (
           <p className="text-center text-muted-foreground text-lg">
             Our team is growing! Check back soon to meet the innovators at MintFire.
           </p>
         )}
-        {!isLoading && !error && teamMembers.length > 0 && (
+        {!isLoadingTeam && !errorTeam && teamMembers.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {teamMembers.map(member => (
               <TeamMemberCard key={member.id} member={member} onViewDetails={handleViewDetails} />

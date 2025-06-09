@@ -77,7 +77,7 @@ export default function AdminPage() {
       toast({ title: "Success", description: result.message });
       setViewMode('login'); 
       createForm.reset();
-      loginForm.reset(); // Reset login form as well
+      loginForm.reset(); 
     } else {
       setServerError(result.message);
       toast({ variant: "destructive", title: "Creation Failed", description: result.message });
@@ -89,7 +89,7 @@ export default function AdminPage() {
     const result = await loginAdmin(data);
     if (result.success) {
       toast({ title: "Success", description: result.message });
-      router.push('/admin/dashboard'); 
+      await router.push('/admin/dashboard'); 
     } else {
       setServerError(result.message);
       toast({ variant: "destructive", title: "Login Failed", description: result.message });

@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig } from 'lucide-react';
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig, Briefcase } from 'lucide-react';
 import React from 'react';
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/company", label: "Company" },
-  { href: "/blog", label: "Blog" },
+  { href: "/blog", label: "Blog", icon: LibraryBig },
+  { href: "/careers", label: "Careers", icon: Briefcase },
 ];
 
 const serviceLinks = [
@@ -73,7 +74,6 @@ const Header = () => {
               <SheetHeader className="p-4 border-b border-border/50">
                  <div className="flex items-center justify-between">
                   <SheetTitle className="font-headline text-xl text-primary">Menu</SheetTitle>
-                  {/* SheetClose is automatically rendered by SheetContent top-right */}
                 </div>
                 <div className="mt-4">
                   <Logo />
@@ -85,7 +85,7 @@ const Header = () => {
                     <SheetClose key={`mobile-${link.href}`} asChild>
                        <Button variant="ghost" asChild className="justify-start text-lg text-foreground/90 hover:text-primary px-2 py-3">
                         <Link href={link.href} className="flex items-center w-full">
-                          {link.label === "Blog" && <LibraryBig className="mr-3 h-5 w-5 text-accent" />} 
+                          {link.icon && <link.icon className="mr-3 h-5 w-5 text-accent" />}
                           {link.label}
                         </Link>
                       </Button>

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig, Briefcase } from 'lucide-react';
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig, Briefcase, Mail } from 'lucide-react'; // Added Mail for Contact
 import React from 'react';
 
 const navLinks = [
@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/company", label: "Company" },
   { href: "/blog", label: "Blog", icon: LibraryBig },
   { href: "/careers", label: "Careers", icon: Briefcase },
+  { href: "/contact", label: "Contact", icon: Mail }, // Added Contact link
 ];
 
 const serviceLinks = [

@@ -16,17 +16,17 @@ const Footer = () => {
 
   const companyLinks = [
     { name: "About Us", href: "/company" },
-    { name: "Blog", href: "#" }, // Placeholder
-    { name: "Careers", href: "#" }, // Placeholder
-    { name: "Contact", href: "#" }, // Placeholder
+    { name: "Blog", href: "/blog" }, 
+    { name: "Careers", href: "/careers" }, 
+    { name: "Contact", href: "/contact" }, 
   ];
 
   return (
     <footer className="border-t border-border/40 bg-background/95 text-sm">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-10">
           {/* Column 1: Logo, Tagline & Socials */}
-          <div>
+          <div className="lg:col-span-2">
             <Logo />
             <p className="mt-3 text-muted-foreground leading-relaxed">
               Pioneering the Future of Technology.

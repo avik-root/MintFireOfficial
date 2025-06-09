@@ -49,14 +49,14 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     if (product.pricingType === 'Free') {
         if (product.pricingTerm === 'Subscription' && product.trialDuration) {
             let summary = `Free Trial: ${product.trialDuration}`;
-            if (product.postTrialPriceAmount && product.postTrialBillingInterval) {
+            if (typeof product.postTrialPriceAmount === 'number' && product.postTrialBillingInterval) {
                 summary += ` -> $${product.postTrialPriceAmount.toFixed(2)}/${product.postTrialBillingInterval.slice(0,2).toLowerCase()}`;
             }
             return summary;
         }
         return `Free - ${product.pricingTerm}`;
     }
-    if (product.pricingTerm === 'Lifetime' && product.priceAmount) {
+    if (product.pricingTerm === 'Lifetime' && typeof product.priceAmount === 'number') {
         return `$${product.priceAmount.toFixed(2)} (Lifetime)`;
     }
     if (product.pricingTerm === 'Subscription') {
@@ -81,7 +81,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
         ) : isHtml && typeof value === 'string' ? (
           <div className="text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: value }} />
         ) : (
-          <p className="text-sm text-foreground/90">{typeof value === 'number' ? value.toFixed(2) : value}</p>
+          <p className="text-sm text-foreground/90">{typeof value === 'number' ? `$${value.toFixed(2)}` : value}</p>
         )}
       </div>
     );
@@ -135,14 +135,14 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 <div className="pt-2 border-t border-border mt-4">
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Layers className="w-4 h-4 mr-1.5 text-accent" />Subscription Plans</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {product.monthlyPrice && <DetailItem label="Monthly" value={`$${product.monthlyPrice.toFixed(2)}`} />}
-                        {product.sixMonthPrice && <DetailItem label="6-Month Plan" value={`$${product.sixMonthPrice.toFixed(2)}`} />}
-                        {product.annualPrice && <DetailItem label="Annual Plan" value={`$${product.annualPrice.toFixed(2)}`} />}
+                        {typeof product.monthlyPrice === 'number' && <DetailItem label="Monthly" value={product.monthlyPrice} />}
+                        {typeof product.sixMonthPrice === 'number' && <DetailItem label="6-Month Plan" value={product.sixMonthPrice} />}
+                        {typeof product.annualPrice === 'number' && <DetailItem label="Annual Plan" value={product.annualPrice} />}
                     </div>
                 </div>
             )}
 
-            {product.pricingType === 'Free' && product.pricingTerm === 'Subscription' && product.postTrialPriceAmount && product.postTrialBillingInterval && (
+            {product.pricingType === 'Free' && product.pricingTerm === 'Subscription' && typeof product.postTrialPriceAmount === 'number' && product.postTrialBillingInterval && (
                  <div className="pt-2 border-t border-border mt-4">
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Repeat className="w-4 h-4 mr-1.5 text-accent" />Post-Trial Pricing</h4>
                     <DetailItem label="After Trial" value={`$${product.postTrialPriceAmount.toFixed(2)} / ${product.postTrialBillingInterval.toLowerCase()}`} />
@@ -181,4 +181,3 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     </Dialog>
   );
 }
-

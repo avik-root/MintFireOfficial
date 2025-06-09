@@ -44,7 +44,7 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
     if (product.pricingType === 'Free') {
       if (product.pricingTerm === 'Subscription' && product.trialDuration) {
         let summary = `Free Trial: ${product.trialDuration}`;
-        if (product.postTrialPriceAmount && product.postTrialBillingInterval) {
+        if (typeof product.postTrialPriceAmount === 'number' && product.postTrialBillingInterval) {
             summary += ` -> $${product.postTrialPriceAmount.toFixed(2)}/${product.postTrialBillingInterval.slice(0,2).toLowerCase()}`;
         }
         return summary;
@@ -52,16 +52,18 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
       return `Free - ${product.pricingTerm}`;
     }
     // Paid
-    if (product.pricingTerm === 'Lifetime' && product.priceAmount) {
+    if (product.pricingTerm === 'Lifetime' && typeof product.priceAmount === 'number') {
       return `$${product.priceAmount.toFixed(2)} (Lifetime)`;
     }
     if (product.pricingTerm === 'Subscription') {
       const plans = [];
-      if (product.monthlyPrice) plans.push(`$${product.monthlyPrice.toFixed(2)}/mo`);
-      if (product.sixMonthPrice) plans.push(`$${product.sixMonthPrice.toFixed(2)}/6mo`);
-      if (product.annualPrice) plans.push(`$${product.annualPrice.toFixed(2)}/yr`);
+      if (typeof product.monthlyPrice === 'number') plans.push(`$${product.monthlyPrice.toFixed(2)}/mo`);
+      if (typeof product.sixMonthPrice === 'number') plans.push(`$${product.sixMonthPrice.toFixed(2)}/6mo`);
+      if (typeof product.annualPrice === 'number') plans.push(`$${product.annualPrice.toFixed(2)}/yr`);
+      
       if (plans.length > 0) return plans.join(' | ');
-      return "Subscription (Contact for pricing)";
+      // This case should ideally not be hit if validation for Paid Subscription requires all three prices
+      return "Subscription (Contact for pricing)"; 
     }
     return "Paid (Details unavailable)";
   };

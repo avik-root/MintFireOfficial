@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink, Repeat, Clock, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { cn } from "@/lib/utils"; // Added import
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -182,3 +183,4 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     </Dialog>
   );
 }
+

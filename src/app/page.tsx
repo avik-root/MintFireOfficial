@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Activity, Newspaper, Megaphone, LibraryBig } from 'lucide-react';
+import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 import { getSiteContentItems } from '@/actions/site-content-actions';
 import type { SiteContentItem } from '@/lib/schemas/site-content-schemas';
@@ -27,7 +27,6 @@ const sectionsData: Array<{ title: string; items: FeatureItem[]; sectionIcon: Re
       { id: "lr2", title: "NovaChain Ledger", description: "Next-gen decentralized ledger technology.", icon: CheckCircle, image: "https://placehold.co/600x400.png", dataAiHint: "blockchain network", link: "/services/blockchain"},
     ],
   },
-  // "Upcoming Products", "Early Access Programs", and "Developer Testing" sections are removed by not including them here.
 ];
 
 interface CoreTechnology {
@@ -49,7 +48,6 @@ const coreTechnologiesData: CoreTechnology[] = [
 export default async function Home() {
   const { items: siteContent, error: siteContentError } = await getSiteContentItems();
 
-  const newsItems = siteContent?.filter(item => item.type === 'news' && item.isActive).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
   const announcementItems = siteContent?.filter(item => item.type === 'announcement' && item.isActive).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
 
   const SiteContentCard = ({ item }: { item: SiteContentItem }) => (
@@ -85,7 +83,7 @@ export default async function Home() {
   const LatestReleasesSection = sectionsData.find(sec => sec.sectionId === "latest-releases");
   const OtherProductSections = sectionsData.filter(sec => 
     sec.sectionId !== "latest-releases" &&
-    sec.sectionId !== "upcoming-products" && // Explicitly ensure these are not picked up if accidentally left in sectionsData
+    sec.sectionId !== "upcoming-products" &&
     sec.sectionId !== "early-access" &&
     sec.sectionId !== "dev-testing"
   );
@@ -238,21 +236,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Latest News Section */}
-      <section id="latest-news" className="py-12">
-        <div className="flex items-center mb-8">
-          <Newspaper className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
-          <h2 className="font-headline text-4xl font-bold">Latest News</h2>
-        </div>
-        {siteContentError && <p className="text-destructive">Could not load news items.</p>}
-        {newsItems.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {newsItems.map((item) => <SiteContentCard key={item.id} item={item} />)}
-          </div>
-        ) : (
-          !siteContentError && <p className="text-muted-foreground">No news items at the moment. Check back soon!</p>
-        )}
-      </section>
     </div>
   );
 }
+
+    

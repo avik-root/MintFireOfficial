@@ -1,4 +1,6 @@
 
+"use client";
+
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
@@ -8,56 +10,104 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, Briefcase } from 'lucide-react'; // Added Menu
+import React from 'react'; // Added React for useState
+
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/company", label: "Company" },
+];
+
+const serviceLinks = [
+  { href: "/services/cyber-security", label: "Cyber Security", icon: ShieldCheck },
+  { href: "/services/blockchain", label: "Blockchain", icon: Blocks },
+  { href: "/services/ai", label: "Artificial Intelligence", icon: Cpu },
+  { href: "/services/iot-devices", label: "IoT Devices", icon: Smartphone },
+];
 
 const Header = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 flex h-16 max-w-screen-2xl items-center justify-between">
+      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4">
         <Logo />
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link href="/" className="text-foreground/80 hover:text-primary transition-colors">
-            Home
-          </Link>
-          <Link href="/company" className="text-foreground/80 hover:text-primary transition-colors">
-            Company
-          </Link>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
+          {navLinks.map(link => (
+            <Button key={link.href} variant="ghost" asChild className="text-foreground/80 hover:text-primary transition-colors px-3">
+              <Link href={link.href}>{link.label}</Link>
+            </Button>
+          ))}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="text-foreground/80 hover:text-primary transition-colors px-2 hover:bg-primary/10">
+              <Button variant="ghost" className="text-foreground/80 hover:text-primary transition-colors px-3 hover:bg-primary/10">
                 Services <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link href="/services/cyber-security" className="flex items-center">
-                  <ShieldCheck className="mr-2 h-4 w-4 text-accent glowing-icon" /> Cyber Security
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/services/blockchain" className="flex items-center">
-                  <Blocks className="mr-2 h-4 w-4 text-accent glowing-icon" /> Blockchain
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/services/ai" className="flex items-center">
-                  <Cpu className="mr-2 h-4 w-4 text-accent glowing-icon" /> Artificial Intelligence
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/services/iot-devices" className="flex items-center">
-                  <Smartphone className="mr-2 h-4 w-4 text-accent glowing-icon" /> IoT Devices
-                </Link>
-              </DropdownMenuItem>
+              {serviceLinks.map(service => (
+                <DropdownMenuItem key={service.href} asChild>
+                  <Link href={service.href} className="flex items-center">
+                    <service.icon className="mr-2 h-4 w-4 text-accent glowing-icon" /> {service.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
-        <div className="flex items-center space-x-4">
-          <Link href="/admin/login" className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors">
-            Admin Login
-          </Link>
-          {/* Placeholder for mobile menu trigger if needed in future */}
-          {/* e.g. <Button variant="ghost" size="icon" className="md:hidden"><Menu /></Button> */}
+
+        <div className="hidden md:flex items-center space-x-4">
+          <Button variant="ghost" asChild className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors px-3">
+            <Link href="/admin/login">Admin Login</Link>
+          </Button>
+        </div>
+
+        {/* Mobile Navigation Trigger */}
+        <div className="md:hidden">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Open mobile menu">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[280px] sm:w-[320px] bg-card border-primary/30">
+              <div className="p-6">
+                <div className="mb-6">
+                  <Logo />
+                </div>
+                <nav className="flex flex-col space-y-3">
+                  {navLinks.map((link) => (
+                    <SheetClose key={`mobile-${link.href}`} asChild>
+                      <Button variant="ghost" asChild className="justify-start text-lg text-foreground/90 hover:text-primary px-2 py-3">
+                        <Link href={link.href}>{link.label}</Link>
+                      </Button>
+                    </SheetClose>
+                  ))}
+                  <div className="pt-2">
+                    <h4 className="px-2 pb-2 text-sm font-medium text-muted-foreground">Services</h4>
+                    {serviceLinks.map((service) => (
+                      <SheetClose key={`mobile-${service.href}`} asChild>
+                        <Button variant="ghost" asChild className="w-full justify-start text-lg text-foreground/90 hover:text-primary px-2 py-3">
+                          <Link href={service.href} className="flex items-center w-full">
+                            <service.icon className="mr-3 h-5 w-5 text-accent" />
+                            {service.label}
+                          </Link>
+                        </Button>
+                      </SheetClose>
+                    ))}
+                  </div>
+                  <SheetClose asChild>
+                     <Button variant="ghost" asChild className="justify-start text-lg text-foreground/90 hover:text-primary px-2 py-3 mt-4 border-t border-border/50 pt-5">
+                       <Link href="/admin/login">Admin Login</Link>
+                     </Button>
+                  </SheetClose>
+                </nav>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>

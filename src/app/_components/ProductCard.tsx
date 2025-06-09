@@ -2,10 +2,10 @@
 import type { Product } from '@/lib/schemas/product-schemas';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import Image from 'next/image';
+// Image import removed
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package } from 'lucide-react'; // Zap for Beta/Alpha, CheckCircle for Stable, Package for placeholder
+import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProductCardProps {
@@ -14,7 +14,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const getStatusBadge = (status: string) => {
-    let colorClass = 'bg-slate-600/30 text-slate-400 border-slate-500'; // Default for Upcoming/Deprecated
+    let colorClass = 'bg-slate-600/30 text-slate-400 border-slate-500';
     let Icon = Zap;
 
     if (status === 'Stable') {
@@ -47,10 +47,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       return { href: url, target: '_blank', rel: 'noopener noreferrer' };
     }
     if (url.startsWith('/')) {
-      return { href: url, target: '_self' }; // Internal link
+      return { href: url, target: '_self' };
     }
-    // Assume it's a partial external URL like www.example.com or example.com, or even just a domain.
-    // Prepend https://.
     return { href: `https://${url}`, target: '_blank', rel: 'noopener noreferrer' };
   };
 
@@ -58,22 +56,10 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Card className="layered-card flex flex-col overflow-hidden group h-full transition-all duration-300 ease-in-out hover:shadow-accent/30">
-      {product.imageUrl ? (
-        <div className="relative w-full h-48 overflow-hidden">
-          <Image 
-            src={product.imageUrl} 
-            alt={product.name} 
-            fill 
-            className="object-cover group-hover:scale-105 transition-transform duration-300" 
-            data-ai-hint="product main image"
-          />
-           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-        </div>
-      ) : (
-        <div className="relative w-full h-48 bg-muted flex items-center justify-center">
-            <Package className="w-16 h-16 text-muted-foreground/50" />
-        </div>
-      )}
+      {/* Image display section removed, replaced with a placeholder icon area */}
+      <div className="relative w-full h-48 bg-muted flex items-center justify-center border-b border-border">
+          <Package className="w-16 h-16 text-muted-foreground/50" />
+      </div>
       <CardHeader className="pt-4">
         <div className="flex justify-between items-start mb-1">
           <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors">{product.name}</CardTitle>

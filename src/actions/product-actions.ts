@@ -14,9 +14,10 @@ import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 
 const productsFilePath = path.join(process.cwd(), 'data', 'products.json');
-const UPLOADS_DIR_NAME = 'uploads';
-const PRODUCT_IMAGES_DIR_NAME = 'product-images';
-const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, PRODUCT_IMAGES_DIR_NAME);
+// Constants for image uploads removed as image functionality is being removed.
+// const UPLOADS_DIR_NAME = 'uploads';
+// const PRODUCT_IMAGES_DIR_NAME = 'product-images';
+// const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, PRODUCT_IMAGES_DIR_NAME);
 
 async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<Product[]> {
   try {
@@ -27,21 +28,18 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
       fileContent = await fs.readFile(productsFilePath, 'utf-8');
     } catch (readError: any) {
       if (readError.code === 'ENOENT') {
-        // If file doesn't exist, create it with an empty array
         await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8');
         return [];
       }
-      throw readError; // Re-throw other read errors
+      throw readError;
     }
 
     if (fileContent.trim() === '') {
-      return []; // Treat empty file as empty array
+      return [];
     }
 
     const items = JSON.parse(fileContent);
 
-    // Ensure the parsed content is an array; if not, log error and treat as empty.
-    // This handles cases where the file might have been corrupted to be a non-array JSON.
     if (!Array.isArray(items)) {
       console.error(`Data in ${productsFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array to prevent further errors.`);
       await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8'); 
@@ -57,16 +55,14 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
       parsedItems = parsedItems.filter(product => product.status === params.status);
     }
 
-    // Sort primarily by releaseDate (if available, descending), then by createdAt (descending)
     parsedItems.sort((a, b) => {
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-      if (dateB !== dateA) return dateB - dateA; // Newest release first
+      if (dateB !== dateA) return dateB - dateA;
 
-      // Fallback to createdAt if release dates are the same or not present
       const createdAtA = new Date(a.createdAt).getTime();
       const createdAtB = new Date(b.createdAt).getTime();
-      return createdAtB - createdAtA; // Newest created first
+      return createdAtB - createdAtA;
     });
 
     if (params?.limit) {
@@ -105,33 +101,7 @@ async function saveProducts(items: Product[]): Promise<void> {
   }
 }
 
-// handleImageUpload saves an uploaded file to public/uploads/product-images/
-// and returns its web-accessible path (e.g., /uploads/product-images/filename.png).
-// This path is then stored in products.json.
-async function handleImageUpload(imageFile: File | null): Promise<string | null> {
-  if (!imageFile || imageFile.size === 0) return null;
-
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  if (!allowedTypes.includes(imageFile.type)) {
-    throw new Error('Invalid file type. Only JPEG, PNG, GIF, WEBP are allowed.');
-  }
-  const maxSize = 5 * 1024 * 1024; // 5MB
-  if (imageFile.size > maxSize) {
-    throw new Error('File is too large. Maximum size is 5MB.');
-  }
-
-  await fs.mkdir(publicUploadsDir, { recursive: true });
-  const fileExtension = path.extname(imageFile.name) || '.png'; // Default to .png if no extension
-  const uniqueFilename = `${randomUUID()}${fileExtension}`;
-  const filePath = path.join(publicUploadsDir, uniqueFilename);
-
-  // Convert ArrayBuffer from File to Buffer for fs.writeFile
-  const buffer = Buffer.from(await imageFile.arrayBuffer());
-  await fs.writeFile(filePath, buffer);
-
-  // Return the web-accessible path
-  return `/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/${uniqueFilename}`;
-}
+// handleImageUpload function removed as image functionality is removed.
 
 function transformTags(tagsString?: string): string[] {
   if (!tagsString || tagsString.trim() === "") return [];
@@ -152,21 +122,16 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
   try {
     const rawData: Record<string, any> = {};
     formData.forEach((value, key) => {
-      // Skip file inputs and specific image URL handling fields from FormData for rawData
-      if (key === 'imageFile' || key === 'existingImageUrl') return;
-
       const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
       } else if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
-        // Convert "undefined", "null", or empty string for these optional/nullable fields to actual null
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
           rawData[key] = strValue;
         }
       } else if (key === 'productUrl') {
-        // productUrl can be an empty string or a valid URL. It cannot be null if key is present.
         if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined' || strValue === '') {
           rawData[key] = ""; 
         } else {
@@ -177,23 +142,15 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       }
     });
 
-    // The FormProductSchema is used for client-side validation in the form component.
-    // Here, we can adapt it slightly or use parts of it for server-side processing of rawData.
-    // We omit 'imageUrl' from this parse because 'imageUrl' will be determined by handleImageUpload.
-    const FormProductParseSchema = FormProductSchema.omit({ imageUrl: true });
-    const validation = FormProductParseSchema.safeParse(rawData);
+    // FormProductSchema no longer contains imageUrl.
+    const validation = FormProductSchema.safeParse(rawData);
 
     if (!validation.success) {
       return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
     }
 
     const validatedData = validation.data;
-    const imageFile = formData.get('imageFile') as File | null;
-    let imageUrlFromServer: string | null = null;
-
-    if (imageFile && imageFile.size > 0) {
-      imageUrlFromServer = await handleImageUpload(imageFile);
-    }
+    // Image handling logic removed.
 
     const products = await getProductsInternal(); 
     const now = new Date().toISOString();
@@ -201,13 +158,13 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     const newProduct: Product = {
       id: randomUUID(),
       name: validatedData.name,
-      version: validatedData.version, // Already null if empty/invalid from form
+      version: validatedData.version,
       status: validatedData.status,
-      releaseDate: validatedData.releaseDate, // Already null if empty/invalid from form
+      releaseDate: validatedData.releaseDate,
       description: validatedData.description,
-      longDescription: validatedData.longDescription, // Already null if empty/invalid from form
-      imageUrl: imageUrlFromServer || "", // Use uploaded image path or empty if none
-      productUrl: validatedData.productUrl || "", // Already "" if empty/invalid from form
+      longDescription: validatedData.longDescription,
+      // imageUrl field removed
+      productUrl: validatedData.productUrl || "",
       developer: validatedData.developer,
       pricingType: validatedData.pricingType,
       pricingTerm: validatedData.pricingTerm,
@@ -220,7 +177,7 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     products.push(newProduct);
     await saveProducts(products);
     revalidatePath('/admin/dashboard/products');
-    revalidatePath('/'); // Revalidate homepage
+    revalidatePath('/');
     return { success: true, product: newProduct };
   } catch (error: any) {
     console.error("ADD_PRODUCT_ACTION_ERROR:", error);
@@ -253,21 +210,16 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
   try {
     const rawData: Record<string, any> = {};
      formData.forEach((value, key) => {
-      // Skip file inputs and specific image URL handling fields from FormData for rawData
-      if (key === 'imageFile' || key === 'existingImageUrl') return;
-
       const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
       } else if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
-        // Convert "undefined", "null", or empty string for these optional/nullable fields to actual null
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
           rawData[key] = strValue;
         }
       } else if (key === 'productUrl') {
-           // productUrl can be an empty string or a valid URL. It cannot be null if key is present.
            if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined' || strValue === '') {
             rawData[key] = "";
           } else {
@@ -278,9 +230,8 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       }
     });
 
-    // We omit 'imageUrl' from this parse because 'imageUrl' will be determined by handleImageUpload or existingImageUrl.
-    const FormProductParseSchema = FormProductSchema.omit({ imageUrl: true }).partial();
-    const validation = FormProductParseSchema.safeParse(rawData);
+    // FormProductSchema no longer contains imageUrl.
+    const validation = FormProductSchema.partial().safeParse(rawData);
 
     if (!validation.success) {
       return { success: false, error: "Invalid data provided for update.", errors: validation.error.issues };
@@ -295,41 +246,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     }
 
     const originalProduct = products[productIndex];
-    let imageUrlToSave = originalProduct.imageUrl; // Default to keeping the original image URL/path
-
-    const imageFile = formData.get('imageFile') as File | null;
-    // 'existingImageUrl' from form indicates client's intent regarding current image.
-    // It could be the current path (if kept), or "" (if removed), or not present (if a new file is uploaded).
-    const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null; 
-
-    if (imageFile && imageFile.size > 0) { // New image uploaded
-      // Delete old local image if it exists and is different from the new one
-      if (originalProduct.imageUrl && originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
-        try {
-          const oldImagePath = path.join(process.cwd(), 'public', originalProduct.imageUrl);
-          await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
-        } catch (imgDelError: any) {
-          console.warn(`Failed to delete old product image ${originalProduct.imageUrl}: ${imgDelError.message}`);
-        }
-      }
-      imageUrlToSave = await handleImageUpload(imageFile); // Save new, get its path
-    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "") { 
-      // User explicitly wants to remove the image (sent "" for existingImageUrl)
-      if (originalProduct.imageUrl && originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
-         try {
-          const oldImagePath = path.join(process.cwd(), 'public', originalProduct.imageUrl);
-          await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
-        } catch (imgDelError: any) {
-          console.warn(`Failed to delete old product image ${originalProduct.imageUrl}: ${imgDelError.message}`);
-        }
-      }
-      imageUrlToSave = ""; // Set to empty string
-    } else if (existingImageUrlFromForm !== null) {
-      // User wants to keep the existing image (sent the current imageUrl as existingImageUrl)
-      // or the form didn't change the image part.
-      imageUrlToSave = existingImageUrlFromForm;
-    }
-    // If existingImageUrlFromForm is null (and no new imageFile), imageUrlToSave remains originalProduct.imageUrl.
+    // Image handling logic removed.
    
     const updatedProductData: Product = {
       ...originalProduct,
@@ -345,7 +262,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       pricingTerm: validatedData.pricingTerm ?? originalProduct.pricingTerm,
       tags: validatedData.tagsString !== undefined ? transformTags(validatedData.tagsString) : originalProduct.tags,
       isFeatured: validatedData.isFeatured !== undefined ? validatedData.isFeatured : originalProduct.isFeatured,
-      imageUrl: imageUrlToSave || "", 
+      // imageUrl field removed
       updatedAt: new Date().toISOString(),
     };
 
@@ -353,7 +270,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     await saveProducts(products);
     revalidatePath('/admin/dashboard/products');
     revalidatePath(`/admin/dashboard/products/edit/${id}`);
-    revalidatePath('/'); // Revalidate homepage
+    revalidatePath('/');
     return { success: true, product: updatedProductData };
   } catch (error: any) {
     console.error("UPDATE_PRODUCT_ACTION_ERROR:", error);
@@ -378,24 +295,13 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
       return { success: false, error: "Product not found for deletion." };
     }
 
-    // Delete associated image file if it's a local upload
-    if (productToDelete.imageUrl && productToDelete.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
-      try {
-        const imagePath = path.join(process.cwd(), 'public', productToDelete.imageUrl);
-        await fs.unlink(imagePath).catch(e => console.warn(`Non-critical: Failed to delete image ${imagePath}: ${e.message}`));
-      }
-      catch (imgDelError: any)
-      {
-        // Log deletion error but proceed with deleting product data
-        console.warn(`Failed to delete product image ${productToDelete.imageUrl}: ${imgDelError.message}`);
-      }
-    }
+    // Image deletion logic removed.
 
     const filteredProducts = products.filter(p => p.id !== id);
     await saveProducts(filteredProducts);
 
     revalidatePath('/admin/dashboard/products');
-    revalidatePath('/'); // Revalidate homepage
+    revalidatePath('/');
     return { success: true };
   } catch (error: any)
    {
@@ -411,4 +317,3 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     return { success: false, error: errorMessage };
   }
 }
-    

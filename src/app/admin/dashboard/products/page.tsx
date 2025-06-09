@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getProducts } from "@/actions/product-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Image from "next/image";
+// Image import removed
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { PlusCircle, Edit, Package, AlertTriangle, Search, ArrowUpDown, Loader2, Eye, EyeOff, CalendarDays, DollarSign, Tag } from "lucide-react";
@@ -79,7 +79,6 @@ export default function AdminProductsPage() {
         valA = valA.toLowerCase();
         valB = valB.toLowerCase();
       } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
-        // Handle boolean sort (e.g., true before false)
         valA = valA ? 1 : 0;
         valB = valB ? 1 : 0;
       }
@@ -202,7 +201,7 @@ export default function AdminProductsPage() {
               <table className="min-w-full divide-y divide-border">
                 <thead className="bg-card">
                   <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Image</th>
+                    {/* Image column removed */}
                     <SortableHeader columnKey="name">Name</SortableHeader>
                     <SortableHeader columnKey="status">Status & Version</SortableHeader>
                     <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Pricing</th>
@@ -214,17 +213,7 @@ export default function AdminProductsPage() {
                 <tbody className="bg-background divide-y divide-border">
                   {filteredAndSortedProducts.map((product: Product) => (
                     <tr key={product.id}>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="relative h-10 w-10 rounded-md overflow-hidden border border-border">
-                          <Image 
-                            src={product.imageUrl || `https://placehold.co/40x40.png?text=${product.name.charAt(0)}`} 
-                            alt={product.name} 
-                            fill
-                            className="object-contain" // Use object-contain for logos
-                            data-ai-hint="product logo"
-                          />
-                        </div>
-                      </td>
+                      {/* Image td removed */}
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">{product.name}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm">
                         <Badge variant="outline" className={getStatusColor(product.status)}>

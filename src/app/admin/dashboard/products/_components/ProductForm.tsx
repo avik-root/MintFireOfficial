@@ -12,11 +12,11 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { FormProductSchema, type FormProductInput, type Product, ProductStatusSchema, ProductPricingTypeSchema, ProductPricingTermSchema } from "@/lib/schemas/product-schemas";
-import { Loader2, Save, Package, Tag, GitBranch, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
+import { Loader2, Save, Package, Tag, GitBranch, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Eye, EyeOff } from "lucide-react"; // ImageIcon removed
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import React, { useState, ChangeEvent } from "react";
-import NextImage from 'next/image';
+// NextImage removed as image functionality is removed
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -35,8 +35,9 @@ export default function ProductForm({
 }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Holds the actual File object for new uploads
+  // imagePreview and selectedFile state removed
+  // const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
+  // const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const form = useForm<FormProductInput>({
     resolver: zodResolver(FormProductSchema),
@@ -47,7 +48,7 @@ export default function ProductForm({
       releaseDate: initialData.releaseDate ? new Date(initialData.releaseDate).toISOString() : undefined,
       description: initialData.description,
       longDescription: initialData.longDescription || "",
-      imageUrl: initialData.imageUrl || "", // This stores the path/URL of an *existing* image
+      // imageUrl removed from defaultValues
       productUrl: initialData.productUrl || "",
       developer: initialData.developer,
       pricingType: initialData.pricingType,
@@ -61,7 +62,7 @@ export default function ProductForm({
       releaseDate: undefined,
       description: "",
       longDescription: "",
-      imageUrl: "",
+      // imageUrl removed
       productUrl: "",
       developer: "MintFire R&D",
       pricingType: "Free",
@@ -71,44 +72,20 @@ export default function ProductForm({
     },
   });
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file); // Store the File object for submission
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string); // For client-side preview
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setSelectedFile(null);
-      setImagePreview(initialData?.imageUrl || null); // Keep existing if no new file selected
-    }
-  };
+  // handleImageChange function removed
 
   const handleFormSubmit = async (data: FormProductInput) => {
     const formData = new FormData();
     
-    // Append all form fields from 'data' (react-hook-form state) to FormData,
-    // except for 'imageUrl' which is handled by 'imageFile' or 'existingImageUrl'.
     Object.entries(data).forEach(([key, value]) => {
        if (key === 'isFeatured') {
         formData.append(key, String(value));
-      } else if (value !== undefined && value !== null && key !== 'imageUrl') { // Do not append 'imageUrl' string from form state directly
+      } else if (value !== undefined && value !== null) { // imageUrl key won't exist in data
         formData.append(key, String(value));
       }
     });
 
-    // Handle the image file itself
-    if (selectedFile) {
-      formData.append("imageFile", selectedFile); // Send the new image file
-    } else if (initialData?.imageUrl && !selectedFile && imagePreview) {
-      // If no new file selected, but there's an existing image and preview (meaning user wants to keep it)
-      formData.append("existingImageUrl", initialData.imageUrl); 
-    } else if (!imagePreview && initialData?.imageUrl) { 
-      // If no preview and there was an initial image, it means the user removed it
-       formData.append("existingImageUrl", ""); // Send empty string to indicate removal
-    }
+    // Logic for appending imageFile or existingImageUrl removed.
     
     const result = await onSubmit(formData);
 
@@ -239,36 +216,7 @@ export default function ProductForm({
           )}
         />
 
-        <FormItem>
-          <FormLabel className="flex items-center"><ImageIcon className="mr-2 h-4 w-4 text-muted-foreground"/>Product Image/Logo</FormLabel>
-           <div className="flex items-center gap-4">
-            {imagePreview && (
-                <div className="relative w-24 h-24 rounded-md border border-border overflow-hidden bg-muted flex-shrink-0">
-                <NextImage src={imagePreview} alt="Selected preview" layout="fill" objectFit="contain" data-ai-hint="product image preview" />
-                </div>
-            )}
-            <div className="flex-grow">
-                <FormControl>
-                     {/* This input is for selecting a new image file. Its value is handled by `selectedFile` state. */}
-                    <Input 
-                    type="file" 
-                    accept="image/png, image/jpeg, image/gif, image/webp" 
-                    onChange={handleImageChange} 
-                    disabled={isSubmitting}
-                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                    />
-                </FormControl>
-                 <FormDescription>Upload an image or logo for the product (PNG, JPG, GIF, WEBP). Max 5MB.</FormDescription>
-            </div>
-             {imagePreview && (
-                 <Button variant="ghost" size="sm" onClick={() => {setImagePreview(null); setSelectedFile(null); form.setValue('imageUrl', '');}} disabled={isSubmitting} type="button">
-                    Remove
-                 </Button>
-            )}
-          </div>
-          {/* Message for 'imageUrl' field from FormProductSchema, if any (though direct validation on it is minimal) */}
-          <FormMessage>{form.formState.errors.imageUrl?.message}</FormMessage>
-        </FormItem>
+        {/* Product Image/Logo FormItem removed */}
 
         <FormField
             control={form.control}
@@ -383,5 +331,3 @@ export default function ProductForm({
     </Form>
   );
 }
-
-    

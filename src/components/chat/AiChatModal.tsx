@@ -71,11 +71,11 @@ const AiChatModal = () => {
   if (!isOpen) {
     return (
       <Button
-        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-accent hover:bg-accent/80 text-accent-foreground z-50"
+        className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-transparent border-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground z-50"
         onClick={() => setIsOpen(true)}
         aria-label="Open AI Chat"
       >
-        <Bot size={28} className="text-primary" /> 
+        <Bot size={28} />
       </Button>
     );
   }

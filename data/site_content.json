@@ -11,24 +11,13 @@
     "updatedAt": "2025-06-09T18:46:47.400Z"
   },
   {
-    "id": "67c66641-2ef7-4ace-a2b0-cd699e7a7537",
-    "type": "banner",
-    "title": "Proto",
-    "content": "Testin ",
-    "imageUrl": "",
-    "linkUrl": "",
-    "isActive": true,
-    "createdAt": "2025-06-09T18:47:28.447Z",
-    "updatedAt": "2025-06-09T18:47:28.447Z"
-  },
-  {
+    "id": "8f402daa-788b-413b-bbd7-d9b281198377",
     "type": "announcement",
     "title": "Test1 anc",
     "content": "test hello",
     "imageUrl": "",
     "linkUrl": "",
     "isActive": true,
-    "id": "8f402daa-788b-413b-bbd7-d9b281198377",
     "createdAt": "2025-06-09T18:48:02.018Z",
     "updatedAt": "2025-06-09T18:48:02.018Z"
   }

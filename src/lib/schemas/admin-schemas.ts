@@ -1,7 +1,8 @@
 
 import { z } from 'zod';
 
-export const CreateAdminSchema = z.object({
+// Base schema for admin creation, including password strength rules
+const BaseCreateAdminSchemaContents = {
   adminName: z.string().min(1, { message: "Admin name is required." }),
   adminId: z.string().min(1, { message: "Admin ID is required." }),
   email: z.string().email({ message: "Invalid email address." }),
@@ -17,7 +18,11 @@ export const CreateAdminSchema = z.object({
       message: "Password must contain at least two special characters (e.g., !@#$%).",
     }),
   confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
+};
+
+const BaseCreateAdminObjectSchema = z.object(BaseCreateAdminSchemaContents);
+
+export const CreateAdminSchema = BaseCreateAdminObjectSchema.refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match.",
   path: ["confirmPassword"],
 });
@@ -60,8 +65,8 @@ export const UpdateAdminProfileSchema = z.object({
     if (!newPassword) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "New password is required.", path: ["newPassword"] });
     } else {
-      // Validate new password strength using the rules from CreateAdminSchema's password field
-      const passwordStrengthValidation = CreateAdminSchema.shape.password.safeParse(newPassword);
+      // Validate new password strength using the rules from the base schema's password field
+      const passwordStrengthValidation = BaseCreateAdminObjectSchema.shape.password.safeParse(newPassword);
       if (!passwordStrengthValidation.success) {
         passwordStrengthValidation.error.issues.forEach(issue => {
           ctx.addIssue({ ...issue, path: ["newPassword"] });

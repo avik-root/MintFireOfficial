@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap } from 'lucide-react'; // Zap for Beta/Alpha, CheckCircle for Stable
+import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package } from 'lucide-react'; // Zap for Beta/Alpha, CheckCircle for Stable, Package for placeholder
 import { format } from 'date-fns';
 
 interface ProductCardProps {
@@ -39,6 +39,22 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
     return `Paid - ${pricingTerm}`;
   };
+
+  const getSafeLinkProps = (url: string | null | undefined): { href: string; target?: string; rel?: string } | null => {
+    if (!url || url.trim() === "") return null;
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return { href: url, target: '_blank', rel: 'noopener noreferrer' };
+    }
+    if (url.startsWith('/')) {
+      return { href: url, target: '_self' }; // Internal link
+    }
+    // Assume it's a partial external URL like www.example.com or example.com, or even just a domain.
+    // Prepend https://.
+    return { href: `https://${url}`, target: '_blank', rel: 'noopener noreferrer' };
+  };
+
+  const linkProps = getSafeLinkProps(product.productUrl);
 
   return (
     <Card className="layered-card flex flex-col overflow-hidden group h-full transition-all duration-300 ease-in-out hover:shadow-accent/30">
@@ -85,9 +101,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </CardContent>
       <CardFooter className="pt-4">
-        {product.productUrl ? (
+        {linkProps ? (
           <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
-            <Link href={product.productUrl} target={product.productUrl.startsWith('http') ? "_blank" : "_self"}  rel="noopener noreferrer">
+            <Link href={linkProps.href} target={linkProps.target} rel={linkProps.rel}>
                 View Product <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
           </Button>

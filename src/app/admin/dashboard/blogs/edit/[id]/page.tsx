@@ -1,19 +1,20 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, use } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getBlogPostById, updateBlogPost } from "@/actions/blog-post-actions";
 import BlogPostForm from "../../_components/BlogPostForm";
 import { Edit, Loader2, AlertTriangle } from "lucide-react";
 import type { BlogPost, CreateBlogPostInput } from "@/lib/schemas/blog-post-schemas";
 
-export default function EditBlogPostPage({ params }: { params: { id: string } }) {
+export default function EditBlogPostPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const params = use(paramsPromise);
   const postId = params.id;
 
   const fetchPost = useCallback(async () => {

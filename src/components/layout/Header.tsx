@@ -10,9 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, Briefcase } from 'lucide-react'; // Added Menu
-import React from 'react'; // Added React for useState
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu } from 'lucide-react';
+import React from 'react';
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -35,15 +36,15 @@ const Header = () => {
         <Logo />
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           {navLinks.map(link => (
-            <Button key={link.href} variant="ghost" asChild className="text-foreground/80 hover:text-primary transition-colors px-3">
-              <Link href={link.href}>{link.label}</Link>
-            </Button>
+             <Button key={link.href} variant="ghost" asChild className="text-foreground/80 hover:text-primary transition-colors px-2">
+                <Link href={link.href}>{link.label}</Link>
+             </Button>
           ))}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="text-foreground/80 hover:text-primary transition-colors px-3 hover:bg-primary/10">
+              <Button variant="ghost" className="text-foreground/80 hover:text-primary transition-colors px-2 hover:bg-primary/10">
                 Services <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -59,8 +60,8 @@ const Header = () => {
           </DropdownMenu>
         </nav>
 
-        <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" asChild className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors px-3">
+        <div className="hidden md:block">
+          <Button variant="ghost" asChild className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors">
             <Link href="/admin/login">Admin Login</Link>
           </Button>
         </div>
@@ -73,12 +74,18 @@ const Header = () => {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] sm:w-[320px] bg-card border-primary/30">
-              <div className="p-6">
-                <div className="mb-6">
+            <SheetContent side="right" className="w-[280px] sm:w-[320px] bg-card border-primary/30 flex flex-col p-0">
+              <SheetHeader className="p-4 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <SheetTitle className="font-headline text-xl text-primary">Menu</SheetTitle>
+                  {/* SheetClose is automatically rendered by SheetContent top-right */}
+                </div>
+                <div className="mt-4">
                   <Logo />
                 </div>
-                <nav className="flex flex-col space-y-3">
+              </SheetHeader>
+              <ScrollArea className="flex-grow">
+                <nav className="flex flex-col space-y-3 p-6">
                   {navLinks.map((link) => (
                     <SheetClose key={`mobile-${link.href}`} asChild>
                       <Button variant="ghost" asChild className="justify-start text-lg text-foreground/90 hover:text-primary px-2 py-3">
@@ -105,7 +112,7 @@ const Header = () => {
                      </Button>
                   </SheetClose>
                 </nav>
-              </div>
+              </ScrollArea>
             </SheetContent>
           </Sheet>
         </div>

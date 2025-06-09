@@ -12,7 +12,7 @@ interface TeamMemberCardProps {
 
 export default function TeamMemberCard({ member, onViewDetails }: TeamMemberCardProps) {
   return (
-    <Card 
+    <Card
       className="layered-card flex flex-col overflow-hidden group h-full cursor-pointer hover:shadow-primary/40 transition-all duration-300"
       onClick={() => onViewDetails(member)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onViewDetails(member);}}
@@ -29,7 +29,7 @@ export default function TeamMemberCard({ member, onViewDetails }: TeamMemberCard
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             data-ai-hint="team member photo"
           />
-           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none"></div>
         </div>
       </CardHeader>
       <CardContent className="flex-grow p-4 space-y-1 text-center mt-auto">
@@ -40,4 +40,3 @@ export default function TeamMemberCard({ member, onViewDetails }: TeamMemberCard
     </Card>
   );
 }
-

@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu } from 'lucide-react';
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig } from 'lucide-react';
 import React from 'react';
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/company", label: "Company" },
+  { href: "/blog", label: "Blog" },
 ];
 
 const serviceLinks = [
@@ -83,7 +84,10 @@ const Header = () => {
                   {navLinks.map((link) => (
                     <SheetClose key={`mobile-${link.href}`} asChild>
                        <Button variant="ghost" asChild className="justify-start text-lg text-foreground/90 hover:text-primary px-2 py-3">
-                        <Link href={link.href}>{link.label}</Link>
+                        <Link href={link.href} className="flex items-center w-full">
+                          {link.label === "Blog" && <LibraryBig className="mr-3 h-5 w-5 text-accent" />} 
+                          {link.label}
+                        </Link>
                       </Button>
                     </SheetClose>
                   ))}

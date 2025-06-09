@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Activity, Newspaper, Megaphone, LibraryBig } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Activity, Newspaper, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 import { getSiteContentItems } from '@/actions/site-content-actions';
 import type { SiteContentItem } from '@/lib/schemas/site-content-schemas';
@@ -75,12 +75,6 @@ export default async function Home() {
 
   const newsItems = siteContent?.filter(item => item.type === 'news' && item.isActive).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
   const announcementItems = siteContent?.filter(item => item.type === 'announcement' && item.isActive).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
-
-  const placeholderBlogPosts = [
-    { id: "blog1", title: "The Future of AI in Cybersecurity", description: "Explore how AI is revolutionizing threat detection and response...", image: "https://placehold.co/600x400.png", dataAiHint: "ai technology", link: "#" },
-    { id: "blog2", title: "Decentralization: Beyond Cryptocurrency", description: "Discover the wider applications of blockchain technology...", image: "https://placehold.co/600x400.png", dataAiHint: "blockchain concept", link: "#" },
-    { id: "blog3", title: "IoT Security Challenges in 2024", description: "Understanding and mitigating risks in the expanding IoT landscape.", image: "https://placehold.co/600x400.png", dataAiHint: "iot security", link: "#" },
-  ];
 
   const SiteContentCard = ({ item }: { item: SiteContentItem }) => (
     <Card className="layered-card overflow-hidden group transition-all duration-300 ease-in-out hover:shadow-accent/30 flex flex-col">
@@ -234,44 +228,6 @@ export default async function Home() {
         )}
       </section>
 
-      {/* Latest Blog Posts Section (Placeholder) */}
-      <section id="latest-blog" className="py-12">
-        <div className="flex items-center mb-8">
-          <LibraryBig className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
-          <h2 className="font-headline text-4xl font-bold">From The Blog</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {placeholderBlogPosts.map((post) => (
-            <Card key={post.id} className="layered-card overflow-hidden group transition-all duration-300 ease-in-out hover:shadow-accent/30 flex flex-col">
-              <CardHeader className="p-0">
-                 <div className="relative w-full h-48 mb-4 overflow-hidden">
-                    <Image src={post.image} alt={post.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" data-ai-hint={post.dataAiHint}/>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  </div>
-                <div className="p-6 pt-0">
-                   <CardTitle className="font-headline text-2xl group-hover:text-foreground transition-colors">{post.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">{post.description}</p>
-              </CardContent>
-              <CardFooter>
-                 <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
-                   <Link href={post.link}>Read More <ArrowRight className="ml-2 w-4 h-4" /></Link>
-                 </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-        <div className="text-center mt-8">
-            <Button variant="outline" size="lg" className="shadow-lg shadow-accent/30">
-                <Link href="#">Visit Our Blog</Link>
-            </Button>
-        </div>
-      </section>
-
     </div>
   );
 }
-
-    

@@ -69,7 +69,7 @@ export async function addSiteContentItem(data: CreateSiteContentItemInput): Prom
     items.push(newItem);
     await saveSiteContentItems(items);
     revalidatePath('/admin/dashboard/site-content');
-    revalidatePath('/'); // Also revalidate home page if content is displayed there
+    revalidatePath('/'); // Revalidate home page
     return { success: true, item: newItem };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to add site content item." };
@@ -90,9 +90,6 @@ export async function getSiteContentItemById(id: string): Promise<{ item?: SiteC
 }
 
 export async function updateSiteContentItem(id: string, data: UpdateSiteContentItemInput): Promise<{ success: boolean; item?: SiteContentItem; error?: string, errors?: z.ZodIssue[] }> {
-  // Use CreateSiteContentItemSchema for validating the input for an update
-  // as all fields are expected, even if only some are changed by the user.
-  // The form should submit all fields.
   const validation = CreateSiteContentItemSchema.safeParse(data);
    if (!validation.success) {
     return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
@@ -107,16 +104,16 @@ export async function updateSiteContentItem(id: string, data: UpdateSiteContentI
     }
 
     const updatedItemData: SiteContentItem = {
-      ...items[itemIndex], // Keep existing id and createdAt
-      ...validation.data, // Apply all validated data from the form
-      updatedAt: new Date().toISOString(), // Update the updatedAt timestamp
+      ...items[itemIndex], 
+      ...validation.data, 
+      updatedAt: new Date().toISOString(), 
     };
     
     items[itemIndex] = updatedItemData;
     await saveSiteContentItems(items);
     revalidatePath('/admin/dashboard/site-content');
     revalidatePath(`/admin/dashboard/site-content/edit/${id}`);
-    revalidatePath('/'); 
+    revalidatePath('/'); // Revalidate home page
     return { success: true, item: updatedItemData };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update site content item." };
@@ -134,10 +131,9 @@ export async function deleteSiteContentItem(id: string): Promise<{ success: bool
 
     await saveSiteContentItems(filteredItems);
     revalidatePath('/admin/dashboard/site-content');
-    revalidatePath('/');
+    revalidatePath('/'); // Revalidate home page
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to delete site content item." };
   }
 }
-

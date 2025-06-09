@@ -1,4 +1,3 @@
-
 [
   {
     "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -8,7 +7,6 @@
     "releaseDate": "2025-09-01T10:00:00.000Z",
     "description": "Next-gen AI engine for predictive analytics and real-time decision making.",
     "longDescription": "InsightAI Engine leverages advanced machine learning models to provide actionable insights from complex datasets. Designed for scalability and ease of integration. Coming soon!",
-    "imageUrl": "",
     "productUrl": "https://la-interior.onrender.com",
     "developer": "MintFire AI Division",
     "pricingType": "Paid",
@@ -20,7 +18,7 @@
     ],
     "isFeatured": true,
     "createdAt": "2025-06-10T12:10:00.000Z",
-    "updatedAt": "2025-06-09T21:57:08.601Z"
+    "updatedAt": "2025-06-09T22:07:18.433Z"
   },
   {
     "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
@@ -30,7 +28,6 @@
     "releaseDate": "2025-06-01T10:00:00.000Z",
     "description": "Intuitive visual development environment for smart contracts and dApps.",
     "longDescription": "ChainWeaver Studio simplifies blockchain development with a drag-and-drop interface, pre-built templates, and seamless deployment to multiple networks. Currently in public beta.",
-    "imageUrl": "",
     "productUrl": "https://la-interior.onrender.com",
     "developer": "MintFire Labs",
     "pricingType": "Free",
@@ -52,7 +49,6 @@
     "releaseDate": "2025-05-15T10:00:00.000Z",
     "description": "Comprehensive enterprise-grade cyber security suite.",
     "longDescription": "CyberGuard Pro offers multi-layered protection against advanced threats, including malware, ransomware, and phishing attacks. Features real-time monitoring, AI-driven threat detection, and automated incident response.",
-    "imageUrl": "",
     "productUrl": "",
     "developer": "MintFire R&D",
     "pricingType": "Paid",

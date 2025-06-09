@@ -31,22 +31,23 @@ export const ProductSchema = z.object({
   releaseDate: z.string().datetime({ message: "Invalid date format for release date." }).optional().nullable(),
   description: z.string().min(1, "Description is required."),
   longDescription: z.string().optional().nullable(), // For more detailed product page
-  // imageUrl field removed
   productUrl: z.string().url("Invalid product URL.").optional().or(z.literal('')),
   developer: z.string().min(1, "Developer name is required (e.g., MintFire R&D)."),
   
   pricingType: ProductPricingTypeSchema.default('Free'),
-  pricingTerm: ProductPricingTermSchema.default('Lifetime'), // Default to Free Lifetime if Free
+  pricingTerm: ProductPricingTermSchema.default('Lifetime'), 
 
   tags: z.array(z.string()).optional().default([]),
-  isFeatured: z.boolean().default(false), // To feature on homepage or specific sections
+  isFeatured: z.boolean().default(false),
+  
+  couponDetails: z.string().optional().nullable(),
+  activationDetails: z.string().optional().nullable(),
   
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
 export type Product = z.infer<typeof ProductSchema>;
 
-// Schema for react-hook-form in the client component
 export const FormProductSchema = z.object({
   name: z.string().min(1, "Product name is required."),
   version: z.string().optional().nullable(),
@@ -60,9 +61,10 @@ export const FormProductSchema = z.object({
   pricingType: ProductPricingTypeSchema,
   pricingTerm: ProductPricingTermSchema,
 
-  tagsString: z.string().optional(), // For form input
+  tagsString: z.string().optional(), 
   isFeatured: z.boolean().default(false),
   
-  // imageUrl field removed from form schema as well.
+  couponDetails: z.string().optional().nullable(),
+  activationDetails: z.string().optional().nullable(),
 });
 export type FormProductInput = z.infer<typeof FormProductSchema>;

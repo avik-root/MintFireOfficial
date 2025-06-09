@@ -12,11 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { FormProductSchema, type FormProductInput, type Product, ProductStatusSchema, ProductPricingTypeSchema, ProductPricingTermSchema } from "@/lib/schemas/product-schemas";
-import { Loader2, Save, Package, Tag, GitBranch, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Eye, EyeOff } from "lucide-react"; // ImageIcon removed
+import { Loader2, Save, Package, Tag, GitBranch, CalendarDays, MessageSquare, Link as LinkIcon, Users, DollarSign, Award, Eye, EyeOff, Ticket, KeyRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import React, { useState, ChangeEvent } from "react";
-// NextImage removed as image functionality is removed
+import React from "react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -35,9 +34,6 @@ export default function ProductForm({
 }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  // imagePreview and selectedFile state removed
-  // const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
-  // const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const form = useForm<FormProductInput>({
     resolver: zodResolver(FormProductSchema),
@@ -48,13 +44,14 @@ export default function ProductForm({
       releaseDate: initialData.releaseDate ? new Date(initialData.releaseDate).toISOString() : undefined,
       description: initialData.description,
       longDescription: initialData.longDescription || "",
-      // imageUrl removed from defaultValues
       productUrl: initialData.productUrl || "",
       developer: initialData.developer,
       pricingType: initialData.pricingType,
       pricingTerm: initialData.pricingTerm,
       tagsString: initialData.tags?.join(', ') || '',
       isFeatured: initialData.isFeatured,
+      couponDetails: initialData.couponDetails || "",
+      activationDetails: initialData.activationDetails || "",
     } : {
       name: "",
       version: "",
@@ -62,17 +59,16 @@ export default function ProductForm({
       releaseDate: undefined,
       description: "",
       longDescription: "",
-      // imageUrl removed
       productUrl: "",
       developer: "MintFire R&D",
       pricingType: "Free",
       pricingTerm: "Lifetime",
       tagsString: "",
       isFeatured: false,
+      couponDetails: "",
+      activationDetails: "",
     },
   });
-
-  // handleImageChange function removed
 
   const handleFormSubmit = async (data: FormProductInput) => {
     const formData = new FormData();
@@ -80,12 +76,10 @@ export default function ProductForm({
     Object.entries(data).forEach(([key, value]) => {
        if (key === 'isFeatured') {
         formData.append(key, String(value));
-      } else if (value !== undefined && value !== null) { // imageUrl key won't exist in data
+      } else if (value !== undefined && value !== null) { 
         formData.append(key, String(value));
       }
     });
-
-    // Logic for appending imageFile or existingImageUrl removed.
     
     const result = await onSubmit(formData);
 
@@ -216,8 +210,6 @@ export default function ProductForm({
           )}
         />
 
-        {/* Product Image/Logo FormItem removed */}
-
         <FormField
             control={form.control}
             name="productUrl"
@@ -289,6 +281,32 @@ export default function ProductForm({
               <FormLabel className="flex items-center"><Tag className="mr-2 h-4 w-4 text-muted-foreground"/>Tags (Optional)</FormLabel>
               <FormControl><Input placeholder="e.g., security, enterprise, new" {...field} value={field.value ?? ""} disabled={isSubmitting}/></FormControl>
               <FormDescription>Comma-separated list of tags.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="couponDetails"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center"><Ticket className="mr-2 h-4 w-4 text-muted-foreground"/>Coupon Details (Optional)</FormLabel>
+              <FormControl><Textarea placeholder="e.g., Use code MINT20 for 20% off!" {...field} value={field.value ?? ""} rows={2} disabled={isSubmitting} /></FormControl>
+              <FormDescription>Information about available coupons or discounts.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="activationDetails"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center"><KeyRound className="mr-2 h-4 w-4 text-muted-foreground"/>Activation Details (Optional)</FormLabel>
+              <FormControl><Textarea placeholder="e.g., Activation key sent via email. Check spam folder." {...field} value={field.value ?? ""} rows={2} disabled={isSubmitting} /></FormControl>
+              <FormDescription>Information about product activation or licensing.</FormDescription>
               <FormMessage />
             </FormItem>
           )}

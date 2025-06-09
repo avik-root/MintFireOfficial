@@ -2,10 +2,9 @@
 import type { Product } from '@/lib/schemas/product-schemas';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-// Image import removed
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package } from 'lucide-react';
+import { ArrowRight, DollarSign, Users, CalendarDays, CheckCircle, Zap, Package, Ticket, KeyRound, Info } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProductCardProps {
@@ -56,9 +55,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Card className="layered-card flex flex-col overflow-hidden group h-full transition-all duration-300 ease-in-out hover:shadow-accent/30">
-      {/* Image display section removed, replaced with a placeholder icon area */}
-      <div className="relative w-full h-48 bg-muted flex items-center justify-center border-b border-border">
-          <Package className="w-16 h-16 text-muted-foreground/50" />
+      <div className="relative w-full h-40 bg-muted flex items-center justify-center border-b border-border group-hover:bg-muted/80 transition-colors">
+          <Package className="w-16 h-16 text-muted-foreground/50 group-hover:scale-105 group-hover:text-accent transition-all duration-300 ease-in-out" />
       </div>
       <CardHeader className="pt-4">
         <div className="flex justify-between items-start mb-1">
@@ -71,8 +69,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="flex-grow py-0">
+      <CardContent className="flex-grow py-2 space-y-3">
         <p className="text-sm text-muted-foreground line-clamp-3 mb-3">{product.description}</p>
+        
         <div className="space-y-1.5 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-accent" />
@@ -81,7 +80,22 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.releaseDate && (
                 <div className="flex items-center gap-1.5">
                     <CalendarDays className="w-3.5 h-3.5 text-accent" />
-                    <span>Released: {format(new Date(product.releaseDate), "MMM d, yyyy")}</span>
+                    <span>
+                        {product.status === 'Upcoming' ? 'Expected: ' : 'Released: '} 
+                        {format(new Date(product.releaseDate), "MMM d, yyyy")}
+                    </span>
+                </div>
+            )}
+             {product.couponDetails && (
+                <div className="flex items-start gap-1.5">
+                    <Ticket className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
+                    <span>Coupon: {product.couponDetails}</span>
+                </div>
+            )}
+            {product.activationDetails && (
+                <div className="flex items-start gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
+                    <span>Activation: {product.activationDetails}</span>
                 </div>
             )}
         </div>
@@ -90,11 +104,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         {linkProps ? (
           <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
             <Link href={linkProps.href} target={linkProps.target} rel={linkProps.rel}>
-                View Product <ArrowRight className="ml-2 w-4 h-4" />
+                View Details <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
           </Button>
         ) : (
-          <span className="text-sm text-muted-foreground italic">More details soon</span>
+          <span className="text-sm text-muted-foreground italic flex items-center">
+            <Info className="w-3.5 h-3.5 mr-1.5 text-muted-foreground/70" /> More details soon
+            </span>
         )}
       </CardFooter>
     </Card>

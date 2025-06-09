@@ -14,10 +14,6 @@ import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 
 const productsFilePath = path.join(process.cwd(), 'data', 'products.json');
-// Constants for image uploads removed as image functionality is being removed.
-// const UPLOADS_DIR_NAME = 'uploads';
-// const PRODUCT_IMAGES_DIR_NAME = 'product-images';
-// const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, PRODUCT_IMAGES_DIR_NAME);
 
 async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<Product[]> {
   try {
@@ -31,11 +27,11 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
         await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8');
         return [];
       }
-      throw readError;
+      throw readError; // Re-throw other read errors
     }
 
     if (fileContent.trim() === '') {
-      return [];
+      return []; // Treat empty file as empty array
     }
 
     const items = JSON.parse(fileContent);
@@ -60,6 +56,7 @@ async function getProductsInternal(params?: { isFeatured?: boolean; limit?: numb
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
       if (dateB !== dateA) return dateB - dateA;
 
+      // Fallback sort by createdAt if release dates are the same or not present
       const createdAtA = new Date(a.createdAt).getTime();
       const createdAtB = new Date(b.createdAt).getTime();
       return createdAtB - createdAtA;
@@ -101,8 +98,6 @@ async function saveProducts(items: Product[]): Promise<void> {
   }
 }
 
-// handleImageUpload function removed as image functionality is removed.
-
 function transformTags(tagsString?: string): string[] {
   if (!tagsString || tagsString.trim() === "") return [];
   return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
@@ -125,7 +120,7 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
-      } else if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
+      } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails'].includes(key)) {
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
@@ -142,7 +137,6 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       }
     });
 
-    // FormProductSchema no longer contains imageUrl.
     const validation = FormProductSchema.safeParse(rawData);
 
     if (!validation.success) {
@@ -150,8 +144,6 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
     }
 
     const validatedData = validation.data;
-    // Image handling logic removed.
-
     const products = await getProductsInternal(); 
     const now = new Date().toISOString();
 
@@ -163,13 +155,14 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
       releaseDate: validatedData.releaseDate,
       description: validatedData.description,
       longDescription: validatedData.longDescription,
-      // imageUrl field removed
       productUrl: validatedData.productUrl || "",
       developer: validatedData.developer,
       pricingType: validatedData.pricingType,
       pricingTerm: validatedData.pricingTerm,
       tags: transformTags(validatedData.tagsString),
       isFeatured: validatedData.isFeatured, 
+      couponDetails: validatedData.couponDetails,
+      activationDetails: validatedData.activationDetails,
       createdAt: now,
       updatedAt: now,
     };
@@ -213,7 +206,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       const strValue = String(value).trim();
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
-      } else if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
+      } else if (['releaseDate', 'version', 'longDescription', 'couponDetails', 'activationDetails'].includes(key)) {
         if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
           rawData[key] = null;
         } else {
@@ -225,12 +218,11 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
           } else {
             rawData[key] = strValue;
           }
-        } else {
+      } else {
         rawData[key] = strValue;
       }
     });
 
-    // FormProductSchema no longer contains imageUrl.
     const validation = FormProductSchema.partial().safeParse(rawData);
 
     if (!validation.success) {
@@ -246,7 +238,6 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
     }
 
     const originalProduct = products[productIndex];
-    // Image handling logic removed.
    
     const updatedProductData: Product = {
       ...originalProduct,
@@ -262,7 +253,8 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
       pricingTerm: validatedData.pricingTerm ?? originalProduct.pricingTerm,
       tags: validatedData.tagsString !== undefined ? transformTags(validatedData.tagsString) : originalProduct.tags,
       isFeatured: validatedData.isFeatured !== undefined ? validatedData.isFeatured : originalProduct.isFeatured,
-      // imageUrl field removed
+      couponDetails: validatedData.couponDetails !== undefined ? validatedData.couponDetails : originalProduct.couponDetails,
+      activationDetails: validatedData.activationDetails !== undefined ? validatedData.activationDetails : originalProduct.activationDetails,
       updatedAt: new Date().toISOString(),
     };
 
@@ -294,8 +286,6 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     if (!productToDelete) {
       return { success: false, error: "Product not found for deletion." };
     }
-
-    // Image deletion logic removed.
 
     const filteredProducts = products.filter(p => p.id !== id);
     await saveProducts(filteredProducts);

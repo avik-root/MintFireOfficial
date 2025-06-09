@@ -6,10 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getProducts } from "@/actions/product-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-// Image import removed
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { PlusCircle, Edit, Package, AlertTriangle, Search, ArrowUpDown, Loader2, Eye, EyeOff, CalendarDays, DollarSign, Tag } from "lucide-react";
+import { PlusCircle, Edit, Package, AlertTriangle, Search, ArrowUpDown, Loader2, Eye, EyeOff, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info } from "lucide-react";
 import DeleteProductButton from "./_components/DeleteProductButton";
 import type { Product } from "@/lib/schemas/product-schemas";
 import { Badge } from "@/components/ui/badge";
@@ -64,7 +63,9 @@ export default function AdminProductsPage() {
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.developer.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.version && product.version.toLowerCase().includes(searchTerm.toLowerCase()))
+        (product.version && product.version.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.couponDetails && product.couponDetails.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.activationDetails && product.activationDetails.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -136,6 +137,17 @@ export default function AdminProductsPage() {
     </th>
   );
 
+  const InfoCell = ({ icon: Icon, text }: { icon: React.ElementType; text: string | null | undefined }) => {
+    if (!text) return <span className="text-muted-foreground/50 italic">N/A</span>;
+    return (
+      <div className="flex items-center gap-1.5" title={text}>
+        <Icon className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+        <span className="truncate max-w-[100px]">{text}</span>
+      </div>
+    );
+  };
+
+
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
       <Card className="layered-card w-full">
@@ -159,7 +171,7 @@ export default function AdminProductsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search by name, developer, status..."
+                placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-full"
@@ -201,11 +213,12 @@ export default function AdminProductsPage() {
               <table className="min-w-full divide-y divide-border">
                 <thead className="bg-card">
                   <tr>
-                    {/* Image column removed */}
                     <SortableHeader columnKey="name">Name</SortableHeader>
                     <SortableHeader columnKey="status">Status & Version</SortableHeader>
                     <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Pricing</th>
                     <SortableHeader columnKey="releaseDate">Release Date</SortableHeader>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Coupons</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Activation</th>
                     <SortableHeader columnKey="isFeatured">Featured</SortableHeader>
                     <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
@@ -213,7 +226,6 @@ export default function AdminProductsPage() {
                 <tbody className="bg-background divide-y divide-border">
                   {filteredAndSortedProducts.map((product: Product) => (
                     <tr key={product.id}>
-                      {/* Image td removed */}
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">{product.name}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm">
                         <Badge variant="outline" className={getStatusColor(product.status)}>
@@ -225,6 +237,12 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {product.releaseDate ? format(new Date(product.releaseDate), "PPP") : 'N/A'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                         <InfoCell icon={Ticket} text={product.couponDetails} />
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                        <InfoCell icon={KeyRound} text={product.activationDetails} />
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm">
                         <Badge variant={product.isFeatured ? "default" : "secondary"} 

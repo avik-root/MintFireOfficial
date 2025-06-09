@@ -17,14 +17,17 @@ export const CreateAdminSchema = z.object({
       message: "Password must contain at least two special characters (e.g., !@#$%).",
     }),
   confirmPassword: z.string(),
-}).refine(async (data) => data.password === data.confirmPassword, {
+}).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match.",
   path: ["confirmPassword"],
 });
 export type CreateAdminInput = z.infer<typeof CreateAdminSchema>;
 
 export const LoginAdminSchema = z.object({
+  adminName: z.string().min(1, { message: "Admin name is required." }),
+  adminId: z.string().min(1, { message: "Admin ID is required." }),
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 export type LoginAdminInput = z.infer<typeof LoginAdminSchema>;
+

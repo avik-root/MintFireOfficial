@@ -85,17 +85,22 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
 export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string }> {
   try {
     const admins = await getAdmins();
-    const admin = admins.find(a => a.email === data.email);
+    const admin = admins.find(a => 
+      a.email === data.email &&
+      a.adminName === data.adminName &&
+      a.adminId === data.adminId
+    );
+
     if (!admin) {
-      return { success: false, message: "Invalid email or password." };
+      return { success: false, message: "Invalid credentials." };
     }
     // In a real app, compare with the hashed password
     // const passwordMatch = await bcrypt.compare(data.password, admin.password);
     // if (!passwordMatch) {
-    //   return { success: false, message: "Invalid email or password." };
+    //   return { success: false, message: "Invalid credentials." };
     // }
     if (admin.password !== data.password) { // Plain text comparison (NOT FOR PRODUCTION)
-        return { success: false, message: "Invalid email or password." };
+        return { success: false, message: "Invalid credentials." };
     }
     return { success: true, message: "Login successful! Redirecting..." };
   } catch (error: any) {

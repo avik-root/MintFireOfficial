@@ -19,7 +19,7 @@ export default function TeamMemberDetailModal({ member, isOpen, onClose }: TeamM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] p-0 layered-card border-primary shadow-2xl shadow-primary/30">
+      <DialogContent className="sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] p-0 border-primary shadow-2xl shadow-primary/30">
         <DialogHeader className="p-6 pb-0 relative">
             <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-accent shadow-lg flex-shrink-0">

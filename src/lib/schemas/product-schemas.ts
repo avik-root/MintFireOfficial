@@ -31,7 +31,7 @@ export const ProductSchema = z.object({
   releaseDate: z.string().datetime({ message: "Invalid date format for release date." }).optional().nullable(),
   description: z.string().min(1, "Description is required."),
   longDescription: z.string().optional().nullable(), // For more detailed product page
-  imageUrl: z.string().optional().or(z.literal('')), // Path to image
+  imageUrl: z.string().optional().or(z.literal('')), // Path to uploaded image (e.g., /uploads/product-images/image.png) or an external URL.
   productUrl: z.string().url("Invalid product URL.").optional().or(z.literal('')),
   developer: z.string().min(1, "Developer name is required (e.g., MintFire R&D)."),
   
@@ -63,7 +63,10 @@ export const FormProductSchema = z.object({
   tagsString: z.string().optional(), // For form input
   isFeatured: z.boolean().default(false),
   
-  // imageFile will be handled via FormData
-  imageUrl: z.string().optional(), // For displaying current image path
+  // This imageUrl field in the form holds the *string path* of an existing image if editing,
+  // or is used to manage the preview. The actual image *file* (if a new one is selected)
+  // is handled separately by the 'imageFile' input in the form component and processed from FormData in server actions.
+  imageUrl: z.string().optional(), 
 });
 export type FormProductInput = z.infer<typeof FormProductSchema>;
+

@@ -1,5 +1,48 @@
-
 [
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "InsightAI Engine",
+    "version": "Pre-Alpha",
+    "status": "Upcoming",
+    "releaseDate": "2025-09-01T10:00:00.000Z",
+    "description": "Next-gen AI engine for predictive analytics and real-time decision making.",
+    "longDescription": "InsightAI Engine leverages advanced machine learning models to provide actionable insights from complex datasets. Designed for scalability and ease of integration. Coming soon!",
+    "imageUrl": "",
+    "productUrl": "https://la-interior.onrender.com",
+    "developer": "MintFire AI Division",
+    "pricingType": "Paid",
+    "pricingTerm": "Subscription",
+    "tags": [
+      "ai",
+      "analytics",
+      "upcoming"
+    ],
+    "isFeatured": true,
+    "createdAt": "2025-06-10T12:10:00.000Z",
+    "updatedAt": "2025-06-09T21:57:08.601Z"
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    "name": "ChainWeaver Studio",
+    "version": "0.8.1 Beta",
+    "status": "Beta",
+    "releaseDate": "2025-06-01T10:00:00.000Z",
+    "description": "Intuitive visual development environment for smart contracts and dApps.",
+    "longDescription": "ChainWeaver Studio simplifies blockchain development with a drag-and-drop interface, pre-built templates, and seamless deployment to multiple networks. Currently in public beta.",
+    "imageUrl": "https://placehold.co/600x400.png",
+    "productUrl": "https://la-interior.onrender.com",
+    "developer": "MintFire Labs",
+    "pricingType": "Free",
+    "pricingTerm": "Lifetime",
+    "tags": [
+      "blockchain",
+      "developer tools",
+      "beta"
+    ],
+    "isFeatured": true,
+    "createdAt": "2025-06-10T12:05:00.000Z",
+    "updatedAt": "2025-06-09T21:51:50.669Z"
+  },
   {
     "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "name": "CyberGuard Pro",
@@ -13,45 +56,13 @@
     "developer": "MintFire R&D",
     "pricingType": "Paid",
     "pricingTerm": "Subscription",
-    "tags": ["security", "enterprise", "ai"],
+    "tags": [
+      "security",
+      "enterprise",
+      "ai"
+    ],
     "isFeatured": true,
     "createdAt": "2025-06-10T12:00:00.000Z",
     "updatedAt": "2025-06-10T12:00:00.000Z"
-  },
-  {
-    "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-    "name": "ChainWeaver Studio",
-    "version": "0.8.1 Beta",
-    "status": "Beta",
-    "releaseDate": "2025-06-01T10:00:00.000Z",
-    "description": "Intuitive visual development environment for smart contracts and dApps.",
-    "longDescription": "ChainWeaver Studio simplifies blockchain development with a drag-and-drop interface, pre-built templates, and seamless deployment to multiple networks. Currently in public beta.",
-    "imageUrl": "https://placehold.co/600x400.png",
-    "productUrl": "https://mintfire.com/chainweaver",
-    "developer": "MintFire Labs",
-    "pricingType": "Free",
-    "pricingTerm": "Lifetime",
-    "tags": ["blockchain", "developer tools", "beta"],
-    "isFeatured": true,
-    "createdAt": "2025-06-10T12:05:00.000Z",
-    "updatedAt": "2025-06-10T12:05:00.000Z"
-  },
-  {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "InsightAI Engine",
-    "version": "Pre-Alpha",
-    "status": "Upcoming",
-    "releaseDate": "2025-09-01T10:00:00.000Z",
-    "description": "Next-gen AI engine for predictive analytics and real-time decision making.",
-    "longDescription": "InsightAI Engine leverages advanced machine learning models to provide actionable insights from complex datasets. Designed for scalability and ease of integration. Coming soon!",
-    "imageUrl": "https://placehold.co/600x400.png",
-    "productUrl": "",
-    "developer": "MintFire AI Division",
-    "pricingType": "Paid",
-    "pricingTerm": "Subscription",
-    "tags": ["ai", "analytics", "upcoming"],
-    "isFeatured": false,
-    "createdAt": "2025-06-10T12:10:00.000Z",
-    "updatedAt": "2025-06-10T12:10:00.000Z"
   }
 ]

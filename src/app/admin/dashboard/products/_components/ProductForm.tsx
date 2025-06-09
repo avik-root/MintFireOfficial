@@ -36,7 +36,7 @@ export default function ProductForm({
   const router = useRouter();
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Holds the actual File object for new uploads
 
   const form = useForm<FormProductInput>({
     resolver: zodResolver(FormProductSchema),
@@ -47,7 +47,7 @@ export default function ProductForm({
       releaseDate: initialData.releaseDate ? new Date(initialData.releaseDate).toISOString() : undefined,
       description: initialData.description,
       longDescription: initialData.longDescription || "",
-      imageUrl: initialData.imageUrl || "", 
+      imageUrl: initialData.imageUrl || "", // This stores the path/URL of an *existing* image
       productUrl: initialData.productUrl || "",
       developer: initialData.developer,
       pricingType: initialData.pricingType,
@@ -74,10 +74,10 @@ export default function ProductForm({
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      setSelectedFile(file); // Store the File object for submission
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setImagePreview(reader.result as string); // For client-side preview
       };
       reader.readAsDataURL(file);
     } else {
@@ -89,20 +89,25 @@ export default function ProductForm({
   const handleFormSubmit = async (data: FormProductInput) => {
     const formData = new FormData();
     
+    // Append all form fields from 'data' (react-hook-form state) to FormData,
+    // except for 'imageUrl' which is handled by 'imageFile' or 'existingImageUrl'.
     Object.entries(data).forEach(([key, value]) => {
        if (key === 'isFeatured') {
         formData.append(key, String(value));
-      } else if (value !== undefined && value !== null && key !== 'imageUrl') {
+      } else if (value !== undefined && value !== null && key !== 'imageUrl') { // Do not append 'imageUrl' string from form state directly
         formData.append(key, String(value));
       }
     });
 
+    // Handle the image file itself
     if (selectedFile) {
-      formData.append("imageFile", selectedFile);
-    } else if (initialData?.imageUrl && !selectedFile && imagePreview) { // if imagePreview is not null means user wants to keep the old image
-      formData.append("existingImageUrl", initialData.imageUrl);
-    } else if (!imagePreview && initialData?.imageUrl) { // if imagePreview is null it means user wants to remove the image
-       formData.append("existingImageUrl", ""); // Send empty to indicate removal
+      formData.append("imageFile", selectedFile); // Send the new image file
+    } else if (initialData?.imageUrl && !selectedFile && imagePreview) {
+      // If no new file selected, but there's an existing image and preview (meaning user wants to keep it)
+      formData.append("existingImageUrl", initialData.imageUrl); 
+    } else if (!imagePreview && initialData?.imageUrl) { 
+      // If no preview and there was an initial image, it means the user removed it
+       formData.append("existingImageUrl", ""); // Send empty string to indicate removal
     }
     
     const result = await onSubmit(formData);
@@ -244,6 +249,7 @@ export default function ProductForm({
             )}
             <div className="flex-grow">
                 <FormControl>
+                     {/* This input is for selecting a new image file. Its value is handled by `selectedFile` state. */}
                     <Input 
                     type="file" 
                     accept="image/png, image/jpeg, image/gif, image/webp" 
@@ -260,6 +266,7 @@ export default function ProductForm({
                  </Button>
             )}
           </div>
+          {/* Message for 'imageUrl' field from FormProductSchema, if any (though direct validation on it is minimal) */}
           <FormMessage>{form.formState.errors.imageUrl?.message}</FormMessage>
         </FormItem>
 

@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Activity, Newspaper, Megaphone } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Cpu, GitBranch, Smartphone, Sparkles, TestTube2, ShieldCheck, Blocks, Activity, Newspaper, Megaphone, LibraryBig } from 'lucide-react';
 import Link from 'next/link';
 import { getSiteContentItems } from '@/actions/site-content-actions';
 import type { SiteContentItem } from '@/lib/schemas/site-content-schemas';
@@ -106,6 +106,10 @@ export default async function Home() {
     </Card>
   );
 
+  const LatestReleasesSection = sectionsData.find(sec => sec.sectionId === "latest-releases");
+  const OtherProductSections = sectionsData.filter(sec => sec.sectionId !== "latest-releases");
+
+
   return (
     <div className="space-y-16">
       <section className="text-center py-16 md:py-24 bg-gradient-to-br from-background to-primary/10 rounded-xl shadow-2xl border border-primary/30">
@@ -127,7 +131,64 @@ export default async function Home() {
         </div>
       </section>
 
-      {sectionsData.map((section) => (
+      {/* Latest Releases Section */}
+      {LatestReleasesSection && (
+        <section key={LatestReleasesSection.sectionId} id={LatestReleasesSection.sectionId} className="py-12">
+          <div className="flex items-center mb-8">
+            <LatestReleasesSection.sectionIcon className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
+            <h2 className="font-headline text-4xl font-bold">{LatestReleasesSection.title}</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {LatestReleasesSection.items.map((item) => (
+              <Card key={item.id} className="layered-card overflow-hidden group transition-all duration-300 ease-in-out hover:shadow-accent/30 flex flex-col">
+                <CardHeader className="p-0">
+                  <div className="relative w-full h-48 mb-4 rounded-md overflow-hidden">
+                    <Image src={item.image} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" data-ai-hint={item.dataAiHint}/>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    <item.icon className="absolute top-4 right-4 w-8 h-8 text-accent glowing-icon" />
+                  </div>
+                  <div className="p-6 pt-0">
+                     <CardTitle className="font-headline text-2xl group-hover:text-foreground transition-colors">{item.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <CardDescription className="text-muted-foreground h-12 overflow-hidden">{item.description}</CardDescription>
+                </CardContent>
+                <CardFooter>
+                  {item.link ? (
+                     <Button asChild variant="link" className="text-accent p-0 hover:text-foreground">
+                       <Link href={item.link}>Learn More <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                     </Button>
+                  ) : (
+                    <Button variant="outline" className="text-accent border-accent">
+                      Get Notified <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Announcements Section */}
+      <section id="announcements" className="py-12">
+        <div className="flex items-center mb-8">
+          <Megaphone className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
+          <h2 className="font-headline text-4xl font-bold">Announcements</h2>
+        </div>
+        {siteContentError && <p className="text-destructive">Could not load announcements.</p>}
+        {announcementItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {announcementItems.map((item) => <SiteContentCard key={item.id} item={item} />)}
+          </div>
+        ) : (
+          !siteContentError && <p className="text-muted-foreground">No announcements right now. Stay tuned!</p>
+        )}
+      </section>
+
+      {/* Other Product Sections (Upcoming, Early Access, Dev Testing) */}
+      {OtherProductSections.map((section) => (
         <section key={section.sectionId} id={section.sectionId} className="py-12">
           <div className="flex items-center mb-8">
             <section.sectionIcon className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
@@ -211,23 +272,6 @@ export default async function Home() {
           !siteContentError && <p className="text-muted-foreground">No news items at the moment. Check back soon!</p>
         )}
       </section>
-
-      {/* Announcements Section */}
-      <section id="announcements" className="py-12">
-        <div className="flex items-center mb-8">
-          <Megaphone className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
-          <h2 className="font-headline text-4xl font-bold">Announcements</h2>
-        </div>
-        {siteContentError && <p className="text-destructive">Could not load announcements.</p>}
-        {announcementItems.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {announcementItems.map((item) => <SiteContentCard key={item.id} item={item} />)}
-          </div>
-        ) : (
-          !siteContentError && <p className="text-muted-foreground">No announcements right now. Stay tuned!</p>
-        )}
-      </section>
-
     </div>
   );
 }

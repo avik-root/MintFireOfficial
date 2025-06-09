@@ -12,7 +12,7 @@ import {
   Users,
   Package,
   Newspaper, // For Blog Posts & Site Content
-  Image as ImageIcon, // For Media
+  ImageIcon, // For Media
   FileText, // For Site Content (if distinct icon needed, using Newspaper for now)
   Briefcase, // For Applicants
   UsersRound, // For Team
@@ -144,5 +144,3 @@ export default function AdminDashboardLayout({
     </div>
   );
 }
-
-    

@@ -13,7 +13,6 @@ import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 
 const foundersFilePath = path.join(process.cwd(), 'data', 'founders.json');
-// Re-use team photos directory for simplicity, or change if dedicated needed
 const UPLOADS_DIR_NAME = 'uploads';
 const TEAM_PHOTOS_DIR_NAME = 'team-photos'; 
 const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, TEAM_PHOTOS_DIR_NAME);
@@ -21,20 +20,42 @@ const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, TE
 async function getFoundersInternal(): Promise<Founder[]> {
   try {
     await fs.mkdir(path.dirname(foundersFilePath), { recursive: true });
-    const data = await fs.readFile(foundersFilePath, 'utf-8');
-    let items = JSON.parse(data) as unknown[];
-    let parsedItems = z.array(FounderSchema).parse(items);
 
-    // Sort by creation date, oldest first by default for founders
-    parsedItems.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    return parsedItems;
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+    let fileContent: string;
+    try {
+      fileContent = await fs.readFile(foundersFilePath, 'utf-8');
+    } catch (readError: any) {
+      if (readError.code === 'ENOENT') {
+        await fs.writeFile(foundersFilePath, JSON.stringify([]), 'utf-8');
+        return [];
+      }
+      throw readError;
+    }
+
+    if (fileContent.trim() === '') {
+      return [];
+    }
+
+    const items = JSON.parse(fileContent);
+
+    if (!Array.isArray(items)) {
+      console.error(`Data in ${foundersFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array.`);
       await fs.writeFile(foundersFilePath, JSON.stringify([]), 'utf-8');
       return [];
     }
-    console.error("Error reading founders file:", error);
-    throw new Error('Could not read founder data.');
+    
+    let parsedItems = z.array(FounderSchema).parse(items);
+    parsedItems.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return parsedItems;
+  } catch (error: any) {
+    console.error(`Error processing founders file (${foundersFilePath}):`, error);
+    let errorMessage = `Could not process founder data from ${foundersFilePath}.`;
+    if (error instanceof z.ZodError) {
+      errorMessage = `Founder data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
+    } else if (error.message) {
+      errorMessage = `Error reading founder data: ${error.message}`;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -42,7 +63,7 @@ async function saveFounders(items: Founder[]): Promise<void> {
   try {
     await fs.mkdir(path.dirname(foundersFilePath), { recursive: true });
     await fs.writeFile(foundersFilePath, JSON.stringify(items, null, 2), 'utf-8');
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error writing founders file:", error);
     throw new Error('Could not save founder data.');
   }
@@ -173,10 +194,31 @@ export async function updateFounder(id: string, formData: FormData): Promise<{ s
     const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null;
 
     if (imageFile && imageFile.size > 0) {
-      imageUrlToSave = await handleImageUpload(imageFile) || originalFounder.imageUrl;
+      // Delete old image if it exists and a new one is uploaded
+      if (originalFounder.imageUrl && originalFounder.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
+        try {
+          const oldImagePath = path.join(process.cwd(), 'public', originalFounder.imageUrl);
+          await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
+        } catch (imgDelError: any) {
+          console.warn(`Failed to delete old image ${originalFounder.imageUrl}: ${imgDelError.message}`);
+        }
+      }
+      imageUrlToSave = await handleImageUpload(imageFile); 
+    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "" && originalFounder.imageUrl) {
+      // User wants to remove the existing image
+       if (originalFounder.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
+          try {
+            const oldImagePath = path.join(process.cwd(), 'public', originalFounder.imageUrl);
+            await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
+          } catch (imgDelError: any) {
+            console.warn(`Failed to delete old image ${originalFounder.imageUrl}: ${imgDelError.message}`);
+          }
+        }
+      imageUrlToSave = ""; // Set to empty string
     } else if (existingImageUrlFromForm !== null) {
-       imageUrlToSave = existingImageUrlFromForm || ""; 
+      imageUrlToSave = existingImageUrlFromForm; // Keep existing if no new file and not explicitly removed
     }
+
 
     const updatedFounderData: Founder = {
       ...originalFounder,
@@ -186,7 +228,7 @@ export async function updateFounder(id: string, formData: FormData): Promise<{ s
       email: validatedData.email ?? originalFounder.email,
       githubUrl: validatedData.githubUrl !== undefined ? validatedData.githubUrl : originalFounder.githubUrl,
       linkedinUrl: validatedData.linkedinUrl !== undefined ? validatedData.linkedinUrl : originalFounder.linkedinUrl,
-      imageUrl: imageUrlToSave,
+      imageUrl: imageUrlToSave || "",
       updatedAt: new Date().toISOString(), 
     };
     
@@ -210,10 +252,10 @@ export async function deleteFounder(id: string): Promise<{ success: boolean; err
       return { success: false, error: "Founder not found for deletion." };
     }
 
-    if (founderToDelete.imageUrl) {
+    if (founderToDelete.imageUrl && founderToDelete.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
       try {
         const imagePath = path.join(process.cwd(), 'public', founderToDelete.imageUrl);
-        await fs.unlink(imagePath);
+        await fs.unlink(imagePath).catch(e => console.warn(`Non-critical: Failed to delete image ${imagePath}: ${e.message}`));
       } catch (imgDelError: any) {
         console.warn(`Failed to delete image ${founderToDelete.imageUrl}: ${imgDelError.message}`);
       }

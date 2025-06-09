@@ -18,16 +18,40 @@ const blogPostsFilePath = path.join(process.cwd(), 'data', 'blog_posts.json');
 async function getBlogPostsInternal(): Promise<BlogPost[]> {
   try {
     await fs.mkdir(path.dirname(blogPostsFilePath), { recursive: true });
-    const data = await fs.readFile(blogPostsFilePath, 'utf-8');
-    const items = JSON.parse(data) as unknown[];
-    return z.array(BlogPostSchema).parse(items);
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+
+    let fileContent: string;
+    try {
+      fileContent = await fs.readFile(blogPostsFilePath, 'utf-8');
+    } catch (readError: any) {
+      if (readError.code === 'ENOENT') {
+        await fs.writeFile(blogPostsFilePath, JSON.stringify([]), 'utf-8');
+        return [];
+      }
+      throw readError;
+    }
+
+    if (fileContent.trim() === '') {
+      return [];
+    }
+
+    const items = JSON.parse(fileContent);
+
+    if (!Array.isArray(items)) {
+      console.error(`Data in ${blogPostsFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array.`);
       await fs.writeFile(blogPostsFilePath, JSON.stringify([]), 'utf-8');
       return [];
     }
-    console.error("Error reading blog posts file:", error);
-    throw new Error('Could not read blog post data.');
+    
+    return z.array(BlogPostSchema).parse(items);
+  } catch (error: any) {
+    console.error(`Error processing blog posts file (${blogPostsFilePath}):`, error);
+    let errorMessage = `Could not process blog post data from ${blogPostsFilePath}.`;
+    if (error instanceof z.ZodError) {
+      errorMessage = `Blog post data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
+    } else if (error.message) {
+      errorMessage = `Error reading blog post data: ${error.message}`;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -35,7 +59,7 @@ async function saveBlogPosts(items: BlogPost[]): Promise<void> {
   try {
     await fs.mkdir(path.dirname(blogPostsFilePath), { recursive: true });
     await fs.writeFile(blogPostsFilePath, JSON.stringify(items, null, 2), 'utf-8');
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error writing blog posts file:", error);
     throw new Error('Could not save blog post data.');
   }
@@ -52,7 +76,6 @@ export async function getBlogPosts(params?: { publishedOnly?: boolean }): Promis
     if (params?.publishedOnly) {
       posts = posts.filter(post => post.isPublished);
     }
-    // Sort by newest first
     posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return { posts };
   } catch (error: any) {
@@ -76,7 +99,7 @@ export async function addBlogPost(data: CreateBlogPostInput): Promise<{ success:
     const newPost: BlogPost = {
       ...validation.data,
       id: crypto.randomUUID(),
-      tags: transformTags(validation.data.tagsString), // Transform string to array
+      tags: transformTags(validation.data.tagsString),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -119,7 +142,7 @@ export async function getBlogPostBySlug(slug: string): Promise<{ post?: BlogPost
 }
 
 export async function updateBlogPost(id: string, data: UpdateBlogPostInput): Promise<{ success: boolean; post?: BlogPost; error?: string, errors?: z.ZodIssue[] }> {
-  const validation = CreateBlogPostInputSchema.safeParse(data); // Use Create schema for full validation on update too
+  const validation = CreateBlogPostInputSchema.safeParse(data); 
    if (!validation.success) {
     return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
   }
@@ -152,7 +175,7 @@ export async function updateBlogPost(id: string, data: UpdateBlogPostInput): Pro
     revalidatePath('/blog');
     revalidatePath(`/blog/${updatedPostData.slug}`);
     if (originalPost.slug !== updatedPostData.slug) {
-      revalidatePath(`/blog/${originalPost.slug}`); // Revalidate old slug path if changed
+      revalidatePath(`/blog/${originalPost.slug}`);
     }
     return { success: true, post: updatedPostData };
   } catch (error: any) {

@@ -6,7 +6,7 @@ import path from 'path';
 import { z } from 'zod';
 import {
   TeamMemberSchema,
-  FormTeamMemberSchema, // Using this for parsing text fields from FormData
+  FormTeamMemberSchema, 
   type TeamMember,
 } from '@/lib/schemas/team-member-schemas';
 import { revalidatePath } from 'next/cache';
@@ -20,8 +20,30 @@ const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, TE
 async function getTeamMembersInternal(params?: { publicOnly?: boolean }): Promise<TeamMember[]> {
   try {
     await fs.mkdir(path.dirname(teamMembersFilePath), { recursive: true });
-    const data = await fs.readFile(teamMembersFilePath, 'utf-8');
-    let items = JSON.parse(data) as unknown[];
+
+    let fileContent: string;
+    try {
+      fileContent = await fs.readFile(teamMembersFilePath, 'utf-8');
+    } catch (readError: any) {
+      if (readError.code === 'ENOENT') {
+        await fs.writeFile(teamMembersFilePath, JSON.stringify([]), 'utf-8');
+        return [];
+      }
+      throw readError;
+    }
+
+    if (fileContent.trim() === '') {
+      return [];
+    }
+
+    const items = JSON.parse(fileContent);
+
+    if (!Array.isArray(items)) {
+      console.error(`Data in ${teamMembersFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array.`);
+      await fs.writeFile(teamMembersFilePath, JSON.stringify([]), 'utf-8');
+      return [];
+    }
+    
     let parsedItems = z.array(TeamMemberSchema).parse(items);
 
     if (params?.publicOnly) {
@@ -29,18 +51,20 @@ async function getTeamMembersInternal(params?: { publicOnly?: boolean }): Promis
     }
 
     parsedItems.sort((a, b) => {
-      const dateA = a.joiningDate ? new Date(a.joiningDate).getTime() : new Date(a.createdAt).getTime();
-      const dateB = b.joiningDate ? new Date(b.joiningDate).getTime() : new Date(b.createdAt).getTime();
+      const dateA = a.joiningDate ? new Date(a.joiningDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const dateB = b.joiningDate ? new Date(b.joiningDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
       return dateA - dateB; // Oldest first
     });
     return parsedItems;
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      await fs.writeFile(teamMembersFilePath, JSON.stringify([]), 'utf-8');
-      return [];
+    console.error(`Error processing team members file (${teamMembersFilePath}):`, error);
+    let errorMessage = `Could not process team member data from ${teamMembersFilePath}.`;
+    if (error instanceof z.ZodError) {
+      errorMessage = `Team member data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
+    } else if (error.message) {
+      errorMessage = `Error reading team member data: ${error.message}`;
     }
-    console.error("Error reading team members file:", error);
-    throw new Error('Could not read team member data.');
+    throw new Error(errorMessage);
   }
 }
 
@@ -48,14 +72,14 @@ async function saveTeamMembers(items: TeamMember[]): Promise<void> {
   try {
     await fs.mkdir(path.dirname(teamMembersFilePath), { recursive: true });
     await fs.writeFile(teamMembersFilePath, JSON.stringify(items, null, 2), 'utf-8');
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error writing team members file:", error);
     throw new Error('Could not save team member data.');
   }
 }
 
 async function handleImageUpload(imageFile: File | null): Promise<string | null> {
-  if (!imageFile) return null;
+  if (!imageFile || imageFile.size === 0) return null;
 
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   if (!allowedTypes.includes(imageFile.type)) {
@@ -91,9 +115,9 @@ export async function addTeamMember(formData: FormData): Promise<{ success: bool
     const rawData: Record<string, any> = {};
     formData.forEach((value, key) => {
       if ((key === 'githubUrl' || key === 'linkedinUrl') && value === '') {
-        rawData[key] = undefined;
+        rawData[key] = undefined; // For optional fields that can be omitted
       } else if (key === 'isPublic') {
-        rawData[key] = value === 'on' || value === 'true'; // FormData sends 'on' for checked, or string 'true'
+        rawData[key] = value === 'on' || String(value) === 'true';
       } else if (key !== 'imageFile') {
         rawData[key] = value;
       }
@@ -124,7 +148,7 @@ export async function addTeamMember(formData: FormData): Promise<{ success: bool
       linkedinUrl: validatedData.linkedinUrl || "",
       joiningDate: validatedData.joiningDate || now,
       imageUrl: imageUrl || "",
-      isPublic: validatedData.isPublic, // Save isPublic status
+      isPublic: validatedData.isPublic,
       createdAt: now,
       updatedAt: now,
     };
@@ -142,7 +166,7 @@ export async function addTeamMember(formData: FormData): Promise<{ success: bool
 
 export async function getTeamMemberById(id: string): Promise<{ member?: TeamMember; error?: string }> {
   try {
-    const members = await getTeamMembersInternal(); // Fetch all for admin view
+    const members = await getTeamMembersInternal({ publicOnly: false }); // Fetch all for admin view
     const member = members.find(p => p.id === id);
     if (!member) {
       return { error: "Team member not found." };
@@ -160,7 +184,7 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
       if ((key === 'githubUrl' || key === 'linkedinUrl') && value === '') {
         rawData[key] = undefined; 
       } else if (key === 'isPublic') {
-        rawData[key] = value === 'on' || value === 'true';
+        rawData[key] = value === 'on' || String(value) === 'true';
       } else if (key !== 'imageFile' && key !== 'existingImageUrl') {
         rawData[key] = value;
       }
@@ -185,10 +209,31 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
     const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null;
 
     if (imageFile && imageFile.size > 0) {
-      imageUrlToSave = await handleImageUpload(imageFile) || originalMember.imageUrl;
+      // Delete old image if it exists and a new one is uploaded
+      if (originalMember.imageUrl && originalMember.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
+        try {
+          const oldImagePath = path.join(process.cwd(), 'public', originalMember.imageUrl);
+          await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
+        } catch (imgDelError: any) {
+          console.warn(`Failed to delete old image ${originalMember.imageUrl}: ${imgDelError.message}`);
+        }
+      }
+      imageUrlToSave = await handleImageUpload(imageFile);
+    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "" && originalMember.imageUrl) { 
+      // User wants to remove the existing image
+      if (originalMember.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
+        try {
+          const oldImagePath = path.join(process.cwd(), 'public', originalMember.imageUrl);
+          await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old image ${oldImagePath}: ${e.message}`));
+        } catch (imgDelError: any) {
+          console.warn(`Failed to delete old image ${originalMember.imageUrl}: ${imgDelError.message}`);
+        }
+      }
+      imageUrlToSave = ""; // Set to empty string
     } else if (existingImageUrlFromForm !== null) {
-       imageUrlToSave = existingImageUrlFromForm || ""; 
+      imageUrlToSave = existingImageUrlFromForm; // Keep existing if no new file and not explicitly removed
     }
+
 
     const updatedMemberData: TeamMember = {
       ...originalMember,
@@ -199,8 +244,8 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
       githubUrl: validatedData.githubUrl !== undefined ? validatedData.githubUrl : originalMember.githubUrl,
       linkedinUrl: validatedData.linkedinUrl !== undefined ? validatedData.linkedinUrl : originalMember.linkedinUrl,
       joiningDate: validatedData.joiningDate !== undefined ? validatedData.joiningDate : originalMember.joiningDate,
-      isPublic: validatedData.isPublic !== undefined ? validatedData.isPublic : originalMember.isPublic, // Update isPublic
-      imageUrl: imageUrlToSave,
+      isPublic: validatedData.isPublic !== undefined ? validatedData.isPublic : originalMember.isPublic,
+      imageUrl: imageUrlToSave || "",
       updatedAt: new Date().toISOString(), 
     };
     
@@ -224,10 +269,10 @@ export async function deleteTeamMember(id: string): Promise<{ success: boolean; 
       return { success: false, error: "Team member not found for deletion." };
     }
 
-    if (memberToDelete.imageUrl) {
+    if (memberToDelete.imageUrl && memberToDelete.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/`)) {
       try {
         const imagePath = path.join(process.cwd(), 'public', memberToDelete.imageUrl);
-        await fs.unlink(imagePath);
+        await fs.unlink(imagePath).catch(e => console.warn(`Non-critical: Failed to delete image ${imagePath}: ${e.message}`));
       } catch (imgDelError: any) {
         console.warn(`Failed to delete image ${memberToDelete.imageUrl}: ${imgDelError.message}`);
       }

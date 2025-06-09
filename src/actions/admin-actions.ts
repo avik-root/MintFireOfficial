@@ -5,24 +5,48 @@ import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored } from '@/lib/schemas/admin-schemas';
-import { AdminUserStoredSchema, CreateAdminSchema } from '@/lib/schemas/admin-schemas'; // Ensure CreateAdminSchema is imported for password validation reference
+import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, BaseCreateAdminSchemaContents } from '@/lib/schemas/admin-schemas';
 import { revalidatePath } from 'next/cache';
 
 const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
 
 async function getAdminsInternal(): Promise<AdminUserStored[]> {
   try {
-    await fs.mkdir(path.dirname(adminFilePath), { recursive: true }); 
-    const data = await fs.readFile(adminFilePath, 'utf-8');
-    const parsedData = JSON.parse(data);
-    return z.array(AdminUserStoredSchema).parse(parsedData);
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+    await fs.mkdir(path.dirname(adminFilePath), { recursive: true });
+
+    let fileContent: string;
+    try {
+      fileContent = await fs.readFile(adminFilePath, 'utf-8');
+    } catch (readError: any) {
+      if (readError.code === 'ENOENT') {
+        await fs.writeFile(adminFilePath, JSON.stringify([]), 'utf-8');
+        return [];
+      }
+      throw readError;
+    }
+
+    if (fileContent.trim() === '') {
+      return [];
+    }
+
+    const items = JSON.parse(fileContent);
+
+    if (!Array.isArray(items)) {
+      console.error(`Data in ${adminFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array.`);
       await fs.writeFile(adminFilePath, JSON.stringify([]), 'utf-8');
       return [];
     }
-    console.error("Error reading admin file:", error);
-    throw new Error('Could not read admin data. Please ensure the data directory is writable.');
+    
+    return z.array(AdminUserStoredSchema).parse(items);
+  } catch (error: any) {
+    console.error(`Error processing admin file (${adminFilePath}):`, error);
+    let errorMessage = `Could not process admin data from ${adminFilePath}.`;
+    if (error instanceof z.ZodError) {
+      errorMessage = `Admin data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
+    } else if (error.message) {
+      errorMessage = `Error reading admin data: ${error.message}`;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -30,7 +54,7 @@ async function saveAdmins(admins: AdminUserStored[]): Promise<void> {
   try {
     await fs.mkdir(path.dirname(adminFilePath), { recursive: true });
     await fs.writeFile(adminFilePath, JSON.stringify(admins, null, 2), 'utf-8');
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error writing admin file:", error);
     throw new Error('Could not save admin data. Please ensure the data directory is writable.');
   }
@@ -45,17 +69,21 @@ export async function checkAdminExists(): Promise<{ exists: boolean; error?: str
   }
 }
 
-export async function createAdminAccount(data: CreateAdminInput): Promise<{ success: boolean; message: string }> {
+export async function createAdminAccount(data: CreateAdminInput): Promise<{ success: boolean; message: string, errors?: z.ZodIssue[] }> {
+  const validation = CreateAdminSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: "Invalid data provided.", errors: validation.error.issues };
+  }
   try {
     const admins = await getAdminsInternal();
     if (admins.length > 0) {
       return { success: false, message: "An admin account already exists. Cannot create another." };
     }
     const newAdmin: AdminUserStored = { 
-      adminName: data.adminName,
-      adminId: data.adminId,
-      email: data.email, 
-      password: data.password 
+      adminName: validation.data.adminName,
+      adminId: validation.data.adminId,
+      email: validation.data.email, 
+      password: validation.data.password // Store password directly as per current design
     };
     await saveAdmins([newAdmin]);
     return { success: true, message: "Admin account created successfully. You can now log in." };
@@ -76,7 +104,7 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     if (!admin) {
       return { success: false, message: "Invalid credentials." };
     }
-    if (admin.password !== data.password) {
+    if (admin.password !== data.password) { // Direct password comparison
         return { success: false, message: "Invalid credentials." };
     }
     return { success: true, message: "Login successful! Redirecting..." };
@@ -105,34 +133,37 @@ export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?:
 }
 
 export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
+  const validation = UpdateAdminProfileSchema.safeParse(data);
+  if (!validation.success) {
+      return { success: false, message: "Invalid data provided for update.", errors: validation.error.issues };
+  }
+  const validatedData = validation.data;
+
   try {
     const admins = await getAdminsInternal();
     if (admins.length === 0) {
       return { success: false, message: "Admin account not found. Cannot update." };
     }
     
-    let currentAdmin = admins[0]; // Assuming single admin
+    let currentAdmin = admins[0]; 
 
-    // Handle password change
-    if (data.newPassword) {
-      if (!data.currentPassword) {
+    if (validatedData.newPassword) {
+      if (!validatedData.currentPassword) {
         return { success: false, message: "Current password is required to set a new password." };
       }
-      if (data.currentPassword !== currentAdmin.password) {
+      if (validatedData.currentPassword !== currentAdmin.password) {
         return { success: false, message: "Incorrect current password." };
       }
-      // Password strength is validated by the Zod schema (UpdateAdminProfileSchema)
-      currentAdmin.password = data.newPassword;
+      currentAdmin.password = validatedData.newPassword;
     }
 
-    // Update other details
-    currentAdmin.adminName = data.adminName;
-    currentAdmin.adminId = data.adminId;
-    currentAdmin.email = data.email;
+    currentAdmin.adminName = validatedData.adminName;
+    currentAdmin.adminId = validatedData.adminId;
+    currentAdmin.email = validatedData.email;
 
-    await saveAdmins([currentAdmin, ...admins.slice(1)]); // Save updated admin (and any others, though it's single admin for now)
+    await saveAdmins([currentAdmin, ...admins.slice(1)]);
     
-    revalidatePath('/admin/dashboard/settings'); // Revalidate settings page
+    revalidatePath('/admin/dashboard/settings'); 
     
     return { success: true, message: "Admin profile updated successfully." };
 

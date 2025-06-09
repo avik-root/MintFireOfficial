@@ -19,16 +19,40 @@ const applicantsFilePath = path.join(process.cwd(), 'data', 'applicants.json');
 async function getApplicantsInternal(): Promise<Applicant[]> {
   try {
     await fs.mkdir(path.dirname(applicantsFilePath), { recursive: true });
-    const data = await fs.readFile(applicantsFilePath, 'utf-8');
-    const items = JSON.parse(data) as unknown[];
-    return z.array(ApplicantSchema).parse(items);
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+
+    let fileContent: string;
+    try {
+      fileContent = await fs.readFile(applicantsFilePath, 'utf-8');
+    } catch (readError: any) {
+      if (readError.code === 'ENOENT') {
+        await fs.writeFile(applicantsFilePath, JSON.stringify([]), 'utf-8');
+        return [];
+      }
+      throw readError;
+    }
+
+    if (fileContent.trim() === '') {
+      return [];
+    }
+
+    const items = JSON.parse(fileContent);
+
+    if (!Array.isArray(items)) {
+      console.error(`Data in ${applicantsFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array.`);
       await fs.writeFile(applicantsFilePath, JSON.stringify([]), 'utf-8');
       return [];
     }
-    console.error("Error reading applicants file:", error);
-    throw new Error('Could not read applicant data.');
+    
+    return z.array(ApplicantSchema).parse(items);
+  } catch (error: any) {
+    console.error(`Error processing applicants file (${applicantsFilePath}):`, error);
+    let errorMessage = `Could not process applicant data from ${applicantsFilePath}.`;
+    if (error instanceof z.ZodError) {
+      errorMessage = `Applicant data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
+    } else if (error.message) {
+      errorMessage = `Error reading applicant data: ${error.message}`;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -36,7 +60,7 @@ async function saveApplicants(items: Applicant[]): Promise<void> {
   try {
     await fs.mkdir(path.dirname(applicantsFilePath), { recursive: true });
     await fs.writeFile(applicantsFilePath, JSON.stringify(items, null, 2), 'utf-8');
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error writing applicants file:", error);
     throw new Error('Could not save applicant data.');
   }
@@ -60,8 +84,7 @@ export async function submitApplication(data: CreateApplicantInput): Promise<{ s
     
     applicants.push(newApplicant);
     await saveApplicants(applicants);
-    revalidatePath('/admin/dashboard/applicants'); // Revalidate admin list
-    // No need to revalidate public careers page immediately after submission for the submitter
+    revalidatePath('/admin/dashboard/applicants'); 
     return { success: true, applicant: newApplicant };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to submit application." };
@@ -71,7 +94,6 @@ export async function submitApplication(data: CreateApplicantInput): Promise<{ s
 export async function getApplicants(): Promise<{ applicants?: Applicant[]; error?: string }> {
   try {
     let applicants = await getApplicantsInternal();
-    // Sort by newest application first
     applicants.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
     return { applicants };
   } catch (error: any) {
@@ -110,7 +132,7 @@ export async function updateApplicantStatus(id: string, data: UpdateApplicantSta
     const updatedApplicantData: Applicant = {
       ...originalApplicant, 
       status: validation.data.status,
-      notes: validation.data.notes !== undefined ? validation.data.notes : originalApplicant.notes, // Keep original notes if not provided
+      notes: validation.data.notes !== undefined ? validation.data.notes : originalApplicant.notes, 
     };
     
     applicants[applicantIndex] = updatedApplicantData;

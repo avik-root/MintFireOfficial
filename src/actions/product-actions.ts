@@ -6,7 +6,7 @@ import path from 'path';
 import { z } from 'zod';
 import {
   ProductSchema,
-  FormProductSchema, // For validating text fields from FormData
+  FormProductSchema, 
   type Product,
   type ProductStatus,
 } from '@/lib/schemas/product-schemas';
@@ -21,37 +21,59 @@ const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, PR
 async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<Product[]> {
   try {
     await fs.mkdir(path.dirname(productsFilePath), { recursive: true });
-    const data = await fs.readFile(productsFilePath, 'utf-8');
-    const items = JSON.parse(data) as unknown[];
+
+    let fileContent: string;
+    try {
+      fileContent = await fs.readFile(productsFilePath, 'utf-8');
+    } catch (readError: any) {
+      if (readError.code === 'ENOENT') {
+        await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8');
+        return [];
+      }
+      throw readError;
+    }
+
+    if (fileContent.trim() === '') {
+      return [];
+    }
+
+    const items = JSON.parse(fileContent);
+
+    if (!Array.isArray(items)) {
+      console.error(`Data in ${productsFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array.`);
+      await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8');
+      return [];
+    }
+    
     let parsedItems = z.array(ProductSchema).parse(items);
 
     if (params?.isFeatured !== undefined) {
       parsedItems = parsedItems.filter(product => product.isFeatured === params.isFeatured);
     }
-
     if (params?.status) {
       parsedItems = parsedItems.filter(product => product.status === params.status);
     }
 
-    // Sort by release date descending (newest first), then by creation date
     parsedItems.sort((a, b) => {
-      const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : new Date(a.createdAt).getTime();
-      const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : new Date(b.createdAt).getTime();
+      const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
       return dateB - dateA;
     });
 
     if (params?.limit) {
       parsedItems = parsedItems.slice(0, params.limit);
     }
-
     return parsedItems;
+
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      await fs.writeFile(productsFilePath, JSON.stringify([]), 'utf-8');
-      return [];
+    console.error(`Error processing products file (${productsFilePath}):`, error);
+    let errorMessage = `Could not process product data from ${productsFilePath}.`;
+    if (error instanceof z.ZodError) {
+      errorMessage = `Product data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
+    } else if (error.message) {
+      errorMessage = `Error reading product data: ${error.message}`;
     }
-    console.error("Error reading products file:", error);
-    throw new Error('Could not read product data.');
+    throw new Error(errorMessage);
   }
 }
 
@@ -60,7 +82,7 @@ async function saveProducts(items: Product[]): Promise<void> {
     await fs.mkdir(path.dirname(productsFilePath), { recursive: true });
     await fs.writeFile(productsFilePath, JSON.stringify(items, null, 2), 'utf-8');
     console.log('Products data successfully saved to:', productsFilePath);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error writing products file:", error);
     throw new Error('Could not save product data.');
   }
@@ -108,21 +130,23 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
   try {
     const rawData: Record<string, any> = {};
     formData.forEach((value, key) => {
-      const strValue = String(value).trim();
+      const strValue = String(value).trim(); // Trim whitespace
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
       } else if (key !== 'imageFile') { 
         if (key === 'releaseDate' || key === 'version' || key === 'longDescription') {
+          // For optional nullable fields, map empty strings or "null"/"undefined" to null
           if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
             rawData[key] = null;
           } else {
             rawData[key] = strValue;
           }
         } else if (key === 'productUrl') {
-          if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
+          // For optional string fields that can be empty, map "null"/"undefined" to empty string
+          if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
             rawData[key] = ""; 
           } else {
-            rawData[key] = strValue;
+            rawData[key] = strValue; // Keep empty string as is if it's intentional
           }
         } else {
           rawData[key] = strValue;
@@ -169,7 +193,6 @@ export async function addProduct(formData: FormData): Promise<{ success: boolean
 
     products.push(newProduct);
     await saveProducts(products);
-    console.log('Product added successfully with ID:', newProduct.id);
     revalidatePath('/admin/dashboard/products');
     revalidatePath('/');
     return { success: true, product: newProduct };
@@ -196,7 +219,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
   try {
     const rawData: Record<string, any> = {};
      formData.forEach((value, key) => {
-      const strValue = String(value).trim();
+      const strValue = String(value).trim(); // Trim whitespace
       if (key === 'isFeatured') {
         rawData[key] = strValue === 'on' || strValue === 'true';
       } else if (key !== 'imageFile' && key !== 'existingImageUrl') {
@@ -207,8 +230,8 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
             rawData[key] = strValue;
           }
         } else if (key === 'productUrl') {
-          if (strValue === '' || strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
-            rawData[key] = ""; 
+           if (strValue.toLowerCase() === 'null' || strValue.toLowerCase() === 'undefined') {
+            rawData[key] = "";
           } else {
             rawData[key] = strValue;
           }
@@ -248,7 +271,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
         }
       }
       imageUrlToSave = await handleImageUpload(imageFile); 
-    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "") {
+    } else if (existingImageUrlFromForm !== null && existingImageUrlFromForm === "") { // Image explicitly removed
       if (originalProduct.imageUrl && originalProduct.imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${PRODUCT_IMAGES_DIR_NAME}/`)) {
          try {
           const oldImagePath = path.join(process.cwd(), 'public', originalProduct.imageUrl);
@@ -258,7 +281,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<{ s
         }
       }
       imageUrlToSave = ""; 
-    } else if (existingImageUrlFromForm !== null) {
+    } else if (existingImageUrlFromForm !== null) { // Keep existing image if not removed and no new file
       imageUrlToSave = existingImageUrlFromForm;
     }
    
@@ -323,7 +346,3 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     return { success: false, error: error.message || "Failed to delete product." };
   }
 }
-
-    
-
-    

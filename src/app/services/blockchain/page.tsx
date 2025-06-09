@@ -1,12 +1,13 @@
 
 "use client"; 
 
+import React, { useEffect, useState } from 'react';
 import ServicePageLayout from '@/components/ServicePageLayout';
 import ProductCard from '@/app/_components/ProductCard';
+import ProductDetailModal from '@/app/_components/ProductDetailModal';
 import { getProducts } from '@/actions/product-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
-import { Blocks, AlertTriangle, PackageSearch, Sparkles } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { Blocks, AlertTriangle, PackageSearch, Sparkles, Loader2 } from 'lucide-react';
 
 const BlockchainPage = () => {
   const features = [
@@ -22,8 +23,10 @@ const BlockchainPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorLoading, setErrorLoading] = useState<string | null>(null);
   const [sectionTitle, setSectionTitle] = useState("Related Blockchain Products");
-  const [SectionIcon, setSectionIcon] = useState(() => Blocks);
+  const [SectionIcon, setSectionIcon] = useState<React.ElementType>(() => Blocks);
 
+  const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -31,7 +34,7 @@ const BlockchainPage = () => {
       setErrorLoading(null);
       let finalProducts: Product[] = [];
       let currentTitle = "Related Blockchain Products";
-      let currentIcon = Blocks;
+      let currentIcon: React.ElementType = Blocks;
 
       const { products: taggedProducts, error: taggedError } = await getProducts({ tag: 'blockchain' });
 
@@ -51,23 +54,24 @@ const BlockchainPage = () => {
       }
       setProductsToDisplay(finalProducts);
       setSectionTitle(currentTitle);
-      setSectionIcon(() => currentIcon); // Store the component type itself
+      setSectionIcon(() => currentIcon); 
       setIsLoading(false);
     }
     fetchData();
   }, []);
 
+  const handleOpenProductModal = (product: Product) => {
+    setSelectedProductForModal(product);
+    setIsProductModalOpen(true);
+  };
 
-  return (
-    <ServicePageLayout
-      title="Blockchain Solutions"
-      description="Leveraging distributed ledger technology to build transparent, secure, and efficient systems for a new era of digital trust."
-      icon={Blocks}
-      imageUrl="https://placehold.co/1200x800.png"
-      imageAlt="Blockchain Technology Abstract"
-      imageAiHint="blockchain abstract"
-      features={features}
-    >
+  const handleCloseProductModal = () => {
+    setIsProductModalOpen(false);
+    setSelectedProductForModal(null);
+  };
+
+  const pageContent = (
+     <>
       <div className="mt-12 p-8 bg-card rounded-lg shadow-lg border border-border">
         <h3 className="font-headline text-2xl font-semibold mb-4 text-primary">Transforming Industries with Blockchain</h3>
         <p className="text-muted-foreground">
@@ -80,8 +84,13 @@ const BlockchainPage = () => {
             <SectionIcon className="w-8 h-8 mr-3 glowing-icon-primary" />
             {sectionTitle}
         </h3>
-        {isLoading && <p className="text-center text-muted-foreground">Loading products...</p>}
-        {errorLoading && (
+        {isLoading && (
+           <div className="text-center py-10">
+             <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary" />
+             <p className="mt-4 text-muted-foreground">Loading products...</p>
+           </div>
+        )}
+        {errorLoading && !isLoading && (
           <div className="text-center text-destructive py-6">
             <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
             <p>Could not load products: {errorLoading}</p>
@@ -90,7 +99,7 @@ const BlockchainPage = () => {
         {!isLoading && !errorLoading && productsToDisplay.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {productsToDisplay.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} onViewDetailsClick={handleOpenProductModal} />
             ))}
           </div>
         ) : (
@@ -102,6 +111,27 @@ const BlockchainPage = () => {
           )
         )}
       </div>
+       {selectedProductForModal && (
+        <ProductDetailModal
+          product={selectedProductForModal}
+          isOpen={isProductModalOpen}
+          onClose={handleCloseProductModal}
+        />
+      )}
+    </>
+  );
+
+  return (
+    <ServicePageLayout
+      title="Blockchain Solutions"
+      description="Leveraging distributed ledger technology to build transparent, secure, and efficient systems for a new era of digital trust."
+      icon={Blocks}
+      imageUrl="https://placehold.co/1200x800.png"
+      imageAlt="Blockchain Technology Abstract"
+      imageAiHint="blockchain abstract"
+      features={features}
+    >
+      {pageContent}
     </ServicePageLayout>
   );
 };

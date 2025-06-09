@@ -75,7 +75,7 @@ const AiChatModal = () => {
         onClick={() => setIsOpen(true)}
         aria-label="Open AI Chat"
       >
-        <Bot size={28} className="text-accent glowing-icon-primary" />
+        <Bot size={28} className="text-accent" />
       </Button>
     );
   }
@@ -85,7 +85,7 @@ const AiChatModal = () => {
       <DialogContent className="sm:max-w-[425px] md:max-w-[600px] lg:max-w-[700px] h-[80vh] flex flex-col p-0 border-primary shadow-2xl shadow-primary/30">
         <DialogHeader className="p-4 border-b border-border sticky top-0 bg-card z-10">
           <DialogTitle className="flex items-center font-headline text-xl">
-            <Bot className="mr-2 text-accent glowing-icon-primary" /> MintFire AI Assistant
+            <Bot className="mr-2 text-accent" /> MintFire AI Assistant
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-grow p-4 bg-background/70" ref={scrollAreaRef}>
@@ -99,7 +99,7 @@ const AiChatModal = () => {
               >
                 {message.sender === 'ai' && (
                   <div className="p-2 bg-muted rounded-full mb-1">
-                    <Bot className="w-5 h-5 text-accent glowing-icon-primary" />
+                    <Bot className="w-5 h-5 text-accent" />
                   </div>
                 )}
                 <div
@@ -121,7 +121,7 @@ const AiChatModal = () => {
             {isLoading && (
               <div className="flex items-start space-x-3">
                  <div className="p-2 bg-muted rounded-full">
-                   <Bot className="w-5 h-5 text-accent animate-pulse glowing-icon-primary" />
+                   <Bot className="w-5 h-5 text-accent animate-pulse" />
                  </div>
                 <div className="p-3 rounded-lg bg-card text-card-foreground border border-border">
                   <p className="text-sm italic">MintFire AI is thinking...</p>

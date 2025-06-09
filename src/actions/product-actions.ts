@@ -8,6 +8,7 @@ import {
   ProductSchema,
   FormProductSchema, // For validating text fields from FormData
   type Product,
+  type ProductStatus,
 } from '@/lib/schemas/product-schemas';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
@@ -17,15 +18,19 @@ const UPLOADS_DIR_NAME = 'uploads';
 const PRODUCT_IMAGES_DIR_NAME = 'product-images';
 const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, PRODUCT_IMAGES_DIR_NAME);
 
-async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number }): Promise<Product[]> {
+async function getProductsInternal(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<Product[]> {
   try {
     await fs.mkdir(path.dirname(productsFilePath), { recursive: true });
     const data = await fs.readFile(productsFilePath, 'utf-8');
     const items = JSON.parse(data) as unknown[];
     let parsedItems = z.array(ProductSchema).parse(items);
 
-    if (params?.isFeatured) {
-      parsedItems = parsedItems.filter(product => product.isFeatured);
+    if (params?.isFeatured !== undefined) {
+      parsedItems = parsedItems.filter(product => product.isFeatured === params.isFeatured);
+    }
+
+    if (params?.status) {
+      parsedItems = parsedItems.filter(product => product.status === params.status);
     }
 
     // Sort by release date descending (newest first), then by creation date
@@ -90,7 +95,7 @@ function transformTags(tagsString?: string): string[] {
 }
 
 
-export async function getProducts(params?: { isFeatured?: boolean; limit?: number }): Promise<{ products?: Product[]; error?: string }> {
+export async function getProducts(params?: { isFeatured?: boolean; limit?: number; status?: ProductStatus }): Promise<{ products?: Product[]; error?: string }> {
   try {
     const products = await getProductsInternal(params);
     return { products };
@@ -318,5 +323,7 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
     return { success: false, error: error.message || "Failed to delete product." };
   }
 }
+
+    
 
     

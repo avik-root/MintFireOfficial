@@ -11,6 +11,7 @@ export const TeamMemberSchema = z.object({
   githubUrl: z.string().url("Invalid GitHub URL.").optional().or(z.literal('')),
   linkedinUrl: z.string().url("Invalid LinkedIn URL.").optional().or(z.literal('')),
   joiningDate: z.string().datetime({ message: "Invalid date format for joining date." }).optional(),
+  isPublic: z.boolean().default(true), // New field
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -25,6 +26,7 @@ export const FormTeamMemberSchema = z.object({
   githubUrl: z.string().url("Invalid GitHub URL.").optional().or(z.literal('')),
   linkedinUrl: z.string().url("Invalid LinkedIn URL.").optional().or(z.literal('')),
   joiningDate: z.string().datetime({ message: "Invalid date format for joining date."}).optional(),
+  isPublic: z.boolean().default(true), // New field
   // imageFile will be handled via FormData, not part of this schema for RHF's `data` object.
   // `imageUrl` below is for displaying the current image path if editing.
   imageUrl: z.string().optional(), 

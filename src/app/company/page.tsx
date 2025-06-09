@@ -21,7 +21,8 @@ const CompanyPage = () => {
     const fetchTeam = async () => {
       setIsLoading(true);
       setError(null);
-      const result = await getTeamMembers(); // Actions now handles sorting
+      // Fetch only public members for the company page
+      const result = await getTeamMembers({ publicOnly: true }); 
       if (result.members) {
         setTeamMembers(result.members);
       } else {

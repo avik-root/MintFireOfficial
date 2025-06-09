@@ -8,19 +8,19 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormTeamMemberSchema, type FormTeamMemberInput, type TeamMember } from "@/lib/schemas/team-member-schemas";
-import { Loader2, Save, User, Briefcase, AlignLeft, MailIcon, Github, Linkedin, CalendarDays, UploadCloud, Image as ImageIcon } from "lucide-react";
+import { Loader2, Save, User, Briefcase, AlignLeft, MailIcon, Github, Linkedin, CalendarDays, UploadCloud, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import React, { useState, ChangeEvent } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import NextImage from 'next/image'; // Renamed to avoid conflict
+import NextImage from 'next/image';
+import { Switch } from '@/components/ui/switch';
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 interface TeamMemberFormProps {
   initialData?: TeamMember | null;
-  // onSubmit now expects FormData
   onSubmit: (formData: FormData) => Promise<{ success: boolean; error?: string; errors?: any[] }>;
   isSubmitting: boolean;
   submitButtonText?: string;
@@ -43,11 +43,12 @@ export default function TeamMemberForm({
       name: initialData.name,
       role: initialData.role,
       description: initialData.description,
-      imageUrl: initialData.imageUrl || "", // Used for display, not direct submission in Zod data
+      imageUrl: initialData.imageUrl || "", 
       email: initialData.email,
       githubUrl: initialData.githubUrl || "",
       linkedinUrl: initialData.linkedinUrl || "",
       joiningDate: initialData.joiningDate ? initialData.joiningDate : new Date().toISOString(),
+      isPublic: initialData.isPublic !== undefined ? initialData.isPublic : true,
     } : {
       name: "",
       role: "",
@@ -57,6 +58,7 @@ export default function TeamMemberForm({
       githubUrl: "",
       linkedinUrl: "",
       joiningDate: new Date().toISOString(),
+      isPublic: true,
     },
   });
 
@@ -71,16 +73,17 @@ export default function TeamMemberForm({
       reader.readAsDataURL(file);
     } else {
       setSelectedFile(null);
-      setImagePreview(initialData?.imageUrl || null); // Revert to initial or no preview
+      setImagePreview(initialData?.imageUrl || null);
     }
   };
 
   const handleFormSubmit = async (data: FormTeamMemberInput) => {
     const formData = new FormData();
     
-    // Append all plain form fields
     Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && key !== 'imageUrl') { // Don't append the display imageUrl
+      if (key === 'isPublic') {
+        formData.append(key, String(value)); // Append boolean as string
+      } else if (value !== undefined && value !== null && key !== 'imageUrl') {
         formData.append(key, String(value));
       }
     });
@@ -88,7 +91,6 @@ export default function TeamMemberForm({
     if (selectedFile) {
       formData.append("imageFile", selectedFile);
     } else if (initialData?.imageUrl && !selectedFile) {
-      // If editing and no new file is selected, pass existing imageUrl
       formData.append("existingImageUrl", initialData.imageUrl);
     }
     
@@ -102,7 +104,6 @@ export default function TeamMemberForm({
       if (result.errors) {
         result.errors.forEach((err: any) => {
           const fieldName = Array.isArray(err.path) ? err.path.join(".") : err.path;
-          // Make sure fieldName is a valid key of FormTeamMemberInput
           if (fieldName in form.getValues()) {
             form.setError(fieldName as keyof FormTeamMemberInput, { message: err.message });
           } else {
@@ -119,6 +120,32 @@ export default function TeamMemberForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="isPublic"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base flex items-center">
+                  {field.value ? <Eye className="mr-2 h-4 w-4 text-green-500"/> : <EyeOff className="mr-2 h-4 w-4 text-red-500"/>}
+                  Profile Visibility
+                </FormLabel>
+                <FormDescription>
+                  {field.value ? "Publicly visible on the Company page." : "Hidden from the public Company page."}
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  disabled={isSubmitting}
+                  aria-label="Toggle profile visibility"
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
             control={form.control}

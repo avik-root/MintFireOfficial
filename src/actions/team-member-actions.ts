@@ -17,16 +17,21 @@ const UPLOADS_DIR_NAME = 'uploads';
 const TEAM_PHOTOS_DIR_NAME = 'team-photos';
 const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, TEAM_PHOTOS_DIR_NAME);
 
-async function getTeamMembersInternal(): Promise<TeamMember[]> {
+async function getTeamMembersInternal(params?: { publicOnly?: boolean }): Promise<TeamMember[]> {
   try {
     await fs.mkdir(path.dirname(teamMembersFilePath), { recursive: true });
     const data = await fs.readFile(teamMembersFilePath, 'utf-8');
-    const items = JSON.parse(data) as unknown[];
-    const parsedItems = z.array(TeamMemberSchema).parse(items);
+    let items = JSON.parse(data) as unknown[];
+    let parsedItems = z.array(TeamMemberSchema).parse(items);
+
+    if (params?.publicOnly) {
+      parsedItems = parsedItems.filter(member => member.isPublic);
+    }
+
     parsedItems.sort((a, b) => {
       const dateA = a.joiningDate ? new Date(a.joiningDate).getTime() : new Date(a.createdAt).getTime();
       const dateB = b.joiningDate ? new Date(b.joiningDate).getTime() : new Date(b.createdAt).getTime();
-      return dateA - dateB;
+      return dateA - dateB; // Oldest first
     });
     return parsedItems;
   } catch (error: any) {
@@ -52,7 +57,6 @@ async function saveTeamMembers(items: TeamMember[]): Promise<void> {
 async function handleImageUpload(imageFile: File | null): Promise<string | null> {
   if (!imageFile) return null;
 
-  // Validate file type and size
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   if (!allowedTypes.includes(imageFile.type)) {
     throw new Error('Invalid file type. Only JPEG, PNG, GIF, WEBP are allowed.');
@@ -63,34 +67,34 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
   }
 
   await fs.mkdir(publicUploadsDir, { recursive: true });
-  const fileExtension = path.extname(imageFile.name) || '.png'; // Default to .png if no extension
+  const fileExtension = path.extname(imageFile.name) || '.png';
   const uniqueFilename = `${randomUUID()}${fileExtension}`;
   const filePath = path.join(publicUploadsDir, uniqueFilename);
   
   const buffer = Buffer.from(await imageFile.arrayBuffer());
   await fs.writeFile(filePath, buffer);
 
-  return `/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/${uniqueFilename}`; // Relative public path
+  return `/${UPLOADS_DIR_NAME}/${TEAM_PHOTOS_DIR_NAME}/${uniqueFilename}`;
 }
 
-export async function getTeamMembers(): Promise<{ members?: TeamMember[]; error?: string }> {
+export async function getTeamMembers(params?: { publicOnly?: boolean }): Promise<{ members?: TeamMember[]; error?: string }> {
   try {
-    let members = await getTeamMembersInternal();
+    const members = await getTeamMembersInternal(params);
     return { members };
   } catch (error: any) {
     return { error: error.message || "Failed to fetch team members." };
   }
 }
 
-// Modified to accept FormData
 export async function addTeamMember(formData: FormData): Promise<{ success: boolean; member?: TeamMember; error?: string; errors?: z.ZodIssue[] }> {
   try {
     const rawData: Record<string, any> = {};
     formData.forEach((value, key) => {
-      // Handle optional empty strings for URLs specifically for Zod parsing
       if ((key === 'githubUrl' || key === 'linkedinUrl') && value === '') {
-        rawData[key] = undefined; // Let Zod handle .optional().or(z.literal(''))
-      } else if (key !== 'imageFile') { // Don't put file in rawData for Zod
+        rawData[key] = undefined;
+      } else if (key === 'isPublic') {
+        rawData[key] = value === 'on' || value === 'true'; // FormData sends 'on' for checked, or string 'true'
+      } else if (key !== 'imageFile') {
         rawData[key] = value;
       }
     });
@@ -104,7 +108,7 @@ export async function addTeamMember(formData: FormData): Promise<{ success: bool
     const imageFile = formData.get('imageFile') as File | null;
     let imageUrl: string | null = null;
 
-    if (imageFile) {
+    if (imageFile && imageFile.size > 0) {
       imageUrl = await handleImageUpload(imageFile);
     }
 
@@ -119,7 +123,8 @@ export async function addTeamMember(formData: FormData): Promise<{ success: bool
       githubUrl: validatedData.githubUrl || "",
       linkedinUrl: validatedData.linkedinUrl || "",
       joiningDate: validatedData.joiningDate || now,
-      imageUrl: imageUrl || "", // Use uploaded image path or empty string
+      imageUrl: imageUrl || "",
+      isPublic: validatedData.isPublic, // Save isPublic status
       createdAt: now,
       updatedAt: now,
     };
@@ -137,7 +142,7 @@ export async function addTeamMember(formData: FormData): Promise<{ success: bool
 
 export async function getTeamMemberById(id: string): Promise<{ member?: TeamMember; error?: string }> {
   try {
-    const members = await getTeamMembersInternal();
+    const members = await getTeamMembersInternal(); // Fetch all for admin view
     const member = members.find(p => p.id === id);
     if (!member) {
       return { error: "Team member not found." };
@@ -148,19 +153,20 @@ export async function getTeamMemberById(id: string): Promise<{ member?: TeamMemb
   }
 }
 
-// Modified to accept FormData and memberId
 export async function updateTeamMember(id: string, formData: FormData): Promise<{ success: boolean; member?: TeamMember; error?: string, errors?: z.ZodIssue[] }> {
   try {
     const rawData: Record<string, any> = {};
      formData.forEach((value, key) => {
       if ((key === 'githubUrl' || key === 'linkedinUrl') && value === '') {
         rawData[key] = undefined; 
+      } else if (key === 'isPublic') {
+        rawData[key] = value === 'on' || value === 'true';
       } else if (key !== 'imageFile' && key !== 'existingImageUrl') {
         rawData[key] = value;
       }
     });
 
-    const validation = FormTeamMemberSchema.partial().safeParse(rawData); // Use partial for update
+    const validation = FormTeamMemberSchema.partial().safeParse(rawData); 
     if (!validation.success) {
       return { success: false, error: "Invalid data provided for update.", errors: validation.error.issues };
     }
@@ -174,26 +180,15 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
     }
     
     const originalMember = members[memberIndex];
-    let imageUrlToSave = originalMember.imageUrl; // Default to existing
+    let imageUrlToSave = originalMember.imageUrl; 
     const imageFile = formData.get('imageFile') as File | null;
     const existingImageUrlFromForm = formData.get('existingImageUrl') as string | null;
 
-
-    if (imageFile) {
-      // Optionally: delete old image if it exists and is different
-      // For simplicity, not deleting old image now.
+    if (imageFile && imageFile.size > 0) {
       imageUrlToSave = await handleImageUpload(imageFile) || originalMember.imageUrl;
     } else if (existingImageUrlFromForm !== null) {
-      // This case handles if the client wants to keep the existing image explicitly
-      // or if the image field was part of form but not changed.
-      // If no imageFile and no existingImageUrl in formData, it means client might want to remove image or keep original.
-      // The `FormTeamMemberSchema` doesn't have imageUrl, so `validatedData.imageUrl` isn't a thing.
-      // We rely on `existingImageUrl` from FormData or `originalMember.imageUrl`.
-      // If the form explicitly clears the image, there should be a mechanism for that.
-      // For now, if no new file, we assume we keep the original image unless 'existingImageUrl' is empty.
-       imageUrlToSave = existingImageUrlFromForm || ""; // If cleared, set to empty
+       imageUrlToSave = existingImageUrlFromForm || ""; 
     }
-
 
     const updatedMemberData: TeamMember = {
       ...originalMember,
@@ -204,6 +199,7 @@ export async function updateTeamMember(id: string, formData: FormData): Promise<
       githubUrl: validatedData.githubUrl !== undefined ? validatedData.githubUrl : originalMember.githubUrl,
       linkedinUrl: validatedData.linkedinUrl !== undefined ? validatedData.linkedinUrl : originalMember.linkedinUrl,
       joiningDate: validatedData.joiningDate !== undefined ? validatedData.joiningDate : originalMember.joiningDate,
+      isPublic: validatedData.isPublic !== undefined ? validatedData.isPublic : originalMember.isPublic, // Update isPublic
       imageUrl: imageUrlToSave,
       updatedAt: new Date().toISOString(), 
     };
@@ -228,13 +224,11 @@ export async function deleteTeamMember(id: string): Promise<{ success: boolean; 
       return { success: false, error: "Team member not found for deletion." };
     }
 
-    // Optionally: delete image file from public/uploads/team-photos
     if (memberToDelete.imageUrl) {
       try {
         const imagePath = path.join(process.cwd(), 'public', memberToDelete.imageUrl);
         await fs.unlink(imagePath);
       } catch (imgDelError: any) {
-        // Log error but don't fail the whole operation if image deletion fails
         console.warn(`Failed to delete image ${memberToDelete.imageUrl}: ${imgDelError.message}`);
       }
     }

@@ -4,13 +4,15 @@ import { getTeamMembers } from "@/actions/team-member-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { PlusCircle, Edit, UsersRound, AlertTriangle, Mail, Github, Linkedin, CalendarDays } from "lucide-react";
+import { PlusCircle, Edit, UsersRound, AlertTriangle, Mail, Github, Linkedin, CalendarDays, Eye, EyeOff } from "lucide-react";
 import DeleteTeamMemberButton from "./_components/DeleteTeamMemberButton";
 import type { TeamMember } from "@/lib/schemas/team-member-schemas";
+import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 
 export default async function AdminTeamMembersPage() {
-  const { members, error } = await getTeamMembers();
+  // Fetch all members for admin view
+  const { members, error } = await getTeamMembers({ publicOnly: false }); 
 
   if (error) {
     return (
@@ -41,7 +43,7 @@ export default async function AdminTeamMembersPage() {
                 <UsersRound className="w-8 h-8 mr-3 text-primary glowing-icon-primary" />
                 Manage Team Members
               </CardTitle>
-              <CardDescription>View, add, edit, or delete team members.</CardDescription>
+              <CardDescription>View, add, edit, or delete team members and manage their visibility.</CardDescription>
             </div>
             <Button asChild variant="default" className="shrink-0">
               <Link href="/admin/dashboard/team/add">
@@ -65,7 +67,7 @@ export default async function AdminTeamMembersPage() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Photo</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Visibility</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Joining Date</th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
@@ -86,7 +88,13 @@ export default async function AdminTeamMembersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{member.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{member.role}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{member.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Badge variant={member.isPublic ? "default" : "secondary"} 
+                               className={member.isPublic ? "bg-green-600/30 text-green-400 border-green-500" : "bg-yellow-600/30 text-yellow-400 border-yellow-500"}>
+                          {member.isPublic ? <Eye className="mr-1 h-3 w-3" /> : <EyeOff className="mr-1 h-3 w-3" />}
+                          {member.isPublic ? "Public" : "Private"}
+                        </Badge>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {member.joiningDate ? format(new Date(member.joiningDate), "PPP") : 'N/A'}
                       </td>

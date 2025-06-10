@@ -25,6 +25,7 @@ import {
   type VerifyPinInput
 } from '@/lib/schemas/admin-schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Label } from '@/components/ui/label'; // Import the standalone Label
 import { useToast } from '@/hooks/use-toast';
 import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
 
@@ -217,7 +218,7 @@ export default function AdminLoginPage() {
             <Form {...pinForm}>
               <form onSubmit={pinForm.handleSubmit(handlePinSubmit)}>
                 <CardContent className="space-y-6">
-                  <FormField control={pinForm.control} name="pin" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />PIN</FormLabel><FormControl><div className="relative"><Input type={showPin ? "text" : "password"} inputMode="numeric" pattern="[0-9]*" maxLength={6} placeholder="••••••" {...field} disabled={isSubmittingPin} className="focus-visible:ring-accent pr-10 text-center tracking-[0.3em]" /><Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-primary" onClick={() => setShowPin(!showPin)} tabIndex={-1}>{showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}<span className="sr-only">Toggle PIN visibility</span></Button></div></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={pinForm.control} name="pin" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />PIN</FormLabel><FormControl><div className="relative"><Input type={showPin ? "text" : "password"} inputMode="numeric" pattern="[0-9]*" maxLength={8} placeholder="••••••" {...field} disabled={isSubmittingPin} className="focus-visible:ring-accent pr-10 text-center tracking-[0.3em]" /><Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-primary" onClick={() => setShowPin(!showPin)} tabIndex={-1}>{showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}<span className="sr-only">Toggle PIN visibility</span></Button></div></FormControl><FormMessage /></FormItem>)} />
                   {serverError && (<p className="text-sm text-destructive text-center bg-destructive/10 p-2 rounded-md flex items-center justify-center"><AlertTriangle className="h-4 w-4 mr-2" />{serverError}</p>)}
                   <p className="text-xs text-muted-foreground text-center">Attempts remaining: {MAX_PIN_ATTEMPTS - pinAttempts}</p>
                 </CardContent>
@@ -238,19 +239,18 @@ export default function AdminLoginPage() {
                 <CardDescription>Too many incorrect PIN attempts. Enter Super Action code to bypass 2FA.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <FormItem>
-                    <FormLabel className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />Super Action Code</FormLabel>
-                    <FormControl>
-                        <Input 
-                            type="text" 
-                            placeholder="Enter Super Action hash" 
-                            value={superActionInput}
-                            onChange={(e) => setSuperActionInput(e.target.value)}
-                            disabled={isSubmittingSuperAction} 
-                            className="focus-visible:ring-accent"
-                        />
-                    </FormControl>
-                </FormItem>
+                <div className="space-y-2"> {/* Replaced FormItem */}
+                    <Label htmlFor="superActionInput" className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />Super Action Code</Label> {/* Replaced FormLabel with Label */}
+                    <Input 
+                        id="superActionInput"
+                        type="text" 
+                        placeholder="Enter Super Action hash" 
+                        value={superActionInput}
+                        onChange={(e) => setSuperActionInput(e.target.value)}
+                        disabled={isSubmittingSuperAction} 
+                        className="focus-visible:ring-accent"
+                    />
+                </div>
                 {serverError && (<p className="text-sm text-destructive text-center bg-destructive/10 p-2 rounded-md flex items-center justify-center"><AlertTriangle className="h-4 w-4 mr-2" />{serverError}</p>)}
             </CardContent>
             <CardFooter>
@@ -289,5 +289,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-
-    

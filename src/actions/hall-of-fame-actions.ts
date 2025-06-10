@@ -72,11 +72,11 @@ export async function manageHallOfFameEntry(data: ManageHallOfFameEntryInput): P
   }
   const validatedData = validation.data;
   const { userId, displayName, pointsToAdd, newAchievement, profileUrl } = validatedData;
-  let formAvatarUrl = validatedData.avatarUrl; // Avatar URL from the form
+  let formAvatarUrl = validatedData.avatarUrl; 
 
   let finalAvatarUrl = formAvatarUrl;
 
-  // Attempt to fetch GitHub avatar if profileUrl is a GitHub URL and admin didn't provide a specific avatarUrl
+  // Attempt to fetch GitHub avatar if profileUrl is a GitHub URL and admin didn't provide a specific avatarUrl in the form
   if ((!finalAvatarUrl || finalAvatarUrl.trim() === '') && profileUrl && profileUrl.startsWith('https://github.com/')) {
     const githubUsername = profileUrl.substring('https://github.com/'.length).split('/')[0];
     if (githubUsername) {
@@ -96,7 +96,7 @@ export async function manageHallOfFameEntry(data: ManageHallOfFameEntryInput): P
         }
       } catch (fetchError: any) {
         console.error(`Error fetching GitHub avatar for ${githubUsername}:`, fetchError.message);
-        // Do not block saving if GitHub fetch fails, finalAvatarUrl will remain as admin provided (or empty)
+        // Do not block saving if GitHub fetch fails, finalAvatarUrl will remain as admin provided (or empty from form)
       }
     }
   }
@@ -113,8 +113,10 @@ export async function manageHallOfFameEntry(data: ManageHallOfFameEntryInput): P
       if (newAchievement && !entry.achievements.includes(newAchievement)) {
         entry.achievements.push(newAchievement);
       }
-      entry.profileUrl = profileUrl || entry.profileUrl; // Keep existing if not provided
-      entry.avatarUrl = finalAvatarUrl || entry.avatarUrl; // Use fetched/form or keep existing if both are empty
+      entry.profileUrl = profileUrl || entry.profileUrl; 
+      // Use fetched/form avatar if available, otherwise keep existing. If formAvatarUrl was empty and fetch failed, finalAvatarUrl would be empty, so existing is kept.
+      entry.avatarUrl = finalAvatarUrl || entry.avatarUrl; 
+
 
       if (pointsToAdd > 0 || newAchievement) {
         entry.lastRewardedAt = new Date().toISOString();
@@ -129,7 +131,7 @@ export async function manageHallOfFameEntry(data: ManageHallOfFameEntryInput): P
         achievements: newAchievement ? [newAchievement] : [],
         lastRewardedAt: (pointsToAdd > 0 || newAchievement) ? new Date().toISOString() : null,
         profileUrl: profileUrl || null,
-        avatarUrl: finalAvatarUrl || null,
+        avatarUrl: finalAvatarUrl || null, // Use fetched/form avatar, or null if both empty
       };
       entries.push(entry);
     }
@@ -160,3 +162,4 @@ export async function deleteHallOfFameEntry(id: string): Promise<{ success: bool
     return { success: false, error: error.message || "Failed to delete Hall of Fame entry." };
   }
 }
+

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -55,8 +56,8 @@ export default function AdminLoginForm() {
     }
     if (exists && adminId) {
       setCurrentAdminId(adminId);
-      // Only switch to PIN entry if not already in login_form (e.g., after super action)
       if (is2FAEnabled && viewMode !== 'login_form') {
+        setPinAttempts(0); 
         setViewMode('pin_entry');
       } else {
         setViewMode('login_form');
@@ -64,7 +65,7 @@ export default function AdminLoginForm() {
     } else {
       setViewMode('create');
     }
-  }, [toast, viewMode]); // Added viewMode to dependency array
+  }, [toast, viewMode]);
 
   useEffect(() => {
     checkInitialStatus();
@@ -123,8 +124,16 @@ export default function AdminLoginForm() {
     setServerError(null);
     const result = await loginAdmin(data);
     if (result.success) {
-      toast({ title: "Success", description: result.message });
-      window.location.assign('/admin/dashboard');
+      if (result.requiresPin && result.adminId) {
+        setCurrentAdminId(result.adminId);
+        setPinAttempts(0);
+        setViewMode('pin_entry');
+      } else {
+        toast({ title: "Success", description: result.message });
+        setTimeout(() => {
+          window.location.assign('/admin/dashboard');
+        }, 0);
+      }
     } else {
       setServerError(result.message);
       toast({ variant: "destructive", title: "Login Failed", description: result.message });
@@ -141,7 +150,9 @@ export default function AdminLoginForm() {
     if (result.success) {
       toast({ title: "PIN Verified", description: result.message || "PIN verified. Redirecting..." });
       setPinAttempts(0);
-      window.location.assign('/admin/dashboard'); // Hard redirect
+      setTimeout(() => {
+        window.location.assign('/admin/dashboard');
+      }, 0);
     } else {
       const newAttempts = pinAttempts + 1;
       setPinAttempts(newAttempts);
@@ -292,3 +303,4 @@ export default function AdminLoginForm() {
     </div>
   );
 }
+

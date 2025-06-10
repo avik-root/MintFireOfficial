@@ -4,16 +4,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored } from '@/lib/schemas/admin-schemas';
-import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, BaseCreateAdminSchemaContents } from '@/lib/schemas/admin-schemas';
+import bcrypt from 'bcrypt';
+import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput } from '@/lib/schemas/admin-schemas';
+import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, Enable2FASchema, Change2FAPinSchema, Disable2FASchema } from '@/lib/schemas/admin-schemas';
 import { revalidatePath } from 'next/cache';
 
 const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
+const SALT_ROUNDS = 10;
+const SUPER_ACTION_HASH = "a3f2c8e4b197a0db3c57d402fa6f90e67bb4b72ea6f845de1a0f8d44b6a7fe6c10d1940879935c8fda6d013caa4e6c967f3d3bb8ea8eac3257b6f5f0a17758e1";
 
 async function getAdminsInternal(): Promise<AdminUserStored[]> {
   try {
     await fs.mkdir(path.dirname(adminFilePath), { recursive: true });
-
     let fileContent: string;
     try {
       fileContent = await fs.readFile(adminFilePath, 'utf-8');
@@ -24,23 +26,17 @@ async function getAdminsInternal(): Promise<AdminUserStored[]> {
       }
       throw readError;
     }
-
-    if (fileContent.trim() === '') {
-      return [];
-    }
-
+    if (fileContent.trim() === '') return [];
     const items = JSON.parse(fileContent);
-
     if (!Array.isArray(items)) {
-      console.error(`Data in ${adminFilePath} is not an array. Found: ${typeof items}. Overwriting with empty array.`);
+      console.error(`Data in ${adminFilePath} is not an array. Overwriting with empty array.`);
       await fs.writeFile(adminFilePath, JSON.stringify([]), 'utf-8');
       return [];
     }
-    
     return z.array(AdminUserStoredSchema).parse(items);
   } catch (error: any) {
     console.error(`Error processing admin file (${adminFilePath}):`, error);
-    let errorMessage = `Could not process admin data from ${adminFilePath}.`;
+    let errorMessage = `Could not process admin data.`;
     if (error instanceof z.ZodError) {
       errorMessage = `Admin data validation failed: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
     } else if (error.message) {
@@ -56,14 +52,18 @@ async function saveAdmins(admins: AdminUserStored[]): Promise<void> {
     await fs.writeFile(adminFilePath, JSON.stringify(admins, null, 2), 'utf-8');
   } catch (error: any) {
     console.error("Error writing admin file:", error);
-    throw new Error('Could not save admin data. Please ensure the data directory is writable.');
+    throw new Error('Could not save admin data.');
   }
 }
 
-export async function checkAdminExists(): Promise<{ exists: boolean; error?: string }> {
+export async function checkAdminExists(): Promise<{ exists: boolean; adminId?: string; is2FAEnabled?: boolean; error?: string }> {
   try {
     const admins = await getAdminsInternal();
-    return { exists: admins.length > 0 };
+    if (admins.length > 0) {
+      const admin = admins[0]; // Assuming single admin
+      return { exists: true, adminId: admin.adminId, is2FAEnabled: admin.is2FAEnabled };
+    }
+    return { exists: false };
   } catch (error: any) {
     return { exists: false, error: error.message || "Failed to check admin status." };
   }
@@ -77,13 +77,16 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
   try {
     const admins = await getAdminsInternal();
     if (admins.length > 0) {
-      return { success: false, message: "An admin account already exists. Cannot create another." };
+      return { success: false, message: "An admin account already exists." };
     }
+    const hashedPassword = await bcrypt.hash(validation.data.password, SALT_ROUNDS);
     const newAdmin: AdminUserStored = { 
       adminName: validation.data.adminName,
       adminId: validation.data.adminId,
       email: validation.data.email, 
-      password: validation.data.password // Store password directly as per current design
+      password: hashedPassword,
+      is2FAEnabled: false,
+      hashedPin: null,
     };
     await saveAdmins([newAdmin]);
     return { success: true, message: "Admin account created successfully. You can now log in." };
@@ -96,7 +99,7 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
   try {
     const admins = await getAdminsInternal();
     const admin = admins.find(a => 
-      a.email === data.email &&
+      a.email.toLowerCase() === data.email.toLowerCase() &&
       a.adminName === data.adminName &&
       a.adminId === data.adminId
     );
@@ -104,7 +107,8 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     if (!admin) {
       return { success: false, message: "Invalid credentials." };
     }
-    if (admin.password !== data.password) { // Direct password comparison
+    const passwordMatch = await bcrypt.compare(data.password, admin.password);
+    if (!passwordMatch) {
         return { success: false, message: "Invalid credentials." };
     }
     return { success: true, message: "Login successful! Redirecting..." };
@@ -119,12 +123,13 @@ export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?:
     if (admins.length === 0) {
       return { error: "Admin account not found." };
     }
-    const currentAdmin = admins[0]; // Assuming single admin system
+    const currentAdmin = admins[0];
     return { 
       admin: {
         adminName: currentAdmin.adminName,
         adminId: currentAdmin.adminId,
         email: currentAdmin.email,
+        is2FAEnabled: currentAdmin.is2FAEnabled || false,
       } 
     };
   } catch (error: any) {
@@ -135,26 +140,26 @@ export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?:
 export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
   const validation = UpdateAdminProfileSchema.safeParse(data);
   if (!validation.success) {
-      return { success: false, message: "Invalid data provided for update.", errors: validation.error.issues };
+      return { success: false, message: "Invalid data for update.", errors: validation.error.issues };
   }
   const validatedData = validation.data;
 
   try {
     const admins = await getAdminsInternal();
     if (admins.length === 0) {
-      return { success: false, message: "Admin account not found. Cannot update." };
+      return { success: false, message: "Admin account not found." };
     }
-    
     let currentAdmin = admins[0]; 
 
     if (validatedData.newPassword) {
-      if (!validatedData.currentPassword) {
-        return { success: false, message: "Current password is required to set a new password." };
+      if (!validatedData.currentPassword) { // This should be caught by Zod, but belt-and-suspenders
+        return { success: false, message: "Current password required to set new password." };
       }
-      if (validatedData.currentPassword !== currentAdmin.password) {
+      const currentPasswordMatch = await bcrypt.compare(validatedData.currentPassword, currentAdmin.password);
+      if (!currentPasswordMatch) {
         return { success: false, message: "Incorrect current password." };
       }
-      currentAdmin.password = validatedData.newPassword;
+      currentAdmin.password = await bcrypt.hash(validatedData.newPassword, SALT_ROUNDS);
     }
 
     currentAdmin.adminName = validatedData.adminName;
@@ -162,13 +167,127 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
     currentAdmin.email = validatedData.email;
 
     await saveAdmins([currentAdmin, ...admins.slice(1)]);
-    
     revalidatePath('/admin/dashboard/settings'); 
-    
     return { success: true, message: "Admin profile updated successfully." };
-
   } catch (error: any) {
-    console.error("Error updating admin profile:", error);
     return { success: false, message: error.message || "Failed to update admin profile." };
   }
+}
+
+// --- 2FA Actions ---
+export async function enable2FA(adminId: string, pinData: Enable2FAInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
+  const validation = Enable2FASchema.safeParse(pinData);
+  if(!validation.success) {
+    return { success: false, message: "Invalid PIN data.", errors: validation.error.issues };
+  }
+  try {
+    const admins = await getAdminsInternal();
+    const adminIndex = admins.findIndex(a => a.adminId === adminId);
+    if (adminIndex === -1) return { success: false, message: "Admin not found." };
+
+    admins[adminIndex].hashedPin = await bcrypt.hash(validation.data.newPin, SALT_ROUNDS);
+    admins[adminIndex].is2FAEnabled = true;
+    await saveAdmins(admins);
+    revalidatePath('/admin/dashboard/settings');
+    return { success: true, message: "2FA enabled successfully." };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to enable 2FA." };
+  }
+}
+
+export async function change2FAPin(adminId: string, pinData: Change2FAPinInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
+  const validation = Change2FAPinSchema.safeParse(pinData);
+   if(!validation.success) {
+    return { success: false, message: "Invalid PIN data.", errors: validation.error.issues };
+  }
+  try {
+    const admins = await getAdminsInternal();
+    const adminIndex = admins.findIndex(a => a.adminId === adminId);
+    if (adminIndex === -1) return { success: false, message: "Admin not found." };
+    const admin = admins[adminIndex];
+    if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA is not enabled for this account."};
+
+    if (!validation.data.currentPin) {
+       return { success: false, message: "Current PIN is required to change PIN.", errors: [{path: ["currentPin"], message: "Current PIN is required."}] };
+    }
+    const currentPinMatch = await bcrypt.compare(validation.data.currentPin, admin.hashedPin);
+    if (!currentPinMatch) return { success: false, message: "Incorrect current PIN." };
+
+    admins[adminIndex].hashedPin = await bcrypt.hash(validation.data.newPin, SALT_ROUNDS);
+    await saveAdmins(admins);
+    revalidatePath('/admin/dashboard/settings');
+    return { success: true, message: "2FA PIN changed successfully." };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to change 2FA PIN." };
+  }
+}
+
+export async function disable2FA(adminId: string, verificationData: Disable2FAInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
+  const validation = Disable2FASchema.safeParse(verificationData);
+  if(!validation.success){
+      return {success: false, message: "Invalid input", errors: validation.error.issues};
+  }
+  try {
+    const admins = await getAdminsInternal();
+    const adminIndex = admins.findIndex(a => a.adminId === adminId);
+    if (adminIndex === -1) return { success: false, message: "Admin not found." };
+    const admin = admins[adminIndex];
+    if (!admin.is2FAEnabled) return { success: false, message: "2FA is already disabled."};
+
+    let verified = false;
+    if (admin.hashedPin) {
+      verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.hashedPin);
+    }
+    if (!verified) { // Try password if PIN failed or no PIN was set (should not happen if 2FA enabled)
+      verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.password);
+    }
+    if (!verified) return { success: false, message: "Incorrect current PIN or password." };
+    
+    admins[adminIndex].is2FAEnabled = false;
+    admins[adminIndex].hashedPin = null;
+    await saveAdmins(admins);
+    revalidatePath('/admin/dashboard/settings');
+    revalidatePath('/admin/login');
+    return { success: true, message: "2FA disabled successfully." };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to disable 2FA." };
+  }
+}
+
+export async function verifyPinForLogin(adminId: string, pin: string): Promise<{ success: boolean; message?: string }> {
+    try {
+        const admins = await getAdminsInternal();
+        const admin = admins.find(a => a.adminId === adminId);
+        if (!admin) return { success: false, message: "Admin not found." };
+        if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA not active." };
+
+        const pinMatch = await bcrypt.compare(pin, admin.hashedPin);
+        if (pinMatch) {
+            return { success: true };
+        } else {
+            return { success: false, message: "Incorrect PIN." };
+        }
+    } catch (error: any) {
+        return { success: false, message: error.message || "PIN verification failed." };
+    }
+}
+
+export async function disable2FABySuperAction(adminId: string, superActionAttempt: string): Promise<{ success: boolean; message: string }> {
+    if (superActionAttempt !== SUPER_ACTION_HASH) {
+        return { success: false, message: "Invalid Super Action." };
+    }
+    try {
+        const admins = await getAdminsInternal();
+        const adminIndex = admins.findIndex(a => a.adminId === adminId);
+        if (adminIndex === -1) return { success: false, message: "Admin not found for Super Action." };
+        
+        admins[adminIndex].is2FAEnabled = false;
+        admins[adminIndex].hashedPin = null;
+        await saveAdmins(admins);
+        revalidatePath('/admin/dashboard/settings');
+        revalidatePath('/admin/login');
+        return { success: true, message: "2FA disabled via Super Action. You can now log in." };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Failed to disable 2FA with Super Action." };
+    }
 }

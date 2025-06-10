@@ -1,37 +1,57 @@
 
+"use client"; // Make this a client component to manage state and re-fetch
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminProfile } from "@/actions/admin-actions";
 import AdminProfileForm from "./_components/AdminProfileForm";
 import { Settings as SettingsIcon, AlertTriangle, Loader2 } from "lucide-react";
-import { redirect } from "next/navigation";
+import type { AdminProfile } from '@/lib/schemas/admin-schemas'; // Import type
 
-export default async function AdminSettingsPage() {
-  const { admin, error } = await getAdminProfile();
+export default function AdminSettingsPage() {
+  const [admin, setAdmin] = useState<AdminProfile | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (error) {
-    // This could happen if admin.json is missing or corrupt, or no admin exists.
-    // For now, we'll show an error, but a robust app might redirect to login or setup.
+  const fetchAdminData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    const { admin: fetchedAdmin, error: fetchError } = await getAdminProfile();
+    if (fetchError) {
+      setError(fetchError);
+      setAdmin(null); 
+    } else if (fetchedAdmin) {
+      setAdmin(fetchedAdmin);
+    } else {
+      setError("Admin profile not found, but no specific error returned.");
+      setAdmin(null);
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchAdminData();
+  }, [fetchAdminData]);
+
+  if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4 md:px-6 flex flex-col items-center">
         <div className="text-center mb-12">
-          <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-4xl font-bold font-headline mb-2 text-destructive">Error</h1>
-          <p className="text-lg text-muted-foreground">{error}</p>
-          <p className="text-sm text-muted-foreground mt-2">Please ensure an admin account exists and the data files are accessible.</p>
+          <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
+          <h1 className="text-4xl font-bold font-headline mb-2">Loading Admin Settings...</h1>
         </div>
       </div>
     );
   }
   
-  if (!admin) {
-    // Should ideally not happen if checkAdminExists is used before allowing access to dashboard.
-    // But as a safeguard, or if admin.json gets deleted.
-     return (
+  if (error || !admin) {
+    return (
       <div className="container mx-auto py-8 px-4 md:px-6 flex flex-col items-center">
         <div className="text-center mb-12">
-          <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
-          <h1 className="text-4xl font-bold font-headline mb-2">Loading Admin Data...</h1>
-          <p className="text-lg text-muted-foreground">If this persists, the admin account might not be set up correctly.</p>
+          <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-4xl font-bold font-headline mb-2 text-destructive">Error</h1>
+          <p className="text-lg text-muted-foreground">{error || "Admin profile could not be loaded."}</p>
+          <p className="text-sm text-muted-foreground mt-2">Please ensure an admin account exists and the data files are accessible.</p>
         </div>
       </div>
     );
@@ -44,11 +64,11 @@ export default async function AdminSettingsPage() {
           <SettingsIcon className="w-10 h-10 text-primary glowing-icon-primary" />
           <div>
             <h1 className="font-headline text-4xl font-bold">Admin Settings</h1>
-            <p className="text-muted-foreground">Manage your administrator profile and password.</p>
+            <p className="text-muted-foreground">Manage your administrator profile, password, and 2FA settings.</p>
           </div>
         </div>
       </div>
-      <AdminProfileForm admin={admin} />
+      <AdminProfileForm admin={admin} onProfileUpdate={fetchAdminData} />
     </div>
   );
 }

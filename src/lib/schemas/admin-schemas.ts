@@ -36,11 +36,12 @@ export const LoginAdminSchema = z.object({
 });
 export type LoginAdminInput = z.infer<typeof LoginAdminSchema>;
 
-// Schema for the data structure of an admin profile (excluding sensitive data like password for general display)
+// Schema for the data structure of an admin profile
 export const AdminProfileSchema = z.object({
   adminName: z.string(),
   adminId: z.string(),
   email: z.string().email(),
+  is2FAEnabled: z.boolean().default(false),
 });
 export type AdminProfile = z.infer<typeof AdminProfileSchema>;
 
@@ -54,9 +55,7 @@ export const UpdateAdminProfileSchema = z.object({
   confirmNewPassword: z.string().optional(),
 }).superRefine((data, ctx) => {
   const { currentPassword, newPassword, confirmNewPassword } = data;
-
   const tryingToChangePassword = !!newPassword || !!confirmNewPassword || (!!currentPassword && (!!newPassword || !!confirmNewPassword));
-
 
   if (tryingToChangePassword) {
     if (!currentPassword) {
@@ -65,7 +64,6 @@ export const UpdateAdminProfileSchema = z.object({
     if (!newPassword) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "New password is required.", path: ["newPassword"] });
     } else {
-      // Validate new password strength using the rules from the base schema's password field
       const passwordStrengthValidation = BaseCreateAdminObjectSchema.shape.password.safeParse(newPassword);
       if (!passwordStrengthValidation.success) {
         passwordStrengthValidation.error.issues.forEach(issue => {
@@ -81,14 +79,51 @@ export const UpdateAdminProfileSchema = z.object({
     }
   }
 });
-
 export type UpdateAdminProfileInput = z.infer<typeof UpdateAdminProfileSchema>;
 
-// Schema for admin user stored in JSON (internal, includes password)
+// Schema for admin user stored in JSON (internal, includes hashed password and PIN)
 export const AdminUserStoredSchema = z.object({
   adminName: z.string(),
   adminId: z.string(),
   email: z.string().email(),
-  password: z.string(), 
+  password: z.string(), // This will store the hashed password
+  is2FAEnabled: z.boolean().default(false),
+  hashedPin: z.string().optional().nullable(),
 });
 export type AdminUserStored = z.infer<typeof AdminUserStoredSchema>;
+
+
+// Schemas for 2FA PIN Management
+const pinSchema = z.string().length(6, { message: "PIN must be exactly 6 digits." }).regex(/^\d{6}$/, { message: "PIN must be 6 digits." });
+// For 6 to 8 digit PIN, adjust as follows:
+// const pinSchema = z.string().min(6, {message: "PIN must be 6 to 8 digits."}).max(8, {message: "PIN must be 6 to 8 digits."}).regex(/^\d{6,8}$/, { message: "PIN must contain only digits." });
+
+
+export const Enable2FASchema = z.object({
+  newPin: pinSchema,
+  confirmNewPin: pinSchema,
+}).refine(data => data.newPin === data.confirmNewPin, {
+  message: "PINs don't match.",
+  path: ["confirmNewPin"],
+});
+export type Enable2FAInput = z.infer<typeof Enable2FASchema>;
+
+export const Change2FAPinSchema = z.object({
+  currentPin: pinSchema.optional(), // Or password, handled in action
+  newPin: pinSchema,
+  confirmNewPin: pinSchema,
+}).refine(data => data.newPin === data.confirmNewPin, {
+  message: "New PINs don't match.",
+  path: ["confirmNewPin"],
+});
+export type Change2FAPinInput = z.infer<typeof Change2FAPinSchema>;
+
+export const Disable2FASchema = z.object({
+  currentPinOrPassword: z.string().min(1, "Current PIN or password is required to disable 2FA."),
+});
+export type Disable2FAInput = z.infer<typeof Disable2FASchema>;
+
+export const VerifyPinSchema = z.object({
+  pin: pinSchema,
+});
+export type VerifyPinInput = z.infer<typeof VerifyPinSchema>;

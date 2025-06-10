@@ -6,9 +6,9 @@ import path from 'path';
 import { z } from 'zod';
 import {
   BlogPostSchema,
-  CreateBlogPostInputSchema,
+  CreateBlogPostInputSchema, // Using the redefined schema
   type BlogPost,
-  type CreateBlogPostInput,
+  // type CreateBlogPostInput is now specifically for the form data
 } from '@/lib/schemas/blog-post-schemas';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
@@ -124,44 +124,43 @@ export async function getBlogPosts(params?: { publishedOnly?: boolean }): Promis
 
 export async function addBlogPost(formData: FormData): Promise<{ success: boolean; post?: BlogPost; error?: string; errors?: z.ZodIssue[] }> {
   try {
-    const rawData: Record<string, any> = {};
-    formData.forEach((value, key) => {
-      if (key === 'isPublished') {
-        rawData[key] = String(value).toLowerCase() === 'true' || value === 'on';
-      } else if (key !== 'imageFile') {
-        rawData[key] = value;
-      }
-    });
+    const rawData = {
+      title: formData.get('title') as string || "",
+      slug: formData.get('slug') as string || "",
+      content: formData.get('content') as string || "",
+      author: formData.get('author') as string || "",
+      isPublished: formData.get('isPublished') === 'true',
+      tagsString: formData.get('tagsString') as string | undefined,
+    };
 
     const validation = CreateBlogPostInputSchema.safeParse(rawData);
     if (!validation.success) {
       return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
     }
     
-    const validatedData = validation.data;
+    const validatedFormInput = validation.data;
     const imageFile = formData.get('imageFile') as File | null;
-    let imageUrl: string | null = null;
+    let imageUrlPath: string | null = null;
 
     if (imageFile && imageFile.size > 0) {
-      imageUrl = await handleImageUploadServer(imageFile);
+      imageUrlPath = await handleImageUploadServer(imageFile);
     }
 
-
     const posts = await getBlogPostsInternal();
-    const slugExists = posts.some(p => p.slug === validatedData.slug);
+    const slugExists = posts.some(p => p.slug === validatedFormInput.slug);
     if (slugExists) {
       return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.'}] };
     }
 
     const newPost: BlogPost = {
       id: crypto.randomUUID(),
-      title: validatedData.title,
-      slug: validatedData.slug,
-      content: validatedData.content,
-      author: validatedData.author,
-      tags: transformTags(validatedData.tagsString),
-      imageUrl: imageUrl,
-      isPublished: validatedData.isPublished,
+      title: validatedFormInput.title,
+      slug: validatedFormInput.slug,
+      content: validatedFormInput.content,
+      author: validatedFormInput.author,
+      tags: transformTags(validatedFormInput.tagsString),
+      imageUrl: imageUrlPath,
+      isPublished: validatedFormInput.isPublished,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -173,6 +172,7 @@ export async function addBlogPost(formData: FormData): Promise<{ success: boolea
     revalidatePath(`/blog/${newPost.slug}`);
     return { success: true, post: newPost };
   } catch (error: any) {
+    console.error("Add blog post error:", error);
     return { success: false, error: error.message || "Failed to add blog post." };
   }
 }
@@ -205,24 +205,23 @@ export async function getBlogPostBySlug(slug: string): Promise<{ post?: BlogPost
 
 export async function updateBlogPost(id: string, formData: FormData): Promise<{ success: boolean; post?: BlogPost; error?: string, errors?: z.ZodIssue[] }> {
  try {
-    const rawData: Record<string, any> = {};
-    let removeImageFlag = false;
-    formData.forEach((value, key) => {
-      if (key === 'isPublished') {
-        rawData[key] = String(value).toLowerCase() === 'true' || value === 'on';
-      } else if (key === 'removeImage') {
-        removeImageFlag = String(value).toLowerCase() === 'true';
-      } else if (key !== 'imageFile' && key !== 'existingImageUrl') {
-        rawData[key] = value;
-      }
-    });
+    const rawDataToValidate = {
+      title: formData.get('title') as string | undefined,
+      slug: formData.get('slug') as string | undefined,
+      content: formData.get('content') as string | undefined,
+      author: formData.get('author') as string | undefined,
+      isPublished: formData.get('isPublished') !== null ? formData.get('isPublished') === 'true' : undefined,
+      tagsString: formData.get('tagsString') as string | undefined,
+    };
 
+    // Filter out undefined values so partial schema validation works as expected
+    const definedRawData = Object.fromEntries(Object.entries(rawDataToValidate).filter(([_, v]) => v !== undefined));
 
-    const validation = CreateBlogPostInputSchema.safeParse(rawData); 
+    const validation = CreateBlogPostInputSchema.partial().safeParse(definedRawData); 
     if (!validation.success) {
       return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
     }
-    const validatedData = validation.data;
+    const validatedFormInput = validation.data;
 
     let posts = await getBlogPostsInternal();
     const postIndex = posts.findIndex(p => p.id === id);
@@ -233,13 +232,16 @@ export async function updateBlogPost(id: string, formData: FormData): Promise<{ 
 
     const originalPost = posts[postIndex];
 
-    const slugExists = posts.some(p => p.slug === validatedData.slug && p.id !== id);
-    if (slugExists) {
-      return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.'}] };
+    if (validatedFormInput.slug && validatedFormInput.slug !== originalPost.slug) {
+        const slugExists = posts.some(p => p.slug === validatedFormInput.slug && p.id !== id);
+        if (slugExists) {
+          return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.'}] };
+        }
     }
     
     let imageUrlToSave = originalPost.imageUrl;
     const imageFile = formData.get('imageFile') as File | null;
+    const removeImageFlag = formData.get('removeImage') === 'true';
     
     if (removeImageFlag && originalPost.imageUrl) {
         await deleteOldImage(originalPost.imageUrl);
@@ -251,16 +253,17 @@ export async function updateBlogPost(id: string, formData: FormData): Promise<{ 
         imageUrlToSave = await handleImageUploadServer(imageFile);
     }
     // If no new file, and not removing, imageUrlToSave remains originalPost.imageUrl
+    // (or the value from `existingImageUrl` if it was sent, but handleImageUploadServer handles replacement).
     
     const updatedPostData: BlogPost = {
       ...originalPost, 
-      title: validatedData.title,
-      slug: validatedData.slug,
-      content: validatedData.content,
-      author: validatedData.author,
-      tags: transformTags(validatedData.tagsString),
-      isPublished: validatedData.isPublished,
-      imageUrl: imageUrlToSave, // Use the potentially updated URL
+      title: validatedFormInput.title ?? originalPost.title,
+      slug: validatedFormInput.slug ?? originalPost.slug,
+      content: validatedFormInput.content ?? originalPost.content,
+      author: validatedFormInput.author ?? originalPost.author,
+      tags: validatedFormInput.tagsString !== undefined ? transformTags(validatedFormInput.tagsString) : originalPost.tags,
+      isPublished: validatedFormInput.isPublished !== undefined ? validatedFormInput.isPublished : originalPost.isPublished,
+      imageUrl: imageUrlToSave,
       updatedAt: new Date().toISOString(), 
     };
     
@@ -289,7 +292,6 @@ export async function deleteBlogPost(id: string): Promise<{ success: boolean; er
       return { success: false, error: "Blog post not found for deletion." };
     }
 
-    // Delete associated image if it exists
     if (postToDelete.imageUrl) {
         await deleteOldImage(postToDelete.imageUrl);
     }
@@ -305,4 +307,3 @@ export async function deleteBlogPost(id: string): Promise<{ success: boolean; er
     return { success: false, error: error.message || "Failed to delete blog post." };
   }
 }
-

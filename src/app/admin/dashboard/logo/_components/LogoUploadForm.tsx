@@ -15,14 +15,15 @@ import { uploadLogoAction } from '@/actions/logo-actions';
 import { useRouter } from 'next/navigation';
 
 const MAX_FILE_SIZE_MB = 1;
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
+const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg']; // Standardized MIME types
+const ACCEPTED_FILE_EXTENSIONS_STRING = ".png, .jpg, .jpeg";
 
 const UploadSchema = z.object({
   logoFile: z.custom<File>((val) => val instanceof File, "Logo file is required.")
     .refine((file) => file.size <= MAX_FILE_SIZE_MB * 1024 * 1024, `Max file size is ${MAX_FILE_SIZE_MB}MB.`)
     .refine(
       (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
-      "Only .jpg, .jpeg, and .png formats are supported."
+      `Only PNG (${ACCEPTED_FILE_EXTENSIONS_STRING}) and JPEG (${ACCEPTED_FILE_EXTENSIONS_STRING}) formats are supported.`
     ),
 });
 type UploadInput = z.infer<typeof UploadSchema>;
@@ -45,7 +46,7 @@ export default function LogoUploadForm({ onUploadSuccess }: LogoUploadFormProps)
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue('logoFile', file); // Update RHF state
+      form.setValue('logoFile', file, { shouldValidate: true }); // Validate on change
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
@@ -72,10 +73,16 @@ export default function LogoUploadForm({ onUploadSuccess }: LogoUploadFormProps)
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      onUploadSuccess(); // Callback to refresh current logo display on page
-      router.refresh(); // Force refresh of current route to update layout if needed
+      onUploadSuccess(); 
+      router.refresh(); 
     } else {
       toast({ variant: "destructive", title: "Upload Failed", description: result.error || "An unknown error occurred." });
+      // Reset file input ref if server fails, allowing re-selection of same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      form.resetField('logoFile'); // Also reset RHF state for the file
+      setPreview(null); // Clear preview on server error
     }
   };
 
@@ -85,7 +92,7 @@ export default function LogoUploadForm({ onUploadSuccess }: LogoUploadFormProps)
         <FormField
           control={form.control}
           name="logoFile"
-          render={({ fieldState }) => ( // field not directly used, onChange handled by handleFileChange
+          render={({ fieldState }) => ( 
             <FormItem>
               <FormLabel className="flex items-center text-base">
                 <ImageIcon className="mr-2 h-5 w-5 text-muted-foreground" />
@@ -94,7 +101,7 @@ export default function LogoUploadForm({ onUploadSuccess }: LogoUploadFormProps)
               <FormControl>
                 <Input
                   type="file"
-                  accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                  accept={`${ACCEPTED_IMAGE_TYPES.join(',')},${ACCEPTED_FILE_EXTENSIONS_STRING}`}
                   onChange={handleFileChange}
                   disabled={isUploading}
                   ref={fileInputRef}
@@ -102,7 +109,7 @@ export default function LogoUploadForm({ onUploadSuccess }: LogoUploadFormProps)
                 />
               </FormControl>
               <FormDescription>
-                PNG or JPG format. Max {MAX_FILE_SIZE_MB}MB. Recommended square or slightly wide.
+                PNG ({ACCEPTED_FILE_EXTENSIONS_STRING}) or JPEG ({ACCEPTED_FILE_EXTENSIONS_STRING}) format. Max {MAX_FILE_SIZE_MB}MB. Recommended square or slightly wide.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -113,7 +120,7 @@ export default function LogoUploadForm({ onUploadSuccess }: LogoUploadFormProps)
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">New Logo Preview:</p>
             <div className="relative w-32 h-32 border border-dashed border-border rounded-md p-2 flex items-center justify-center">
-              <Image src={preview} alt="New logo preview" fill style={{ objectFit: 'contain' }} data-ai-hint="logo preview" />
+              <Image src={preview} alt="New logo preview" fill style={{ objectFit: 'contain' }} data-ai-hint="logo preview"/>
             </div>
           </div>
         )}

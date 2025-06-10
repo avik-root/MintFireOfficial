@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTeamMembers } from "@/actions/team-member-actions";
 import { Button } from "@/components/ui/button";
@@ -26,24 +26,38 @@ export default function AdminTeamMembersPage() {
   const [sortKey, setSortKey] = useState<SortKey>('joiningDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-  useEffect(() => {
-    async function fetchMembers() {
-      setIsLoading(true);
+  const fetchData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setIsLoading(true);
+    // setError(null);
+    try {
       const { members, error: fetchError } = await getTeamMembers({ publicOnly: false });
       if (fetchError) {
         setError(fetchError);
       } else if (members) {
         setAllMembers(members);
+         if (!isInitialLoad) setError(null);
       }
-      setIsLoading(false);
+    } catch (e: any) {
+      setError(e.message || "An unexpected error occurred fetching team members.");
     }
-    fetchMembers();
+     if (isInitialLoad) setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData(true); // Initial fetch
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        fetchData(false);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
 
   const filteredAndSortedMembers = useMemo(() => {
     let members = [...allMembers];
 
-    // Filter
     if (searchTerm) {
       members = members.filter(member =>
         member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,13 +66,11 @@ export default function AdminTeamMembersPage() {
       );
     }
 
-    // Sort
     members.sort((a, b) => {
       let valA = a[sortKey];
       let valB = b[sortKey];
 
       if (sortKey === 'joiningDate') {
-        // Handle potential null/undefined joining dates if they weren't always set
         valA = a.joiningDate ? new Date(a.joiningDate).getTime() : 0;
         valB = b.joiningDate ? new Date(b.joiningDate).getTime() : 0;
       } else if (typeof valA === 'string' && typeof valB === 'string') {
@@ -88,7 +100,7 @@ export default function AdminTeamMembersPage() {
     );
   }
 
-  if (error) {
+  if (error && filteredAndSortedMembers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
         <AlertTriangle className="w-16 h-16 mb-4" />
@@ -125,6 +137,12 @@ export default function AdminTeamMembersPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
+       {error && filteredAndSortedMembers.length > 0 && (
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          <p>Error refreshing data: {error}. Displaying last known data.</p>
+        </div>
+      )}
       <Card className="layered-card w-full">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -172,7 +190,7 @@ export default function AdminTeamMembersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredAndSortedMembers.length === 0 ? (
+          {filteredAndSortedMembers.length === 0 && !error ? (
             <div className="text-center py-12">
               <UsersRound className="w-20 h-20 mx-auto text-muted-foreground mb-4" />
               <p className="text-xl font-semibold text-muted-foreground">

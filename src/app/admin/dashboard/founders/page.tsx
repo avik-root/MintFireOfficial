@@ -1,17 +1,60 @@
 
+"use client";
+
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getFounders } from "@/actions/founder-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { PlusCircle, Edit, Crown, AlertTriangle } from "lucide-react";
+import { PlusCircle, Edit, Crown, AlertTriangle, Loader2 } from "lucide-react";
 import DeleteFounderButton from "./_components/DeleteFounderButton";
 import type { Founder } from "@/lib/schemas/founder-schema";
 
-export default async function AdminFoundersPage() {
-  const { founders, error } = await getFounders();
+export default function AdminFoundersPage() {
+  const [founders, setFounders] = useState<Founder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (error) {
+  const fetchData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setIsLoading(true);
+    // setError(null);
+    try {
+      const { founders: fetchedFounders, error: fetchError } = await getFounders();
+      if (fetchError) {
+        setError(fetchError);
+      } else {
+        setFounders(fetchedFounders || []);
+         if (!isInitialLoad) setError(null);
+      }
+    } catch (e: any) {
+      setError(e.message || "An unexpected error occurred fetching founder profiles.");
+    }
+    if (isInitialLoad) setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchData(true); // Initial fetch
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        fetchData(false);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading founder profiles...</p>
+      </div>
+    );
+  }
+
+  if (error && founders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
         <AlertTriangle className="w-16 h-16 mb-4" />
@@ -21,17 +64,14 @@ export default async function AdminFoundersPage() {
     );
   }
 
-  if (!founders) {
-    return (
-       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-        <Crown className="w-16 h-16 mb-4 text-muted-foreground animate-pulse" />
-        <p className="text-muted-foreground">Loading founder profiles...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
+      {error && founders.length > 0 && (
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          <p>Error refreshing data: {error}. Displaying last known data.</p>
+        </div>
+      )}
       <Card className="layered-card w-full">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -50,7 +90,7 @@ export default async function AdminFoundersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {founders.length === 0 ? (
+          {founders.length === 0 && !error ? (
             <div className="text-center py-12">
               <Crown className="w-20 h-20 mx-auto text-muted-foreground mb-4" />
               <p className="text-xl font-semibold text-muted-foreground">No founder profiles found.</p>

@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAnalyticsData, getGeneralCounts, incrementProductView, incrementTeamMemberView } from "@/actions/analytics-actions";
+import { getAnalyticsData, getGeneralCounts } from "@/actions/analytics-actions";
 import type { AnalyticsData, GeneralCounts } from "@/lib/schemas/analytics-schemas";
 import { BarChart3, Package, Users, Crown, Newspaper, Briefcase, Eye, Loader2, AlertTriangle } from "lucide-react";
 import { getProducts } from '@/actions/product-actions';
@@ -43,37 +43,55 @@ export default function AdminAnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [analyticsRes, countsRes, productsRes, teamMembersRes] = await Promise.all([
-          getAnalyticsData(),
-          getGeneralCounts(),
-          getProducts(),
-          getTeamMembers({ publicOnly: false }) // Fetch all for admin view
-        ]);
+  const fetchData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setIsLoading(true);
+    // For subsequent polls, we don't want to flash the error message if data is already there
+    // setError(null); 
+    let currentError: string | null = null;
+    try {
+      const [analyticsRes, countsRes, productsRes, teamMembersRes] = await Promise.all([
+        getAnalyticsData(),
+        getGeneralCounts(),
+        getProducts(),
+        getTeamMembers({ publicOnly: false })
+      ]);
 
-        if (analyticsRes.error) throw new Error(analyticsRes.error);
-        setAnalyticsData(analyticsRes.data || { productViews: {}, teamMemberViews: {} });
+      if (analyticsRes.error) currentError = (currentError ? currentError + "; " : "") + analyticsRes.error;
+      setAnalyticsData(analyticsRes.data || { productViews: {}, teamMemberViews: {}, lastUpdatedAt: new Date().toISOString() });
 
-        if (countsRes.error) throw new Error(countsRes.error);
-        setGeneralCounts(countsRes.counts || { totalProducts: 0, totalTeamMembers: 0, totalFounders: 0, totalBlogPosts: 0, totalApplicants: 0 });
-        
-        if (productsRes.error) throw new Error(productsRes.error);
-        setProducts(productsRes.products || []);
+      if (countsRes.error) currentError = (currentError ? currentError + "; " : "") + countsRes.error;
+      setGeneralCounts(countsRes.counts || { totalProducts: 0, totalTeamMembers: 0, totalFounders: 0, totalBlogPosts: 0, totalApplicants: 0 });
+      
+      if (productsRes.error) currentError = (currentError ? currentError + "; " : "") + productsRes.error;
+      setProducts(productsRes.products || []);
 
-        if (teamMembersRes.error) throw new Error(teamMembersRes.error);
-        setTeamMembers(teamMembersRes.members || []);
+      if (teamMembersRes.error) currentError = (currentError ? currentError + "; " : "") + teamMembersRes.error;
+      setTeamMembers(teamMembersRes.members || []);
 
-      } catch (err: any) {
-        setError(err.message || "Failed to load analytics data.");
+      if (currentError) {
+        setError(currentError);
+      } else if (!isInitialLoad) {
+        setError(null); // Clear error on successful poll
       }
-      setIsLoading(false);
+
+    } catch (err: any) {
+      currentError = (currentError ? currentError + "; " : "") + (err.message || "Failed to load analytics data.");
+      setError(currentError);
     }
-    fetchData();
+    if (isInitialLoad) setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData(true); // Initial fetch
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        fetchData(false);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
 
   const getTopViewed = (viewCounts: Record<string, number>, items: Array<{id: string, name: string}>, topN = 5): TopViewedItem[] => {
     if (!viewCounts || Object.keys(viewCounts).length === 0 || items.length === 0) return [];
@@ -98,7 +116,7 @@ export default function AdminAnalyticsPage() {
     );
   }
 
-  if (error) {
+  if (error && !analyticsData && !generalCounts) { // Show full page error if no data is currently displayed
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
         <AlertTriangle className="w-16 h-16 mb-4" />
@@ -110,6 +128,12 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
+      {error && (analyticsData || generalCounts) && ( // Show a less intrusive error if data is already displayed
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          <p>Error refreshing data: {error}. Displaying last known data.</p>
+        </div>
+      )}
       <div className="mb-8">
         <div className="flex items-center gap-3">
           <BarChart3 className="w-10 h-10 text-primary glowing-icon-primary" />

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProducts } from "@/actions/product-actions";
 import { Button } from "@/components/ui/button";
@@ -25,19 +25,34 @@ export default function AdminProductsPage() {
   const [sortKey, setSortKey] = useState<SortKey>('releaseDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  useEffect(() => {
-    async function fetchProducts() {
-      setIsLoading(true);
+  const fetchData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setIsLoading(true);
+    // setError(null); 
+    try {
       const { products, error: fetchError } = await getProducts();
       if (fetchError) {
         setError(fetchError);
       } else if (products) {
         setAllProducts(products);
+         if (!isInitialLoad) setError(null);
       }
-      setIsLoading(false);
+    } catch (e: any) {
+      setError(e.message || "An unexpected error occurred fetching products.");
     }
-    fetchProducts();
+    if (isInitialLoad) setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData(true); // Initial fetch
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        fetchData(false);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
 
   const getStatusColor = (status: string) => {
     if (status === 'Stable') return 'bg-green-600/30 text-green-400 border-green-500';
@@ -126,7 +141,7 @@ export default function AdminProductsPage() {
     );
   }
 
-  if (error) {
+  if (error && filteredAndSortedProducts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
         <AlertTriangle className="w-16 h-16 mb-4" />
@@ -172,6 +187,12 @@ export default function AdminProductsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
+      {error && filteredAndSortedProducts.length > 0 && (
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          <p>Error refreshing data: {error}. Displaying last known data.</p>
+        </div>
+      )}
       <Card className="layered-card w-full">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -220,7 +241,7 @@ export default function AdminProductsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredAndSortedProducts.length === 0 ? (
+          {filteredAndSortedProducts.length === 0 && !error ? (
             <div className="text-center py-12">
               <Package className="w-20 h-20 mx-auto text-muted-foreground mb-4" />
               <p className="text-xl font-semibold text-muted-foreground">

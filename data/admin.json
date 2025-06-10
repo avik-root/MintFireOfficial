@@ -4,7 +4,7 @@
     "adminId": "@test",
     "email": "test@gmail.com",
     "password": "$2b$10$SoKbyjfjPxs8rE9/hBWGneXShogbWKPtc8ZsfqX1t60GGbm12r3OK",
-    "is2FAEnabled": true,
-    "hashedPin": "$2b$10$2.dLjYlOoyFBsH1v90AururK4.sg8f8gwW0NbF2eWq9mXJpFpKkta"
+    "is2FAEnabled": false,
+    "hashedPin": null
   }
 ]

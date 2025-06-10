@@ -25,13 +25,11 @@ import {
   type VerifyPinInput
 } from '@/lib/schemas/admin-schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Label } from '@/components/ui/label'; // Import the standalone Label
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
 
 type ViewMode = 'loading' | 'create' | 'pin_entry' | 'pin_locked_super_action' | 'login_form';
-
-const SUPER_ACTION_HASH = "a3f2c8e4b197a0db3c57d402fa6f90e67bb4b72ea6f845de1a0f8d44b6a7fe6c10d1940879935c8fda6d013caa4e6c967f3d3bb8ea8eac3257b6f5f0a17758e1";
 
 export default function AdminLoginPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('loading');
@@ -239,8 +237,8 @@ export default function AdminLoginPage() {
                 <CardDescription>Too many incorrect PIN attempts. Enter Super Action code to bypass 2FA.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-2"> {/* Replaced FormItem */}
-                    <Label htmlFor="superActionInput" className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />Super Action Code</Label> {/* Replaced FormLabel with Label */}
+                <div className="space-y-2">
+                    <Label htmlFor="superActionInput" className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />Super Action Code</Label>
                     <Input 
                         id="superActionInput"
                         type="text" 
@@ -289,3 +287,4 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+

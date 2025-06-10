@@ -10,8 +10,27 @@ import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, Ena
 import { revalidatePath } from 'next/cache';
 
 const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
+const securityHashFilePath = path.join(process.cwd(), 'data', 'securityhash.json');
 const SALT_ROUNDS = 10;
-const SUPER_ACTION_HASH = "a3f2c8e4b197a0db3c57d402fa6f90e67bb4b72ea6f845de1a0f8d44b6a7fe6c10d1940879935c8fda6d013caa4e6c967f3d3bb8ea8eac3257b6f5f0a17758e1";
+
+async function getSuperActionHashInternal(): Promise<string | null> {
+  try {
+    const fileContent = await fs.readFile(securityHashFilePath, 'utf-8');
+    const data = JSON.parse(fileContent);
+    if (data && typeof data.superActionHash === 'string') {
+      return data.superActionHash;
+    }
+    console.error("Super Action Hash not found or invalid in securityhash.json");
+    return null;
+  } catch (error: any) {
+    console.error("Error reading or parsing securityhash.json:", error.message);
+    if (error.code === 'ENOENT') {
+        console.warn("securityhash.json not found. Super Action will not work.");
+    }
+    return null;
+  }
+}
+
 
 async function getAdminsInternal(): Promise<AdminUserStored[]> {
   try {
@@ -273,7 +292,12 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
 }
 
 export async function disable2FABySuperAction(adminId: string, superActionAttempt: string): Promise<{ success: boolean; message: string }> {
-    if (superActionAttempt !== SUPER_ACTION_HASH) {
+    const SUPER_ACTION_HASH_FROM_FILE = await getSuperActionHashInternal();
+    if (!SUPER_ACTION_HASH_FROM_FILE) {
+      return { success: false, message: "Super Action feature is not configured correctly." };
+    }
+
+    if (superActionAttempt !== SUPER_ACTION_HASH_FROM_FILE) {
         return { success: false, message: "Invalid Super Action." };
     }
     try {
@@ -291,3 +315,4 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
         return { success: false, message: error.message || "Failed to disable 2FA with Super Action." };
     }
 }
+

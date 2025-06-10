@@ -5,6 +5,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
+import { cookies } from 'next/headers';
+import { randomUUID } from 'crypto';
 import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput } from '@/lib/schemas/admin-schemas';
 import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, Enable2FASchema, Change2FAPinSchema, Disable2FASchema } from '@/lib/schemas/admin-schemas';
 import { revalidatePath } from 'next/cache';
@@ -12,6 +14,7 @@ import { revalidatePath } from 'next/cache';
 const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
 const securityHashFilePath = path.join(process.cwd(), 'data', 'securityhash.json');
 const SALT_ROUNDS = 10;
+const AUTH_COOKIE_NAME = 'admin-auth-token';
 
 async function getSuperActionHashInternal(): Promise<string | null> {
   try {
@@ -75,6 +78,27 @@ async function saveAdmins(admins: AdminUserStored[]): Promise<void> {
   }
 }
 
+function setAuthCookie() {
+  const authToken = randomUUID();
+  cookies().set(AUTH_COOKIE_NAME, authToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7, // 1 week
+  });
+}
+
+function clearAuthCookie() {
+  cookies().delete(AUTH_COOKIE_NAME);
+}
+
+export async function logoutAdmin(): Promise<void> {
+  clearAuthCookie();
+  revalidatePath('/admin/login');
+  revalidatePath('/admin/dashboard');
+}
+
 export async function checkAdminExists(): Promise<{ exists: boolean; adminId?: string; is2FAEnabled?: boolean; error?: string }> {
   try {
     const admins = await getAdminsInternal();
@@ -130,6 +154,11 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     if (!passwordMatch) {
         return { success: false, message: "Invalid credentials." };
     }
+
+    // If we reach here, password is correct.
+    // The UI should have already routed to PIN if 2FA was enabled for this admin.
+    // So, we assume if this action is called, it's for a direct login or PIN was already handled.
+    setAuthCookie();
     return { success: true, message: "Login successful! Redirecting..." };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to log in." };
@@ -171,7 +200,7 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
     let currentAdmin = admins[0]; 
 
     if (validatedData.newPassword) {
-      if (!validatedData.currentPassword) { // This should be caught by Zod, but belt-and-suspenders
+      if (!validatedData.currentPassword) { 
         return { success: false, message: "Current password required to set new password." };
       }
       const currentPasswordMatch = await bcrypt.compare(validatedData.currentPassword, currentAdmin.password);
@@ -193,7 +222,6 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
   }
 }
 
-// --- 2FA Actions ---
 export async function enable2FA(adminId: string, pinData: Enable2FAInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
   const validation = Enable2FASchema.safeParse(pinData);
   if(!validation.success) {
@@ -257,7 +285,7 @@ export async function disable2FA(adminId: string, verificationData: Disable2FAIn
     if (admin.hashedPin) {
       verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.hashedPin);
     }
-    if (!verified) { // Try password if PIN failed or no PIN was set (should not happen if 2FA enabled)
+    if (!verified) { 
       verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.password);
     }
     if (!verified) return { success: false, message: "Incorrect current PIN or password." };
@@ -265,9 +293,10 @@ export async function disable2FA(adminId: string, verificationData: Disable2FAIn
     admins[adminIndex].is2FAEnabled = false;
     admins[adminIndex].hashedPin = null;
     await saveAdmins(admins);
+    clearAuthCookie(); // Clear auth cookie as 2FA status changes
     revalidatePath('/admin/dashboard/settings');
     revalidatePath('/admin/login');
-    return { success: true, message: "2FA disabled successfully." };
+    return { success: true, message: "2FA disabled successfully. You will be logged out." };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to disable 2FA." };
   }
@@ -278,10 +307,11 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
         const admins = await getAdminsInternal();
         const admin = admins.find(a => a.adminId === adminId);
         if (!admin) return { success: false, message: "Admin not found." };
-        if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA not active." };
+        if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA not active for this admin." };
 
         const pinMatch = await bcrypt.compare(pin, admin.hashedPin);
         if (pinMatch) {
+            setAuthCookie(); // Set auth cookie on successful PIN verification
             return { success: true };
         } else {
             return { success: false, message: "Incorrect PIN." };
@@ -308,11 +338,11 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
         admins[adminIndex].is2FAEnabled = false;
         admins[adminIndex].hashedPin = null;
         await saveAdmins(admins);
+        clearAuthCookie(); // Clear auth cookie as 2FA status changes
         revalidatePath('/admin/dashboard/settings');
         revalidatePath('/admin/login');
-        return { success: true, message: "2FA disabled via Super Action. You can now log in." };
+        return { success: true, message: "2FA disabled via Super Action. You can now log in directly." };
     } catch (error: any) {
         return { success: false, message: error.message || "Failed to disable 2FA with Super Action." };
     }
 }
-

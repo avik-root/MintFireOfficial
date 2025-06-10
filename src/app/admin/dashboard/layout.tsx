@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation'; // Added useRouter
 import Logo from '@/components/Logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -25,10 +25,12 @@ import {
   Bug, 
   Trophy, 
   ImageIcon,
-  ListPlus, // Added for Waitlist
+  ListPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { logoutAdmin } from '@/actions/admin-actions';
+import { useToast } from '@/hooks/use-toast';
 
 const sidebarNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -42,13 +44,13 @@ const sidebarNavItems = [
   { href: '/admin/dashboard/team', label: 'Team', icon: UsersRound },
   { href: '/admin/dashboard/founders', label: 'Founders', icon: Crown },
   { href: '/admin/dashboard/feedback', label: 'Feedback', icon: MessageSquareWarning },
-  { href: '/admin/dashboard/waitlist', label: 'Product Waitlist', icon: ListPlus }, // New Waitlist Link
+  { href: '/admin/dashboard/waitlist', label: 'Product Waitlist', icon: ListPlus },
   { href: '/admin/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 const sidebarBottomNavItems = [
   { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings },
-  { href: '/admin/login', label: 'Logout', icon: LogOut }, 
+  // Logout is handled differently now
 ];
 
 export default function AdminDashboardLayout({
@@ -57,10 +59,22 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutAdmin();
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      router.push('/admin/login'); // Ensure client-side redirect after cookie is cleared
+    } catch (error) {
+      toast({ variant: "destructive", title: "Logout Failed", description: "Could not log out. Please try again." });
+    }
   };
 
   return (
@@ -130,6 +144,20 @@ export default function AdminDashboardLayout({
                 </Link>
                );
             })}
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className={cn(
+                "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium hover:bg-destructive/20 hover:text-destructive text-muted-foreground",
+                isCollapsed ? "justify-center" : "gap-3 justify-start"
+              )}
+              title={isCollapsed ? "Logout" : undefined}
+            >
+              <LogOut className="h-5 w-5 shrink-0" />
+              <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}>
+                Logout
+              </span>
+            </Button>
           </nav>
         </div>
       </aside>

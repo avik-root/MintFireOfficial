@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,14 +43,16 @@ export default function AdminLoginPage() {
   const MAX_PIN_ATTEMPTS = 5;
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const checkInitialStatus = useCallback(async () => {
     setServerError(null);
+    setViewMode('loading');
     const { exists, adminId, is2FAEnabled, error } = await checkAdminExists();
     if (error) {
       setServerError(error);
-      setViewMode('login_form'); // Default to login if check fails
+      setViewMode('login_form'); 
       toast({ variant: "destructive", title: "System Error", description: error });
       return;
     }
@@ -100,13 +102,21 @@ export default function AdminLoginPage() {
     const result = await createAdminAccount(data);
     if (result.success) {
       toast({ title: "Success", description: result.message });
-      await checkInitialStatus(); // Re-check status to transition to login or PIN
+      await checkInitialStatus(); 
       createForm.reset();
       loginForm.reset();
       pinForm.reset();
     } else {
       setServerError(result.message);
-      toast({ variant: "destructive", title: "Creation Failed", description: result.message });
+      if (result.errors) {
+         result.errors.forEach((err) => {
+            const fieldName = Array.isArray(err.path) ? err.path.join(".") : err.path;
+            createForm.setError(fieldName as keyof CreateAdminInput, { message: err.message });
+         });
+         toast({ variant: "destructive", title: "Validation Error", description: "Please check the form fields." });
+      } else {
+        toast({ variant: "destructive", title: "Creation Failed", description: result.message });
+      }
     }
   };
 
@@ -115,7 +125,8 @@ export default function AdminLoginPage() {
     const result = await loginAdmin(data);
     if (result.success) {
       toast({ title: "Success", description: result.message });
-      router.push('/admin/dashboard'); 
+      const nextUrl = searchParams.get('next') || '/admin/dashboard';
+      router.push(nextUrl);
     } else {
       setServerError(result.message);
       toast({ variant: "destructive", title: "Login Failed", description: result.message });
@@ -130,8 +141,9 @@ export default function AdminLoginPage() {
     setServerError(null);
     const result = await verifyPinForLogin(currentAdminId, data.pin);
     if (result.success) {
-      toast({ title: "PIN Verified", description: "Please proceed to login."});
-      setViewMode('login_form');
+      toast({ title: "PIN Verified", description: "Login successful! Redirecting..."});
+      const nextUrl = searchParams.get('next') || '/admin/dashboard';
+      router.push(nextUrl);
       setPinAttempts(0);
     } else {
       const newAttempts = pinAttempts + 1;
@@ -157,7 +169,7 @@ export default function AdminLoginPage() {
     setIsSubmittingSuperAction(false);
     if (result.success) {
         toast({ title: "2FA Disabled", description: result.message });
-        setViewMode('login_form');
+        await checkInitialStatus(); // Re-check status, should go to login_form
         setPinAttempts(0);
         setSuperActionInput('');
     } else {
@@ -205,18 +217,17 @@ export default function AdminLoginPage() {
           </>
         )}
 
-        {/* PIN Entry View */}
         {viewMode === 'pin_entry' && (
           <>
             <CardHeader className="text-center">
               <Shield className="mx-auto h-12 w-12 text-primary glowing-icon-primary mb-4" />
               <CardTitle className="font-headline text-3xl">Enter 2FA PIN</CardTitle>
-              <CardDescription>Please enter your 6-digit security PIN to proceed.</CardDescription>
+              <CardDescription>Admin ID: {currentAdminId}. Enter your 6-digit security PIN.</CardDescription>
             </CardHeader>
             <Form {...pinForm}>
               <form onSubmit={pinForm.handleSubmit(handlePinSubmit)}>
                 <CardContent className="space-y-6">
-                  <FormField control={pinForm.control} name="pin" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />PIN</FormLabel><FormControl><div className="relative"><Input type={showPin ? "text" : "password"} inputMode="numeric" pattern="[0-9]*" maxLength={8} placeholder="••••••" {...field} disabled={isSubmittingPin} className="focus-visible:ring-accent pr-10 text-center tracking-[0.3em]" /><Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-primary" onClick={() => setShowPin(!showPin)} tabIndex={-1}>{showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}<span className="sr-only">Toggle PIN visibility</span></Button></div></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={pinForm.control} name="pin" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><Lock className="mr-2 h-4 w-4 text-muted-foreground" />PIN</FormLabel><FormControl><div className="relative"><Input type={showPin ? "text" : "password"} inputMode="numeric" pattern="[0-9]*" maxLength={6} placeholder="••••••" {...field} disabled={isSubmittingPin} className="focus-visible:ring-accent pr-10 text-center tracking-[0.3em]" /><Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-primary" onClick={() => setShowPin(!showPin)} tabIndex={-1}>{showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}<span className="sr-only">Toggle PIN visibility</span></Button></div></FormControl><FormMessage /></FormItem>)} />
                   {serverError && (<p className="text-sm text-destructive text-center bg-destructive/10 p-2 rounded-md flex items-center justify-center"><AlertTriangle className="h-4 w-4 mr-2" />{serverError}</p>)}
                   <p className="text-xs text-muted-foreground text-center">Attempts remaining: {MAX_PIN_ATTEMPTS - pinAttempts}</p>
                 </CardContent>
@@ -228,13 +239,12 @@ export default function AdminLoginPage() {
           </>
         )}
         
-        {/* PIN Locked - Super Action View */}
         {viewMode === 'pin_locked_super_action' && (
             <>
             <CardHeader className="text-center">
                 <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
                 <CardTitle className="font-headline text-3xl">PIN Entry Locked</CardTitle>
-                <CardDescription>Too many incorrect PIN attempts. Enter Super Action code to bypass 2FA.</CardDescription>
+                <CardDescription>Too many incorrect PIN attempts. Enter Super Action code to bypass 2FA and disable it for Admin ID: {currentAdminId}.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -259,7 +269,6 @@ export default function AdminLoginPage() {
             </>
         )}
 
-        {/* Login Form View */}
         {viewMode === 'login_form' && (
           <>
             <CardHeader className="text-center">
@@ -287,4 +296,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-

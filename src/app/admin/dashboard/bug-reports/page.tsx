@@ -1,20 +1,25 @@
 
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getBugReports } from "@/actions/bug-report-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Bug, Eye, AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { Bug, Eye, AlertTriangle, Loader2, Trash2, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { BugReport } from "@/lib/schemas/bug-report-schemas";
 // import DeleteBugReportButton from "./_components/DeleteBugReportButton"; // Placeholder for future use
+
+type SortKey = 'fullName' | 'status' | 'reportedAt';
+type SortDirection = 'asc' | 'desc';
 
 export default function AdminBugReportsPage() {
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('reportedAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
     if (isInitialLoad) setIsLoading(true);
@@ -40,6 +45,38 @@ export default function AdminBugReportsPage() {
     return () => clearInterval(intervalId);
   }, [fetchData]);
 
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedBugReports = useMemo(() => {
+    let reports = [...bugReports];
+    reports.sort((a, b) => {
+      let valA = a[sortKey];
+      let valB = b[sortKey];
+
+      if (sortKey === 'reportedAt') {
+        valA = new Date(a.reportedAt).getTime();
+        valB = new Date(b.reportedAt).getTime();
+      } else if (typeof valA === 'string' && typeof valB === 'string') {
+        valA = valA.toLowerCase();
+        valB = valB.toLowerCase();
+      }
+
+      let comparison = 0;
+      if (valA > valB) comparison = 1;
+      else if (valA < valB) comparison = -1;
+      
+      return sortDirection === 'desc' ? comparison * -1 : comparison;
+    });
+    return reports;
+  }, [bugReports, sortKey, sortDirection]);
+
   const getStatusColorClass = (status: string) => {
     switch (status) {
       case 'Pending': return 'bg-yellow-500/30 text-yellow-400 border-yellow-500';
@@ -55,6 +92,21 @@ export default function AdminBugReportsPage() {
     }
   };
 
+  const SortableHeader = ({ children, columnKey }: { children: React.ReactNode; columnKey: SortKey }) => (
+    <th 
+        scope="col" 
+        className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/50"
+        onClick={() => handleSort(columnKey)}
+    >
+        <div className="flex items-center">
+            {children}
+            {sortKey === columnKey && (
+                <ArrowUpDown className={`ml-2 h-3 w-3 ${sortDirection === 'asc' ? 'rotate-180' : ''}`} />
+            )}
+        </div>
+    </th>
+  );
+
 
   if (isLoading) {
     return (
@@ -65,7 +117,7 @@ export default function AdminBugReportsPage() {
     );
   }
 
-  if (error && bugReports.length === 0) {
+  if (error && sortedBugReports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
         <AlertTriangle className="w-16 h-16 mb-4" />
@@ -77,7 +129,7 @@ export default function AdminBugReportsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
-      {error && bugReports.length > 0 && (
+      {error && sortedBugReports.length > 0 && (
         <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
           <AlertTriangle className="w-5 h-5 mr-2" />
           <p>Error refreshing data: {error}. Displaying last known data.</p>
@@ -96,7 +148,7 @@ export default function AdminBugReportsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {bugReports.length === 0 && !error ? (
+          {sortedBugReports.length === 0 && !error ? (
             <div className="text-center py-12">
               <Bug className="w-20 h-20 mx-auto text-muted-foreground mb-4" />
               <p className="text-xl font-semibold text-muted-foreground">No bug reports found.</p>
@@ -107,15 +159,15 @@ export default function AdminBugReportsPage() {
               <table className="min-w-full divide-y divide-border">
                 <thead className="bg-card">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Reporter</th>
+                    <SortableHeader columnKey="fullName">Reporter</SortableHeader>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Description (Snippet)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Reported At</th>
+                    <SortableHeader columnKey="status">Status</SortableHeader>
+                    <SortableHeader columnKey="reportedAt">Reported At</SortableHeader>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-background divide-y divide-border">
-                  {bugReports.map((report: BugReport) => (
+                  {sortedBugReports.map((report: BugReport) => (
                     <tr key={report.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{report.fullName}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground max-w-xs truncate" title={report.description}>
@@ -146,3 +198,4 @@ export default function AdminBugReportsPage() {
     </div>
   );
 }
+

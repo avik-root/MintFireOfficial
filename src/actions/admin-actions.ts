@@ -262,7 +262,7 @@ export async function change2FAPin(adminId: string, pinData: Change2FAPinInput):
     if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA is not enabled for this account."};
 
     if (!validation.data.currentPin) {
-       return { success: false, message: "Current PIN is required to change PIN.", errors: [{path: ["currentPin"], message: "Current PIN is required."}] };
+       return { success: false, message: "Current PIN is required to change PIN.", errors: [{code: z.ZodIssueCode.custom, path: ["currentPin"], message: "Current PIN is required."}] };
     }
     const currentPinMatch = await bcrypt.compare(validation.data.currentPin, admin.hashedPin);
     if (!currentPinMatch) return { success: false, message: "Incorrect current PIN." };

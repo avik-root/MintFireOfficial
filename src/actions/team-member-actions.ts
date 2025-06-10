@@ -112,7 +112,8 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
   }
 
   await fs.mkdir(publicUploadsDir, { recursive: true });
-  const fileExtension = path.extname(imageFile.name) || '.png';
+  const sanitizedOriginalFilename = path.basename(imageFile.name);
+  const fileExtension = path.extname(sanitizedOriginalFilename) || '.png';
   const uniqueFilename = `${randomUUID()}${fileExtension}`;
   const filePath = path.join(publicUploadsDir, uniqueFilename);
   

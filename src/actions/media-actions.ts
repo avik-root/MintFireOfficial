@@ -43,7 +43,8 @@ export async function uploadMediaFile(formData: FormData): Promise<{ success: bo
     }
 
     await fs.mkdir(publicUploadsMediaDir, { recursive: true });
-    const fileExtension = path.extname(imageFile.name) || `.${imageFile.type.split('/')[1] || 'png'}`;
+    const sanitizedOriginalFilename = path.basename(imageFile.name);
+    const fileExtension = path.extname(sanitizedOriginalFilename) || `.${imageFile.type.split('/')[1] || 'png'}`;
     const uniqueFilename = `${randomUUID()}${fileExtension}`;
     const serverFilePath = path.join(publicUploadsMediaDir, uniqueFilename);
     
@@ -83,3 +84,4 @@ export async function deleteMediaFile(filePath: string): Promise<{ success: bool
     return { success: false, error: "Failed to delete media file. " + error.message };
   }
 }
+

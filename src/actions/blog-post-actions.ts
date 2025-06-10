@@ -82,7 +82,8 @@ async function handleImageUploadServer(imageFile: File | null): Promise<string |
   }
 
   await fs.mkdir(publicUploadsDir, { recursive: true });
-  const fileExtension = path.extname(imageFile.name) || `.${imageFile.type.split('/')[1] || 'png'}`;
+  const sanitizedOriginalFilename = path.basename(imageFile.name);
+  const fileExtension = path.extname(sanitizedOriginalFilename) || `.${imageFile.type.split('/')[1] || 'png'}`;
   const uniqueFilename = `${randomUUID()}${fileExtension}`;
   const filePath = path.join(publicUploadsDir, uniqueFilename);
   
@@ -149,7 +150,7 @@ export async function addBlogPost(formData: FormData): Promise<{ success: boolea
     const posts = await getBlogPostsInternal();
     const slugExists = posts.some(p => p.slug === validatedFormInput.slug);
     if (slugExists) {
-      return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.'}] };
+      return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.', code: z.ZodIssueCode.custom }] };
     }
 
     const newPost: BlogPost = {
@@ -235,7 +236,7 @@ export async function updateBlogPost(id: string, formData: FormData): Promise<{ 
     if (validatedFormInput.slug && validatedFormInput.slug !== originalPost.slug) {
         const slugExists = posts.some(p => p.slug === validatedFormInput.slug && p.id !== id);
         if (slugExists) {
-          return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.'}] };
+          return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.', code: z.ZodIssueCode.custom }] };
         }
     }
     
@@ -307,3 +308,4 @@ export async function deleteBlogPost(id: string): Promise<{ success: boolean; er
     return { success: false, error: error.message || "Failed to delete blog post." };
   }
 }
+

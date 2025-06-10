@@ -28,7 +28,7 @@ export default function ContactPage() {
               For general inquiries, support, or partnership opportunities, please email us.
             </p>
             <Button asChild variant="default" size="lg">
-              <Link href="mailto:contact@mintfire.com">contact@mintfire.com</Link>
+              <Link href="mailto:mintfire.official@gmail.com">mintfire.official@gmail.com</Link>
             </Button>
           </CardContent>
         </Card>
@@ -37,15 +37,15 @@ export default function ContactPage() {
           <CardHeader>
             <CardTitle className="font-headline text-2xl flex items-center">
               <Phone className="w-6 h-6 mr-3 text-accent glowing-icon" />
-              Call Us (Placeholder)
+              Call Us
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
               Reach out to our team during business hours.
             </p>
-            <p className="text-2xl font-semibold text-foreground">(+1) 555-0100</p>
-            <p className="text-xs text-muted-foreground mt-1">(Mon-Fri, 9 AM - 5 PM PST)</p>
+            <p className="text-2xl font-semibold text-foreground">+91 6294246820</p>
+            <p className="text-xs text-muted-foreground mt-1">(Mon-Fri, 10 AM - 6 PM IST)</p>
           </CardContent>
         </Card>
       </section>
@@ -55,7 +55,7 @@ export default function ContactPage() {
           <CardHeader>
             <CardTitle className="font-headline text-2xl flex items-center">
               <MapPin className="w-6 h-6 mr-3 text-accent glowing-icon" />
-              Our Office (Placeholder)
+              Our Location
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -63,30 +63,16 @@ export default function ContactPage() {
               MintFire Headquarters
             </p>
             <p className="text-foreground">
-              123 Innovation Drive<br />
-              Tech City, TX 75001<br />
-              United States
+              Kolkata, India<br />
+              Remote (Cloud Based)
             </p>
             <div className="mt-4 aspect-w-16 aspect-h-9 rounded-md overflow-hidden border border-border">
-              {/* Placeholder for a map embed */}
-              <img src="https://placehold.co/600x300.png?text=Map+Placeholder" alt="Map to MintFire Office" className="w-full h-full object-cover" data-ai-hint="office map" />
+              {/* Placeholder for a map embed or relevant graphic */}
+              <img src="https://placehold.co/600x300.png?text=Global+Operations" alt="MintFire Global Operations" className="w-full h-full object-cover" data-ai-hint="global network abstract" />
             </div>
           </CardContent>
         </Card>
       </section>
-
-      {/* Placeholder for a future contact form
-      <section className="mt-16">
-        <Card className="layered-card w-full max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl text-center">Send a Direct Message</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-center">Contact form coming soon!</p>
-          </CardContent>
-        </Card>
-      </section>
-      */}
     </div>
   );
 }

@@ -58,17 +58,21 @@ export default function AdminLoginPage() {
     }
     if (exists && adminId) {
       setCurrentAdminId(adminId);
-      if (is2FAEnabled) {
-        setViewMode('pin_entry');
-      } else {
-        setViewMode('login_form');
-      }
+      // Do not check is2FAEnabled here to determine viewMode. Middleware handles auth.
+      // Login page should always default to login form if an admin account exists.
+      // If middleware redirects an authed user here, it will redirect them away.
+      // If not authed, show login form. Then loginAdmin will determine if PIN is needed.
+      setViewMode('login_form'); 
     } else {
       setViewMode('create');
     }
   }, [toast]);
 
   useEffect(() => {
+    // Check if middleware has already redirected an authenticated user away
+    // This avoids flashing the login form if already logged in.
+    // We can't directly check cookies here on client easily, so rely on middleware.
+    // The initial view mode is 'loading'. If middleware doesn't redirect, checkInitialStatus runs.
     checkInitialStatus();
   }, [checkInitialStatus]);
 
@@ -125,21 +129,15 @@ export default function AdminLoginPage() {
     const result = await loginAdmin(data);
     if (result.success) {
       if (result.requiresPin && result.adminId) {
-
-        // Password was correct, but 2FA is enabled for this admin. Switch to PIN view.
-        setCurrentAdminId(result.adminId); // Ensure adminId is set for PIN form
+        setCurrentAdminId(result.adminId);
         setViewMode('pin_entry');
+        setPinAttempts(0); // Reset PIN attempts when switching to PIN entry
         toast({ title: "Password Verified", description: "Please enter your 2FA PIN." });
       } else if (!result.requiresPin) {
-        // Login successful (2FA not enabled or handled elsewhere).
         toast({ title: "Success", description: result.message });
-
         const nextUrl = searchParams.get('next') || '/admin/dashboard';
-
-        router.push(nextUrl);
+        window.location.assign(nextUrl); // Hard navigation
       } else {
-        // This case should ideally not be reached if result.success is true & requiresPin is true,
-        // but result.adminId is missing.
         setServerError("An unexpected error occurred during login. Admin ID missing for 2FA.");
         toast({ variant: "destructive", title: "Login Error", description: "Admin ID missing for 2FA." });
       }
@@ -158,10 +156,8 @@ export default function AdminLoginPage() {
     const result = await verifyPinForLogin(currentAdminId, data.pin);
     if (result.success) {
       toast({ title: "PIN Verified", description: "Login successful! Redirecting..."});
-
       const nextUrl = searchParams.get('next') || '/admin/dashboard';
-
-      router.push(nextUrl);
+      window.location.assign(nextUrl); // Hard navigation
       setPinAttempts(0);
     } else {
       const newAttempts = pinAttempts + 1;
@@ -170,7 +166,7 @@ export default function AdminLoginPage() {
       toast({ variant: "destructive", title: "PIN Invalid", description: result.message || "Incorrect PIN." });
       if (newAttempts >= MAX_PIN_ATTEMPTS) {
         setViewMode('pin_locked_super_action');
-        setServerError(`Maximum PIN attempts reached. Use Super Action to bypass.`);
+        setServerError(\`Maximum PIN attempts reached. Use Super Action to bypass.\`);
       }
     }
     pinForm.reset();
@@ -187,7 +183,7 @@ export default function AdminLoginPage() {
     setIsSubmittingSuperAction(false);
     if (result.success) {
         toast({ title: "2FA Disabled", description: result.message });
-        await checkInitialStatus(); // Re-check status, should go to login_form
+        await checkInitialStatus(); 
         setPinAttempts(0);
         setSuperActionInput('');
     } else {

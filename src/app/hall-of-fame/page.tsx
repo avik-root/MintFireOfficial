@@ -5,6 +5,7 @@ import { Trophy, UserCircle, Medal, Activity, Award, Star, ExternalLink, AlertTr
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge'; // Added this import
 
 export default async function HallOfFamePage() {
   const { entries, error } = await getHallOfFameEntries();

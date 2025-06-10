@@ -24,7 +24,7 @@ import {
   Crown, 
   Bug, 
   Trophy, 
-  Image as ImageIcon, // Added ImageIcon
+  Image as ImageIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
@@ -34,8 +34,7 @@ const sidebarNavItems = [
   { href: '/admin/dashboard/products', label: 'Products', icon: Package },
   { href: '/admin/dashboard/hall-of-fame-management', label: 'Hall of Fame', icon: Trophy }, 
   { href: '/admin/dashboard/site-content', label: 'Site Content', icon: FileText },
-  { href: '/admin/dashboard/media', label: 'Media Library', icon: ImageIcon }, // Used ImageIcon for Media Library
-  { href: '/admin/dashboard/logo', label: 'Logo Management', icon: ImageIcon }, // Used ImageIcon for Logo
+  { href: '/admin/dashboard/logo', label: 'Logo Management', icon: ImageIcon }, 
   { href: '/admin/dashboard/blogs', label: 'Blog Posts', icon: Newspaper },
   { href: '/admin/dashboard/applicants', label: 'Applicants', icon: Briefcase },
   { href: '/admin/dashboard/bug-reports', label: 'Bug Reports', icon: Bug },

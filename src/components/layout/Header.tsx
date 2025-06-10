@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig, Briefcase, Mail, Code2 } from 'lucide-react'; 
+import { ChevronDown, ShieldCheck, Blocks, Cpu, Smartphone, Menu, LibraryBig, Briefcase, Mail, Code2, Trophy } from 'lucide-react'; 
 import React from 'react';
 
 const navLinks = [
@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/company", label: "Company" },
   { href: "/blog", label: "Blog", icon: LibraryBig },
   { href: "/careers", label: "Careers", icon: Briefcase },
+  { href: "/hall-of-fame", label: "Hall Of Fame", icon: Trophy }, // New Hall of Fame link
   { href: "/contact", label: "Contact", icon: Mail }, 
 ];
 
@@ -28,8 +29,8 @@ const serviceLinks = [
   { href: "/services/blockchain", label: "Blockchain", icon: Blocks },
   { href: "/services/ai", label: "Artificial Intelligence", icon: Cpu },
   { href: "/services/iot-devices", label: "IoT Devices", icon: Smartphone },
-  { href: "/services/industrial-software", label: "Industrial Software", icon: Briefcase }, // Assuming Briefcase for Industrial
-  { href: "/services/softwares", label: "Software Solutions", icon: Code2 }, // New "Softwares"
+  { href: "/services/industrial-software", label: "Industrial Software", icon: Briefcase }, 
+  { href: "/services/softwares", label: "Software Solutions", icon: Code2 },
 ];
 
 const Header = () => {
@@ -41,7 +42,7 @@ const Header = () => {
         <Logo />
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-2 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
           {navLinks.map(link => (
              <Button key={link.href} variant="ghost" asChild className="text-foreground/80 hover:text-primary transition-colors px-3">
                 <Link href={link.href}>{link.label}</Link>
@@ -118,4 +119,3 @@ const Header = () => {
 };
 
 export default Header;
-

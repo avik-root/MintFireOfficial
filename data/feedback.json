@@ -1,2 +1,10 @@
-
-[]
+[
+  {
+    "name": "Test",
+    "email": "test@gmail.com",
+    "rating": 1,
+    "message": "Too much bugs ",
+    "id": "7a120c4f-a441-438a-abde-e66762fe2301",
+    "createdAt": "2025-06-10T00:30:46.573Z"
+  }
+]

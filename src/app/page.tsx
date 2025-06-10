@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction, Info, Code2, Search, ArrowUpDown, Archive, Loader2, AlertTriangle, SlidersHorizontal, PackageSearch, MessageSquareHeart } from 'lucide-react';
+import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction, Info, Code2, Search, ArrowUpDown, Archive, Loader2, AlertTriangle, SlidersHorizontal, PackageSearch, MessageSquareHeart, Bug } from 'lucide-react';
 import Link from 'next/link';
 import { getSiteContentItems } from '@/actions/site-content-actions';
 import type { SiteContentItem } from '@/lib/schemas/site-content-schemas';
@@ -16,6 +16,7 @@ import type { Product } from '@/lib/schemas/product-schemas';
 import ProductCard from './_components/ProductCard'; 
 import ProductDetailModal from './_components/ProductDetailModal';
 import FeedbackForm from './_components/FeedbackForm';
+import BugReportForm from './_components/BugReportForm'; // Import BugReportForm
 import { incrementProductView } from '@/actions/analytics-actions';
 
 
@@ -406,7 +407,31 @@ export default function Home() {
       
       <section id="feedback" className="py-16">
         <div className="container mx-auto px-4 max-w-2xl">
-          <FeedbackForm />
+           <Card className="layered-card w-full">
+            <CardHeader className="text-center">
+                <MessageSquareHeart className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
+                <CardTitle className="font-headline text-3xl">Share Your Feedback</CardTitle>
+                <CardDescription>We value your opinion. Let us know how we can improve.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <FeedbackForm />
+            </CardContent>
+        </Card>
+        </div>
+      </section>
+
+      <section id="report-bugs" className="py-16">
+        <div className="container mx-auto px-4 max-w-2xl">
+           <Card className="layered-card w-full">
+            <CardHeader className="text-center">
+                <Bug className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
+                <CardTitle className="font-headline text-3xl">Report a Bug</CardTitle>
+                <CardDescription>Help us improve MintFire by reporting any bugs or vulnerabilities you find. Your efforts are appreciated!</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <BugReportForm />
+            </CardContent>
+           </Card>
         </div>
       </section>
 
@@ -420,3 +445,4 @@ export default function Home() {
     </div>
   );
 }
+

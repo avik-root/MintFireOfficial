@@ -9,8 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
-  Users,
-  Package, // Icon for Products
+  Users, // Keep Users icon for "Hall of Fame" or general user management
+  Package, 
   Newspaper, 
   FileText, 
   Briefcase, 
@@ -22,17 +22,20 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown, 
+  Bug, 
+  Trophy, // Icon for Hall of Fame
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
 
 const sidebarNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/dashboard/products', label: 'Products', icon: Package }, // Added Products
-  { href: '/admin/dashboard/users', label: 'Users', icon: Users },
+  { href: '/admin/dashboard/products', label: 'Products', icon: Package },
+  { href: '/admin/dashboard/hall-of-fame-management', label: 'Hall of Fame', icon: Trophy }, // Updated "Users"
   { href: '/admin/dashboard/site-content', label: 'Site Content', icon: FileText },
   { href: '/admin/dashboard/blogs', label: 'Blog Posts', icon: Newspaper },
   { href: '/admin/dashboard/applicants', label: 'Applicants', icon: Briefcase },
+  { href: '/admin/dashboard/bug-reports', label: 'Bug Reports', icon: Bug },
   { href: '/admin/dashboard/team', label: 'Team', icon: UsersRound },
   { href: '/admin/dashboard/founders', label: 'Founders', icon: Crown },
   { href: '/admin/dashboard/feedback', label: 'Feedback', icon: MessageSquareWarning },
@@ -63,7 +66,7 @@ export default function AdminDashboardLayout({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-card",
-          "transition-all duration-0 ease-in-out", // Removed animation for instant snap
+          "transition-all duration-0 ease-in-out", 
           isCollapsed ? "w-20" : "w-64"
         )}
       >
@@ -133,7 +136,7 @@ export default function AdminDashboardLayout({
       <div
         className={cn(
           "flex-1 flex flex-col",
-          "transition-all duration-0 ease-in-out", // Removed animation
+          "transition-all duration-0 ease-in-out", 
           isCollapsed ? "sm:pl-20" : "sm:pl-64"
         )}
       >

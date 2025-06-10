@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, Mail, UserPlus, LogIn, AlertTriangle, Loader2, UserSquare2, Fingerprint, Eye, EyeOff, ShieldKeyhole } from 'lucide-react';
+import { Lock, Mail, UserPlus, LogIn, AlertTriangle, Loader2, UserSquare2, Fingerprint, Eye, EyeOff, Shield } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
@@ -210,7 +210,7 @@ export default function AdminLoginPage() {
         {viewMode === 'pin_entry' && (
           <>
             <CardHeader className="text-center">
-              <ShieldKeyhole className="mx-auto h-12 w-12 text-primary glowing-icon-primary mb-4" />
+              <Shield className="mx-auto h-12 w-12 text-primary glowing-icon-primary mb-4" />
               <CardTitle className="font-headline text-3xl">Enter 2FA PIN</CardTitle>
               <CardDescription>Please enter your 6-digit security PIN to proceed.</CardDescription>
             </CardHeader>
@@ -289,3 +289,5 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+
+    

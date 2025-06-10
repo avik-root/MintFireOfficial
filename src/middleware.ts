@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // If trying to access admin dashboard routes
-  if (pathname.startsWith(ADMIN_DASHBOARD_URL)) {
+  if (pathname === ADMIN_DASHBOARD_URL || pathname.startsWith(ADMIN_DASHBOARD_URL + '/')) {
     if (!adminAuthToken?.value) {
       // Not authenticated, redirect to login
       const loginUrl = new URL(ADMIN_LOGIN_URL, request.url);
@@ -36,5 +36,9 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/dashboard/:path*', '/admin/login'],
+  matcher: [
+    '/admin/dashboard', // Explicitly match the dashboard root
+    '/admin/dashboard/:path*', // Match all sub-paths
+    '/admin/login'
+  ],
 };

@@ -9,14 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CreateBlogPostInputSchema, type CreateBlogPostInput, type BlogPost } from "@/lib/schemas/blog-post-schemas";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Image as ImageIcon, Trash2, UploadCloud } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import React from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
+import NextImage from 'next/image';
 
 interface BlogPostFormProps {
   initialData?: BlogPost | null;
-  onSubmit: (data: CreateBlogPostInput) => Promise<{ success: boolean; error?: string; errors?: any[] }>;
+  onSubmit: (data: FormData) => Promise<{ success: boolean; error?: string; errors?: any[] }>;
   isSubmitting: boolean;
   submitButtonText?: string;
 }
@@ -29,6 +30,11 @@ export default function BlogPostForm({
 }: BlogPostFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [removeCurrentImage, setRemoveCurrentImage] = useState<boolean>(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
 
   const form = useForm<CreateBlogPostInput>({
     resolver: zodResolver(CreateBlogPostInputSchema),
@@ -38,7 +44,7 @@ export default function BlogPostForm({
       content: initialData.content,
       author: initialData.author,
       tagsString: initialData.tags?.join(', ') || '',
-      imageUrl: initialData.imageUrl || undefined,
+      imageUrl: initialData.imageUrl || undefined, // Will be handled by file input
       isPublished: initialData.isPublished,
     } : {
       title: "",
@@ -46,13 +52,71 @@ export default function BlogPostForm({
       content: "",
       author: "",
       tagsString: "",
-      imageUrl: "",
+      imageUrl: "", // Will be handled by file input
       isPublished: false,
     },
   });
 
-  const handleSubmit = async (data: CreateBlogPostInput) => {
-    const result = await onSubmit(data);
+  useEffect(() => {
+    if (initialData?.imageUrl) {
+      setImagePreview(initialData.imageUrl);
+    }
+  }, [initialData]);
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setRemoveCurrentImage(false); // If a new file is selected, don't remove the old one yet (it'll be replaced)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // If file input is cleared, but there was an initial image, keep previewing initial unless explicitly removed.
+      // If no initial image, then clear preview.
+      setSelectedFile(null);
+      if (!initialData?.imageUrl) {
+        setImagePreview(null);
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setImagePreview(null);
+    setRemoveCurrentImage(true); 
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; 
+    }
+  };
+
+  const handleSubmitWithFormData = async (data: CreateBlogPostInput) => {
+    const formData = new FormData();
+    
+    Object.entries(data).forEach(([key, value]) => {
+      if (key !== 'imageUrl') { // Don't append imageUrl from form schema directly
+         if (typeof value === 'boolean') {
+          formData.append(key, String(value));
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    if (selectedFile) {
+      formData.append("imageFile", selectedFile);
+    }
+    if (removeCurrentImage) {
+        formData.append("removeImage", "true");
+    }
+    if (initialData?.imageUrl && !selectedFile && !removeCurrentImage) {
+      formData.append("existingImageUrl", initialData.imageUrl); // Keep existing if no new one and not removed
+    }
+
+
+    const result = await onSubmit(formData);
     if (result.success) {
       toast({ title: "Success", description: `Blog post ${initialData ? 'updated' : 'added'} successfully.` });
       router.push("/admin/dashboard/blogs");
@@ -72,7 +136,7 @@ export default function BlogPostForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmitWithFormData)} className="space-y-8">
         <FormField
           control={form.control}
           name="title"
@@ -130,6 +194,34 @@ export default function BlogPostForm({
           )}
         />
         
+        <FormItem>
+          <FormLabel className="flex items-center"><ImageIcon className="mr-2 h-4 w-4 text-muted-foreground"/>Blog Post Image</FormLabel>
+          <FormControl>
+            <Input 
+              type="file" 
+              accept="image/png, image/jpeg, image/gif, image/webp" 
+              onChange={handleImageChange} 
+              disabled={isSubmitting}
+              ref={fileInputRef}
+              className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+            />
+          </FormControl>
+          <FormDescription>Upload a header image for the post (PNG, JPG, GIF, WEBP). Max 5MB.</FormDescription>
+          {imagePreview && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Image Preview:</p>
+              <div className="relative w-full aspect-video md:w-1/2 lg:w-1/3 rounded-md border border-border overflow-hidden">
+                <NextImage src={imagePreview} alt="Selected preview" layout="fill" objectFit="cover" data-ai-hint="blog image preview"/>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={handleRemoveImage} disabled={isSubmitting}>
+                <Trash2 className="mr-2 h-3 w-3"/> Remove Image
+              </Button>
+            </div>
+          )}
+          {/* FormMessage for imageUrl is less relevant now as it's file input, but CreateBlogPostInputSchema still has it */}
+          <FormMessage>{form.formState.errors.imageUrl?.message}</FormMessage>
+        </FormItem>
+
         <FormField
           control={form.control}
           name="tagsString"
@@ -140,21 +232,6 @@ export default function BlogPostForm({
                 <Input placeholder="e.g., tech, AI, tutorial" {...field} value={field.value ?? ""} disabled={isSubmitting}/>
               </FormControl>
               <FormDescription>Comma-separated list of tags.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Image URL (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/image.png" {...field} value={field.value ?? ""} disabled={isSubmitting}/>
-              </FormControl>
-              <FormDescription>Provide a direct link to a header image for the post.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -197,3 +274,4 @@ export default function BlogPostForm({
     </Form>
   );
 }
+

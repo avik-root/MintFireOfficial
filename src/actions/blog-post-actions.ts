@@ -9,11 +9,15 @@ import {
   CreateBlogPostInputSchema,
   type BlogPost,
   type CreateBlogPostInput,
-  type UpdateBlogPostInput
 } from '@/lib/schemas/blog-post-schemas';
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'crypto';
 
 const blogPostsFilePath = path.join(process.cwd(), 'data', 'blog_posts.json');
+const UPLOADS_DIR_NAME = 'uploads';
+const BLOG_IMAGES_DIR_NAME = 'blog-post-images';
+const publicUploadsDir = path.join(process.cwd(), 'public', UPLOADS_DIR_NAME, BLOG_IMAGES_DIR_NAME);
+
 
 async function getBlogPostsInternal(): Promise<BlogPost[]> {
   try {
@@ -65,6 +69,41 @@ async function saveBlogPosts(items: BlogPost[]): Promise<void> {
   }
 }
 
+async function handleImageUploadServer(imageFile: File | null): Promise<string | null> {
+  if (!imageFile || imageFile.size === 0) return null;
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(imageFile.type)) {
+    throw new Error('Invalid file type. Only JPEG, PNG, GIF, WEBP are allowed.');
+  }
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (imageFile.size > maxSize) {
+    throw new Error('File is too large. Maximum size is 5MB.');
+  }
+
+  await fs.mkdir(publicUploadsDir, { recursive: true });
+  const fileExtension = path.extname(imageFile.name) || `.${imageFile.type.split('/')[1] || 'png'}`;
+  const uniqueFilename = `${randomUUID()}${fileExtension}`;
+  const filePath = path.join(publicUploadsDir, uniqueFilename);
+  
+  const buffer = Buffer.from(await imageFile.arrayBuffer());
+  await fs.writeFile(filePath, buffer);
+
+  return `/${UPLOADS_DIR_NAME}/${BLOG_IMAGES_DIR_NAME}/${uniqueFilename}`;
+}
+
+async function deleteOldImage(imageUrl: string | null | undefined) {
+  if (imageUrl && imageUrl.startsWith(`/${UPLOADS_DIR_NAME}/${BLOG_IMAGES_DIR_NAME}/`)) {
+    try {
+      const oldImagePath = path.join(process.cwd(), 'public', imageUrl);
+      await fs.unlink(oldImagePath).catch(e => console.warn(`Non-critical: Failed to delete old blog image ${oldImagePath}: ${e.message}`));
+    } catch (imgDelError: any) {
+      console.warn(`Failed to delete old blog image ${imageUrl}: ${imgDelError.message}`);
+    }
+  }
+}
+
+
 function transformTags(tagsString?: string): string[] {
   if (!tagsString || tagsString.trim() === "") return [];
   return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
@@ -83,23 +122,46 @@ export async function getBlogPosts(params?: { publishedOnly?: boolean }): Promis
   }
 }
 
-export async function addBlogPost(data: CreateBlogPostInput): Promise<{ success: boolean; post?: BlogPost; error?: string; errors?: z.ZodIssue[] }> {
-  const validation = CreateBlogPostInputSchema.safeParse(data);
-  if (!validation.success) {
-    return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
-  }
-  
+export async function addBlogPost(formData: FormData): Promise<{ success: boolean; post?: BlogPost; error?: string; errors?: z.ZodIssue[] }> {
   try {
+    const rawData: Record<string, any> = {};
+    formData.forEach((value, key) => {
+      if (key === 'isPublished') {
+        rawData[key] = String(value).toLowerCase() === 'true' || value === 'on';
+      } else if (key !== 'imageFile') {
+        rawData[key] = value;
+      }
+    });
+
+    const validation = CreateBlogPostInputSchema.safeParse(rawData);
+    if (!validation.success) {
+      return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
+    }
+    
+    const validatedData = validation.data;
+    const imageFile = formData.get('imageFile') as File | null;
+    let imageUrl: string | null = null;
+
+    if (imageFile && imageFile.size > 0) {
+      imageUrl = await handleImageUploadServer(imageFile);
+    }
+
+
     const posts = await getBlogPostsInternal();
-    const slugExists = posts.some(p => p.slug === validation.data.slug);
+    const slugExists = posts.some(p => p.slug === validatedData.slug);
     if (slugExists) {
       return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.'}] };
     }
 
     const newPost: BlogPost = {
-      ...validation.data,
       id: crypto.randomUUID(),
-      tags: transformTags(validation.data.tagsString),
+      title: validatedData.title,
+      slug: validatedData.slug,
+      content: validatedData.content,
+      author: validatedData.author,
+      tags: transformTags(validatedData.tagsString),
+      imageUrl: imageUrl,
+      isPublished: validatedData.isPublished,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -141,13 +203,27 @@ export async function getBlogPostBySlug(slug: string): Promise<{ post?: BlogPost
   }
 }
 
-export async function updateBlogPost(id: string, data: UpdateBlogPostInput): Promise<{ success: boolean; post?: BlogPost; error?: string, errors?: z.ZodIssue[] }> {
-  const validation = CreateBlogPostInputSchema.safeParse(data); 
-   if (!validation.success) {
-    return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
-  }
+export async function updateBlogPost(id: string, formData: FormData): Promise<{ success: boolean; post?: BlogPost; error?: string, errors?: z.ZodIssue[] }> {
+ try {
+    const rawData: Record<string, any> = {};
+    let removeImageFlag = false;
+    formData.forEach((value, key) => {
+      if (key === 'isPublished') {
+        rawData[key] = String(value).toLowerCase() === 'true' || value === 'on';
+      } else if (key === 'removeImage') {
+        removeImageFlag = String(value).toLowerCase() === 'true';
+      } else if (key !== 'imageFile' && key !== 'existingImageUrl') {
+        rawData[key] = value;
+      }
+    });
 
-  try {
+
+    const validation = CreateBlogPostInputSchema.safeParse(rawData); 
+    if (!validation.success) {
+      return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
+    }
+    const validatedData = validation.data;
+
     let posts = await getBlogPostsInternal();
     const postIndex = posts.findIndex(p => p.id === id);
 
@@ -155,21 +231,42 @@ export async function updateBlogPost(id: string, data: UpdateBlogPostInput): Pro
       return { success: false, error: "Blog post not found." };
     }
 
-    const slugExists = posts.some(p => p.slug === validation.data.slug && p.id !== id);
+    const originalPost = posts[postIndex];
+
+    const slugExists = posts.some(p => p.slug === validatedData.slug && p.id !== id);
     if (slugExists) {
       return { success: false, error: "A blog post with this slug already exists.", errors: [{ path: ['slug'], message: 'Slug already in use.'}] };
     }
     
-    const originalPost = posts[postIndex];
+    let imageUrlToSave = originalPost.imageUrl;
+    const imageFile = formData.get('imageFile') as File | null;
+    
+    if (removeImageFlag && originalPost.imageUrl) {
+        await deleteOldImage(originalPost.imageUrl);
+        imageUrlToSave = null;
+    } else if (imageFile && imageFile.size > 0) {
+        if (originalPost.imageUrl) {
+            await deleteOldImage(originalPost.imageUrl);
+        }
+        imageUrlToSave = await handleImageUploadServer(imageFile);
+    }
+    // If no new file, and not removing, imageUrlToSave remains originalPost.imageUrl
+    
     const updatedPostData: BlogPost = {
       ...originalPost, 
-      ...validation.data, 
-      tags: transformTags(validation.data.tagsString),
+      title: validatedData.title,
+      slug: validatedData.slug,
+      content: validatedData.content,
+      author: validatedData.author,
+      tags: transformTags(validatedData.tagsString),
+      isPublished: validatedData.isPublished,
+      imageUrl: imageUrlToSave, // Use the potentially updated URL
       updatedAt: new Date().toISOString(), 
     };
     
     posts[postIndex] = updatedPostData;
     await saveBlogPosts(posts);
+
     revalidatePath('/admin/dashboard/blogs');
     revalidatePath(`/admin/dashboard/blogs/edit/${id}`);
     revalidatePath('/blog');
@@ -179,6 +276,7 @@ export async function updateBlogPost(id: string, data: UpdateBlogPostInput): Pro
     }
     return { success: true, post: updatedPostData };
   } catch (error: any) {
+    console.error("Update blog post error:", error);
     return { success: false, error: error.message || "Failed to update blog post." };
   }
 }
@@ -189,6 +287,11 @@ export async function deleteBlogPost(id: string): Promise<{ success: boolean; er
     const postToDelete = posts.find(p => p.id === id);
     if (!postToDelete) {
       return { success: false, error: "Blog post not found for deletion." };
+    }
+
+    // Delete associated image if it exists
+    if (postToDelete.imageUrl) {
+        await deleteOldImage(postToDelete.imageUrl);
     }
 
     const filteredPosts = posts.filter(p => p.id !== id);
@@ -202,3 +305,4 @@ export async function deleteBlogPost(id: string): Promise<{ success: boolean; er
     return { success: false, error: error.message || "Failed to delete blog post." };
   }
 }
+

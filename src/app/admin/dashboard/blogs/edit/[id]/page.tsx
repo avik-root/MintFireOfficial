@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getBlogPostById, updateBlogPost } from "@/actions/blog-post-actions";
 import BlogPostForm from "../../_components/BlogPostForm";
 import { Edit, Loader2, AlertTriangle } from "lucide-react";
-import type { BlogPost, CreateBlogPostInput } from "@/lib/schemas/blog-post-schemas";
+import type { BlogPost } from "@/lib/schemas/blog-post-schemas";
 
 export default function EditBlogPostPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -33,13 +33,15 @@ export default function EditBlogPostPage({ params: paramsPromise }: { params: Pr
     fetchPost();
   }, [fetchPost]);
 
-  const handleSubmit = async (data: CreateBlogPostInput) => {
+  const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
-    const result = await updateBlogPost(postId, data);
+    const result = await updateBlogPost(postId, formData);
     setIsSubmitting(false);
-    if(result.success) {
-      await fetchPost(); 
+    if(result.success && result.post) {
+      // Update local state with the returned post which might have new image URL
+      setPost(result.post); 
     }
+    // The form itself handles toast notifications based on the result
     return result;
   };
 
@@ -94,3 +96,4 @@ export default function EditBlogPostPage({ params: paramsPromise }: { params: Pr
     </div>
   );
 }
+

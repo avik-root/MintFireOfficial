@@ -6,14 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { addBlogPost } from "@/actions/blog-post-actions";
 import BlogPostForm from "../_components/BlogPostForm";
 import { PlusCircle } from "lucide-react";
-import type { CreateBlogPostInput } from "@/lib/schemas/blog-post-schemas";
 
 export default function AddBlogPostPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: CreateBlogPostInput) => {
+  const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
-    const result = await addBlogPost(data);
+    const result = await addBlogPost(formData);
     setIsSubmitting(false);
     return result;
   };
@@ -41,3 +40,4 @@ export default function AddBlogPostPage() {
     </div>
   );
 }
+

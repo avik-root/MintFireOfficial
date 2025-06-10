@@ -106,9 +106,9 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
   if (!allowedTypes.includes(imageFile.type)) {
     throw new Error('Invalid file type. Only JPEG, PNG, GIF, WEBP are allowed.');
   }
-  const maxSize = 2 * 1024 * 1024; // 2MB
+  const maxSize = 10 * 1024 * 1024; // 10MB
   if (imageFile.size > maxSize) {
-    throw new Error('File is too large. Maximum size is 2MB.');
+    throw new Error('File is too large. Maximum size is 10MB.');
   }
 
   await fs.mkdir(publicUploadsDir, { recursive: true });
@@ -311,3 +311,4 @@ export async function deleteTeamMember(id: string): Promise<{ success: boolean; 
     return { success: false, error: error.message || "Failed to delete team member." };
   }
 }
+

@@ -159,7 +159,7 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     if (admin.is2FAEnabled) {
         // Do NOT set auth cookie here. UI should handle PIN entry.
         // Signal that PIN is required.
-        return { success: true, message: "Password verified. PIN required.", requiresPin: true, adminId: admin.adminId };
+ return { success: true, message: "Password verified. PIN required.", requiresPin: true, adminId: admin.adminId };
     }
 
     // 2FA is not enabled for this admin. Proceed with login by setting the cookie.

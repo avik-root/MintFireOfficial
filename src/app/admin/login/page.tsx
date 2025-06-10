@@ -125,6 +125,7 @@ export default function AdminLoginPage() {
     const result = await loginAdmin(data);
     if (result.success) {
       if (result.requiresPin && result.adminId) {
+
         // Password was correct, but 2FA is enabled for this admin. Switch to PIN view.
         setCurrentAdminId(result.adminId); // Ensure adminId is set for PIN form
         setViewMode('pin_entry');
@@ -132,7 +133,9 @@ export default function AdminLoginPage() {
       } else if (!result.requiresPin) {
         // Login successful (2FA not enabled or handled elsewhere).
         toast({ title: "Success", description: result.message });
+
         const nextUrl = searchParams.get('next') || '/admin/dashboard';
+
         router.push(nextUrl);
       } else {
         // This case should ideally not be reached if result.success is true & requiresPin is true,
@@ -155,7 +158,9 @@ export default function AdminLoginPage() {
     const result = await verifyPinForLogin(currentAdminId, data.pin);
     if (result.success) {
       toast({ title: "PIN Verified", description: "Login successful! Redirecting..."});
+
       const nextUrl = searchParams.get('next') || '/admin/dashboard';
+
       router.push(nextUrl);
       setPinAttempts(0);
     } else {

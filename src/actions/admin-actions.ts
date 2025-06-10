@@ -85,7 +85,7 @@ function setAuthCookie() {
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 1 week
+    // No maxAge or expires makes it a session cookie
   });
 }
 
@@ -355,3 +355,4 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
         return { success: false, message: error.message || "Failed to disable 2FA with Super Action." };
     }
 }
+

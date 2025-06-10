@@ -1,16 +1,69 @@
 
+"use client";
+
+import React, { useEffect, useState, useCallback } from 'react';
 import { getHallOfFameEntries } from '@/actions/hall-of-fame-actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Trophy, UserCircle, Medal, Activity, Award, Star, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Trophy, UserCircle, Medal, Activity, Award, Star, ExternalLink, AlertTriangle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge'; // Added this import
+import { Badge } from '@/components/ui/badge';
+import type { HallOfFameEntry } from '@/lib/schemas/hall-of-fame-schemas';
 
-export default async function HallOfFamePage() {
-  const { entries, error } = await getHallOfFameEntries();
+export default function HallOfFamePage() {
+  const [entries, setEntries] = useState<HallOfFameEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (error) {
+  const fetchData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setIsLoading(true);
+    // For subsequent polls, we don't want to flash the error message if data is already there
+    // setError(null); 
+    try {
+      const { entries: fetchedEntries, error: fetchError } = await getHallOfFameEntries();
+      if (fetchError) {
+        setError(fetchError);
+      } else {
+        setEntries(fetchedEntries || []);
+        if (!isInitialLoad) setError(null); // Clear error on successful poll
+      }
+    } catch (e: any) {
+      setError(e.message || "An unexpected error occurred fetching Hall of Fame entries.");
+    }
+    if (isInitialLoad) setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchData(true); // Initial fetch
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        fetchData(false);
+      }
+    }, 5000); // Refresh every 5 seconds
+
+    return () => clearInterval(intervalId); // Cleanup interval
+  }, [fetchData]);
+
+
+  const getRankColor = (rank?: number | null) => {
+    if (rank === 1) return "text-yellow-400";
+    if (rank === 2) return "text-slate-400";
+    if (rank === 3) return "text-orange-400";
+    return "text-primary";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading Hall of Fame...</p>
+      </div>
+    );
+  }
+
+  if (error && entries.length === 0) {
     return (
       <div className="container mx-auto py-12 px-4 md:px-6 text-center">
         <AlertTriangle className="w-20 h-20 text-destructive mx-auto mb-6" />
@@ -20,15 +73,14 @@ export default async function HallOfFamePage() {
     );
   }
 
-  const getRankColor = (rank?: number | null) => {
-    if (rank === 1) return "text-yellow-400";
-    if (rank === 2) return "text-slate-400";
-    if (rank === 3) return "text-orange-400";
-    return "text-primary";
-  };
-
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
+       {error && entries.length > 0 && ( // Show a less intrusive error if data is already displayed
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          <p>Error refreshing data: {error}. Displaying last known data.</p>
+        </div>
+      )}
       <section className="text-center mb-16">
         <Trophy className="w-20 h-20 text-primary mx-auto mb-6 glowing-icon-primary" />
         <h1 className="font-headline text-5xl font-bold mb-4">MintFire Hall of Fame</h1>
@@ -88,11 +140,13 @@ export default async function HallOfFamePage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <Activity className="w-20 h-20 mx-auto text-muted-foreground mb-4" />
-          <p className="text-xl font-semibold text-muted-foreground">The Hall of Fame is currently empty.</p>
-          <p className="text-muted-foreground">Outstanding contributions will be recognized here soon!</p>
-        </div>
+        !error && entries.length === 0 && ( // Check for no error and empty entries
+          <div className="text-center py-12">
+            <Activity className="w-20 h-20 mx-auto text-muted-foreground mb-4" />
+            <p className="text-xl font-semibold text-muted-foreground">The Hall of Fame is currently empty.</p>
+            <p className="text-muted-foreground">Outstanding contributions will be recognized here soon!</p>
+          </div>
+        )
       )}
     </div>
   );

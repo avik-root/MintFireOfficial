@@ -34,14 +34,14 @@ export default function SiteContentForm({
   const form = useForm<CreateSiteContentItemInput>({
     resolver: zodResolver(CreateSiteContentItemSchema),
     defaultValues: initialData ? {
-      type: initialData.type,
+      type: initialData.type, // Should always be 'announcement' now
       title: initialData.title,
       content: initialData.content,
       imageUrl: initialData.imageUrl || undefined,
       linkUrl: initialData.linkUrl || undefined,
       isActive: initialData.isActive,
     } : {
-      type: "news", // Default to 'news', user can change
+      type: "announcement", // Default to 'announcement'
       title: "",
       content: "",
       imageUrl: "",
@@ -79,15 +79,14 @@ export default function SiteContentForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Content Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting || true}> {/* Disabled as only one option */}
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select content type" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="banner">Banner</SelectItem>
-                  <SelectItem value="news">News</SelectItem>
+                  {/* Only "Announcement" is now an option */}
                   <SelectItem value="announcement">Announcement</SelectItem>
                 </SelectContent>
               </Select>
@@ -191,4 +190,3 @@ export default function SiteContentForm({
     </Form>
   );
 }
-

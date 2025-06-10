@@ -3,8 +3,9 @@ import { z } from 'zod';
 
 export const SiteContentItemSchema = z.object({
   id: z.string().uuid(),
-  type: z.enum(['banner', 'news', 'announcement'], {
+  type: z.enum(['announcement'], { // Only 'announcement' is now a valid type
     required_error: "Content type is required.",
+    invalid_type_error: "Invalid content type specified. Only 'announcement' is allowed.",
   }),
   title: z.string().min(1, "Title is required."),
   content: z.string().min(1, "Content is required."),

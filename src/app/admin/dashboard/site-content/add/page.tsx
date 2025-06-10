@@ -13,7 +13,8 @@ export default function AddSiteContentPage() {
 
   const handleSubmit = async (data: CreateSiteContentItemInput) => {
     setIsSubmitting(true);
-    const result = await addSiteContentItem(data);
+    // Ensure type is 'announcement' before submitting, though form should enforce this
+    const result = await addSiteContentItem({...data, type: 'announcement'});
     setIsSubmitting(false);
     return result;
   };
@@ -26,7 +27,7 @@ export default function AddSiteContentPage() {
             <PlusCircle className="w-8 h-8 text-primary glowing-icon-primary" />
             <div>
               <CardTitle className="font-headline text-3xl">Add New Site Content</CardTitle>
-              <CardDescription>Create a new banner, news item, or announcement.</CardDescription>
+              <CardDescription>Create a new announcement for the site.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -34,7 +35,7 @@ export default function AddSiteContentPage() {
           <SiteContentForm 
             onSubmit={handleSubmit} 
             isSubmitting={isSubmitting}
-            submitButtonText="Add Content"
+            submitButtonText="Add Announcement"
           />
         </CardContent>
       </Card>

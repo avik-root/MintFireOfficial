@@ -24,7 +24,8 @@ export default function AdminSiteContentPage() {
       if (fetchError) {
         setError(fetchError);
       } else {
-        setSiteContentItems(items || []);
+        // Filter for announcements only on the client, though schema should enforce this for new items
+        setSiteContentItems(items?.filter(item => item.type === 'announcement') || []);
          if (!isInitialLoad) setError(null);
       }
     } catch (e: any) {
@@ -78,13 +79,13 @@ export default function AdminSiteContentPage() {
             <div>
               <CardTitle className="font-headline text-3xl flex items-center">
                 <ListChecks className="w-8 h-8 mr-3 text-primary glowing-icon-primary" />
-                Manage Site Content
+                Manage Announcements
               </CardTitle>
-              <CardDescription>View, add, edit, or delete banners, news, and announcements.</CardDescription>
+              <CardDescription>View, add, edit, or delete site announcements.</CardDescription>
             </div>
             <Button asChild variant="default" className="shrink-0">
               <Link href="/admin/dashboard/site-content/add">
-                <PlusCircle className="mr-2 h-5 w-5" /> Add New Item
+                <PlusCircle className="mr-2 h-5 w-5" /> Add New Announcement
               </Link>
             </Button>
           </div>
@@ -93,8 +94,8 @@ export default function AdminSiteContentPage() {
           {siteContentItems.length === 0 && !error ? (
             <div className="text-center py-12">
               <ListChecks className="w-20 h-20 mx-auto text-muted-foreground mb-4" />
-              <p className="text-xl font-semibold text-muted-foreground">No site content items found.</p>
-              <p className="text-muted-foreground">Get started by adding a new banner, news, or announcement.</p>
+              <p className="text-xl font-semibold text-muted-foreground">No announcements found.</p>
+              <p className="text-muted-foreground">Get started by adding a new announcement.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -113,10 +114,7 @@ export default function AdminSiteContentPage() {
                     <tr key={item.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{item.title}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        <Badge variant={
-                          item.type === 'banner' ? 'default' : 
-                          item.type === 'news' ? 'secondary' : 'outline'
-                        } className="capitalize">{item.type}</Badge>
+                        <Badge variant={'outline'} className="capitalize">{item.type}</Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Badge variant={item.isActive ? "default" : "destructive"} className={item.isActive ? "bg-green-600/30 text-green-400 border-green-500" : "bg-red-600/30 text-red-400 border-red-500"}>

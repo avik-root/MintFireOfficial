@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { LayoutDashboard, Package, Newspaper, Settings, BarChart3, Users, FileText } from "lucide-react"; // Added FileText for consistency
+import { LayoutDashboard, Package, Newspaper, Settings, BarChart3, Users, FileText, Trophy } from "lucide-react"; // Added Trophy, removed Users (or keep if generic users are planned)
 
 interface DashboardCardProps {
   title: string;
@@ -42,23 +42,23 @@ export default function AdminDashboardPage() {
         <DashboardCard
           title="Products"
           description="Manage your product catalog. View, add, edit, or delete products."
-          link="/admin/dashboard/products" // Updated link
+          link="/admin/dashboard/products"
           linkText="Go to Products"
           icon={Package}
         />
         <DashboardCard
-          title="Users"
-          description="Manage user accounts. View, edit, block/unblock, or delete users."
-          link="/admin/dashboard/users"
-          linkText="Go to Users"
-          icon={Users}
+          title="Hall of Fame"
+          description="Manage Hall of Fame entries, points, and achievements."
+          link="/admin/dashboard/hall-of-fame-management"
+          linkText="Go to Hall of Fame"
+          icon={Trophy}
         />
         <DashboardCard
           title="Site Content"
           description="Manage banners, news, and announcements."
           link="/admin/dashboard/site-content"
           linkText="Go to Site Content"
-          icon={FileText} // Changed to FileText for consistency
+          icon={FileText}
         />
         <DashboardCard
           title="Blog Posts"

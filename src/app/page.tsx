@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, type ElementType } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import type { Product } from '@/lib/schemas/product-schemas';
 import ProductCard from './_components/ProductCard'; 
 import ProductDetailModal from './_components/ProductDetailModal';
 import FeedbackForm from './_components/FeedbackForm';
-import BugReportForm from './_components/BugReportForm'; // Import BugReportForm
+import BugReportForm from './_components/BugReportForm'; 
 import { incrementProductView } from '@/actions/analytics-actions';
 
 
@@ -24,7 +24,7 @@ interface CoreTechnology {
   id: string;
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
   link: string;
 }
 
@@ -146,7 +146,7 @@ export default function Home() {
     </Card>
   );
 
-  const ProductSection = ({ title, products, error, icon: Icon, sectionId, limit = 3 }: { title: string, products?: Product[], error?: string, icon: React.ElementType, sectionId: string, limit?: number }) => {
+  const ProductSection = ({ title, products, error, icon: Icon, sectionId, limit = 3 }: { title: string, products?: Product[], error?: string, icon: ElementType, sectionId: string, limit?: number }) => {
     if (error) {
       return (
         <section id={sectionId} className="py-12">
@@ -446,4 +446,3 @@ export default function Home() {
     </div>
   );
 }
-

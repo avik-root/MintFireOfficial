@@ -1,24 +1,24 @@
 
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, type ElementType } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAnalyticsData, getGeneralCounts } from "@/actions/analytics-actions";
 import type { AnalyticsData, GeneralCounts, TopHallOfFameParticipant } from "@/lib/schemas/analytics-schemas";
-import { getHallOfFameEntries } from '@/actions/hall-of-fame-actions'; // Added
-import type { HallOfFameEntry } from '@/lib/schemas/hall-of-fame-schemas'; // Added
-import { BarChart3, Package, Users, Crown, Newspaper, Briefcase, Eye, Loader2, AlertTriangle, Bug, Trophy, Star } from "lucide-react"; // Added Bug, Trophy, Star
+import { getHallOfFameEntries } from '@/actions/hall-of-fame-actions'; 
+import type { HallOfFameEntry } from '@/lib/schemas/hall-of-fame-schemas'; 
+import { BarChart3, Package, Users, Crown, Newspaper, Briefcase, Eye, Loader2, AlertTriangle, Bug, Trophy, Star } from "lucide-react"; 
 import { getProducts } from '@/actions/product-actions';
 import { getTeamMembers } from '@/actions/team-member-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
 import type { TeamMember } from '@/lib/schemas/team-member-schemas';
-import Link from 'next/link'; // Added
-import Image from 'next/image'; // Added
+import Link from 'next/link'; 
+import NextImage from 'next/image'; // Changed to NextImage to avoid conflict with local Image type if any
 
 interface CountCardProps {
   title: string;
   count: number;
-  icon: React.ElementType;
+  icon: ElementType;
 }
 
 const CountCard: React.FC<CountCardProps> = ({ title, count, icon: Icon }) => (
@@ -44,7 +44,7 @@ export default function AdminAnalyticsPage() {
   const [generalCounts, setGeneralCounts] = useState<GeneralCounts | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [hallOfFameEntries, setHallOfFameEntries] = useState<HallOfFameEntry[]>([]); // Added
+  const [hallOfFameEntries, setHallOfFameEntries] = useState<HallOfFameEntry[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,12 +52,12 @@ export default function AdminAnalyticsPage() {
     if (isInitialLoad) setIsLoading(true);
     let currentError: string | null = null;
     try {
-      const [analyticsRes, countsRes, productsRes, teamMembersRes, hofRes] = await Promise.all([ // Added hofRes
+      const [analyticsRes, countsRes, productsRes, teamMembersRes, hofRes] = await Promise.all([ 
         getAnalyticsData(),
         getGeneralCounts(),
         getProducts(),
         getTeamMembers({ publicOnly: false }),
-        getHallOfFameEntries() // Added
+        getHallOfFameEntries() 
       ]);
 
       if (analyticsRes.error) currentError = (currentError ? currentError + "; " : "") + analyticsRes.error;
@@ -72,8 +72,8 @@ export default function AdminAnalyticsPage() {
       if (teamMembersRes.error) currentError = (currentError ? currentError + "; " : "") + teamMembersRes.error;
       setTeamMembers(teamMembersRes.members || []);
 
-      if (hofRes.error) currentError = (currentError ? currentError + "; " : "") + hofRes.error; // Added
-      setHallOfFameEntries(hofRes.entries || []); // Added
+      if (hofRes.error) currentError = (currentError ? currentError + "; " : "") + hofRes.error; 
+      setHallOfFameEntries(hofRes.entries || []); 
 
       if (currentError) {
         setError(currentError);
@@ -156,7 +156,7 @@ export default function AdminAnalyticsPage() {
       {generalCounts && (
         <section className="mb-12">
           <h2 className="text-2xl font-semibold font-headline mb-6 text-center md:text-left">Content Overview</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"> {/* Adjusted grid for more items */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"> 
             <CountCard title="Total Products" count={generalCounts.totalProducts} icon={Package} />
             <CountCard title="Total Team Members" count={generalCounts.totalTeamMembers} icon={Users} />
             <CountCard title="Total Founders" count={generalCounts.totalFounders} icon={Crown} />
@@ -167,7 +167,7 @@ export default function AdminAnalyticsPage() {
         </section>
       )}
 
-      <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"> {/* Adjusted grid for new card */}
+      <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"> 
         <Card className="layered-card">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><Eye className="mr-2 text-accent"/>Top Viewed Products</CardTitle>
@@ -210,7 +210,7 @@ export default function AdminAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="layered-card"> {/* New Hall of Fame Summary Card */}
+        <Card className="layered-card"> 
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><Trophy className="mr-2 text-accent"/>Hall of Fame Summary</CardTitle>
             <CardDescription>Overview of top contributors.</CardDescription>

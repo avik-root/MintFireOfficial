@@ -6,6 +6,7 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image'; // Import next/image
 
 export default function ContactPage() {
   const [isPhoneHovered, setIsPhoneHovered] = useState(false);
@@ -79,9 +80,15 @@ export default function ContactPage() {
             <p className="text-foreground">
               India, Kolkata - Remote (Cloud Based)
             </p>
-            <div className="mt-4 aspect-w-16 aspect-h-9 rounded-md overflow-hidden border border-border">
-              {/* Placeholder for a map embed or relevant graphic */}
-              <img src="https://placehold.co/600x300.png?text=Global+Operations" alt="MintFire Global Operations" className="w-full h-full object-cover" data-ai-hint="global network abstract" />
+            <div className="mt-4 aspect-video relative rounded-md overflow-hidden border border-border">
+              <Image 
+                src="https://placehold.co/600x300.png" 
+                alt="MintFire Global Operations" 
+                width={600}
+                height={300}
+                className="w-full h-auto object-cover" 
+                data-ai-hint="global network abstract" 
+              />
             </div>
           </CardContent>
         </Card>

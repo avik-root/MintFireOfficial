@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, type ElementType } from 'react';
 import ServicePageLayout from '@/components/ServicePageLayout';
 import ProductCard from '@/app/_components/ProductCard';
 import ProductDetailModal from '@/app/_components/ProductDetailModal';
@@ -14,7 +14,7 @@ export default function AiPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorLoading, setErrorLoading] = useState<string | null>(null);
   const [sectionTitle, setSectionTitle] = useState("Related AI Products");
-  const [SectionIcon, setSectionIcon] = useState<React.ElementType>(() => Cpu);
+  const [SectionIcon, setSectionIcon] = useState<ElementType>(() => Cpu);
 
   const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -25,7 +25,7 @@ export default function AiPage() {
       setErrorLoading(null);
       let finalProducts: Product[] = [];
       let currentTitle = "Related AI Products";
-      let currentIcon: React.ElementType = Cpu;
+      let currentIcon: ElementType = Cpu;
 
       const { products: taggedProducts, error: taggedError } = await getProducts({ tag: 'ai' });
 

@@ -1,18 +1,19 @@
 
 import Image from 'next/image';
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import type { ArrowRight, CheckCircle } from 'lucide-react'; // Lucide icons are components (runtime)
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import type { ReactNode, ElementType } from 'react';
 
 interface ServicePageLayoutProps {
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
   imageUrl: string;
   imageAlt: string;
   imageAiHint: string;
   features: string[];
-  children?: React.ReactNode; // For additional specific content
+  children?: ReactNode; // For additional specific content
 }
 
 const ServicePageLayout: React.FC<ServicePageLayoutProps> = ({
@@ -77,3 +78,4 @@ const ServicePageLayout: React.FC<ServicePageLayoutProps> = ({
 };
 
 export default ServicePageLayout;
+

@@ -4,12 +4,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAnalyticsData, getGeneralCounts } from "@/actions/analytics-actions";
-import type { AnalyticsData, GeneralCounts } from "@/lib/schemas/analytics-schemas";
-import { BarChart3, Package, Users, Crown, Newspaper, Briefcase, Eye, Loader2, AlertTriangle } from "lucide-react";
+import type { AnalyticsData, GeneralCounts, TopHallOfFameParticipant } from "@/lib/schemas/analytics-schemas";
+import { getHallOfFameEntries } from '@/actions/hall-of-fame-actions'; // Added
+import type { HallOfFameEntry } from '@/lib/schemas/hall-of-fame-schemas'; // Added
+import { BarChart3, Package, Users, Crown, Newspaper, Briefcase, Eye, Loader2, AlertTriangle, Bug, Trophy, Star } from "lucide-react"; // Added Bug, Trophy, Star
 import { getProducts } from '@/actions/product-actions';
 import { getTeamMembers } from '@/actions/team-member-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
 import type { TeamMember } from '@/lib/schemas/team-member-schemas';
+import Link from 'next/link'; // Added
+import Image from 'next/image'; // Added
 
 interface CountCardProps {
   title: string;
@@ -40,27 +44,27 @@ export default function AdminAnalyticsPage() {
   const [generalCounts, setGeneralCounts] = useState<GeneralCounts | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [hallOfFameEntries, setHallOfFameEntries] = useState<HallOfFameEntry[]>([]); // Added
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
     if (isInitialLoad) setIsLoading(true);
-    // For subsequent polls, we don't want to flash the error message if data is already there
-    // setError(null); 
     let currentError: string | null = null;
     try {
-      const [analyticsRes, countsRes, productsRes, teamMembersRes] = await Promise.all([
+      const [analyticsRes, countsRes, productsRes, teamMembersRes, hofRes] = await Promise.all([ // Added hofRes
         getAnalyticsData(),
         getGeneralCounts(),
         getProducts(),
-        getTeamMembers({ publicOnly: false })
+        getTeamMembers({ publicOnly: false }),
+        getHallOfFameEntries() // Added
       ]);
 
       if (analyticsRes.error) currentError = (currentError ? currentError + "; " : "") + analyticsRes.error;
       setAnalyticsData(analyticsRes.data || { productViews: {}, teamMemberViews: {}, lastUpdatedAt: new Date().toISOString() });
 
       if (countsRes.error) currentError = (currentError ? currentError + "; " : "") + countsRes.error;
-      setGeneralCounts(countsRes.counts || { totalProducts: 0, totalTeamMembers: 0, totalFounders: 0, totalBlogPosts: 0, totalApplicants: 0 });
+      setGeneralCounts(countsRes.counts || { totalProducts: 0, totalTeamMembers: 0, totalFounders: 0, totalBlogPosts: 0, totalApplicants: 0, totalBugReports: 0 });
       
       if (productsRes.error) currentError = (currentError ? currentError + "; " : "") + productsRes.error;
       setProducts(productsRes.products || []);
@@ -68,10 +72,13 @@ export default function AdminAnalyticsPage() {
       if (teamMembersRes.error) currentError = (currentError ? currentError + "; " : "") + teamMembersRes.error;
       setTeamMembers(teamMembersRes.members || []);
 
+      if (hofRes.error) currentError = (currentError ? currentError + "; " : "") + hofRes.error; // Added
+      setHallOfFameEntries(hofRes.entries || []); // Added
+
       if (currentError) {
         setError(currentError);
       } else if (!isInitialLoad) {
-        setError(null); // Clear error on successful poll
+        setError(null);
       }
 
     } catch (err: any) {
@@ -82,14 +89,10 @@ export default function AdminAnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    fetchData(true); // Initial fetch
-
+    fetchData(true); 
     const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        fetchData(false);
-      }
+      if (!document.hidden) fetchData(false);
     }, 5000);
-
     return () => clearInterval(intervalId);
   }, [fetchData]);
 
@@ -106,6 +109,12 @@ export default function AdminAnalyticsPage() {
 
   const topViewedProducts = analyticsData ? getTopViewed(analyticsData.productViews, products) : [];
   const topViewedTeamMembers = analyticsData ? getTopViewed(analyticsData.teamMemberViews, teamMembers) : [];
+  const topHallOfFameParticipants: TopHallOfFameParticipant[] = hallOfFameEntries.slice(0, 3).map(entry => ({
+    id: entry.id,
+    displayName: entry.displayName,
+    totalPoints: entry.totalPoints,
+    rank: entry.rank
+  }));
 
   if (isLoading) {
     return (
@@ -116,7 +125,7 @@ export default function AdminAnalyticsPage() {
     );
   }
 
-  if (error && !analyticsData && !generalCounts) { // Show full page error if no data is currently displayed
+  if (error && !analyticsData && !generalCounts && hallOfFameEntries.length === 0) { 
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
         <AlertTriangle className="w-16 h-16 mb-4" />
@@ -128,7 +137,7 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
-      {error && (analyticsData || generalCounts) && ( // Show a less intrusive error if data is already displayed
+      {error && (analyticsData || generalCounts || hallOfFameEntries.length > 0) && ( 
         <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
           <AlertTriangle className="w-5 h-5 mr-2" />
           <p>Error refreshing data: {error}. Displaying last known data.</p>
@@ -147,17 +156,18 @@ export default function AdminAnalyticsPage() {
       {generalCounts && (
         <section className="mb-12">
           <h2 className="text-2xl font-semibold font-headline mb-6 text-center md:text-left">Content Overview</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"> {/* Adjusted grid for more items */}
             <CountCard title="Total Products" count={generalCounts.totalProducts} icon={Package} />
             <CountCard title="Total Team Members" count={generalCounts.totalTeamMembers} icon={Users} />
             <CountCard title="Total Founders" count={generalCounts.totalFounders} icon={Crown} />
             <CountCard title="Total Blog Posts" count={generalCounts.totalBlogPosts} icon={Newspaper} />
             <CountCard title="Total Applicants" count={generalCounts.totalApplicants} icon={Briefcase} />
+            <CountCard title="Total Bug Reports" count={generalCounts.totalBugReports} icon={Bug} /> 
           </div>
         </section>
       )}
 
-      <section className="grid md:grid-cols-2 gap-8">
+      <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"> {/* Adjusted grid for new card */}
         <Card className="layered-card">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><Eye className="mr-2 text-accent"/>Top Viewed Products</CardTitle>
@@ -197,6 +207,38 @@ export default function AdminAnalyticsPage() {
             ) : (
               <p className="text-muted-foreground italic">No team member view data yet.</p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="layered-card"> {/* New Hall of Fame Summary Card */}
+          <CardHeader>
+            <CardTitle className="font-headline text-xl flex items-center"><Trophy className="mr-2 text-accent"/>Hall of Fame Summary</CardTitle>
+            <CardDescription>Overview of top contributors.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground">Total Participants</p>
+              <p className="text-2xl font-bold text-foreground">{hallOfFameEntries.length}</p>
+            </div>
+            <h4 className="text-md font-semibold text-foreground mb-2">Top 3 Participants:</h4>
+            {topHallOfFameParticipants.length > 0 ? (
+              <ul className="space-y-2">
+                {topHallOfFameParticipants.map((p, index) => (
+                  <li key={p.id} className="flex items-center text-sm p-2 bg-muted/30 rounded-md">
+                    <span className="font-semibold text-accent mr-2">#{p.rank || index + 1}</span>
+                    <span className="text-foreground truncate flex-1">{p.displayName}</span>
+                    <span className="font-semibold text-muted-foreground flex items-center"><Star className="w-3 h-3 mr-1 text-yellow-400 fill-yellow-400"/>{p.totalPoints}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground italic">No participants in the Hall of Fame yet.</p>
+            )}
+             <div className="mt-4 text-right">
+                <Link href="/admin/dashboard/hall-of-fame-management" className="text-xs text-primary hover:underline">
+                    Manage Hall of Fame →
+                </Link>
+            </div>
           </CardContent>
         </Card>
       </section>

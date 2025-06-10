@@ -10,6 +10,7 @@ import type { TeamMember } from '@/lib/schemas/team-member-schemas';
 import type { Founder } from '@/lib/schemas/founder-schema';
 import type { BlogPost } from '@/lib/schemas/blog-post-schemas';
 import type { Applicant } from '@/lib/schemas/applicant-schemas';
+import type { BugReport } from '@/lib/schemas/bug-report-schemas'; // Added
 
 const analyticsFilePath = path.join(process.cwd(), 'data', 'analytics.json');
 const productsFilePath = path.join(process.cwd(), 'data', 'products.json');
@@ -17,6 +18,7 @@ const teamMembersFilePath = path.join(process.cwd(), 'data', 'team_members.json'
 const foundersFilePath = path.join(process.cwd(), 'data', 'founders.json');
 const blogPostsFilePath = path.join(process.cwd(), 'data', 'blog_posts.json');
 const applicantsFilePath = path.join(process.cwd(), 'data', 'applicants.json');
+const bugReportsFilePath = path.join(process.cwd(), 'data', 'bug-reports.json'); // Added
 
 
 async function readDataFile<T>(filePath: string, schema: z.ZodType<T[]>): Promise<T[]> {
@@ -113,13 +115,14 @@ export async function incrementTeamMemberView(memberId: string): Promise<void> {
   }
 }
 
-export async function getGeneralCounts(): Promise<{ counts?: { totalProducts: number; totalTeamMembers: number; totalFounders: number; totalBlogPosts: number; totalApplicants: number; }; error?: string }> {
+export async function getGeneralCounts(): Promise<{ counts?: { totalProducts: number; totalTeamMembers: number; totalFounders: number; totalBlogPosts: number; totalApplicants: number; totalBugReports: number; }; error?: string }> {
   try {
     const products = await readDataFile(productsFilePath, z.array(z.custom<Product>()));
     const teamMembers = await readDataFile(teamMembersFilePath, z.array(z.custom<TeamMember>()));
     const founders = await readDataFile(foundersFilePath, z.array(z.custom<Founder>()));
     const blogPosts = await readDataFile(blogPostsFilePath, z.array(z.custom<BlogPost>()));
     const applicants = await readDataFile(applicantsFilePath, z.array(z.custom<Applicant>()));
+    const bugReports = await readDataFile(bugReportsFilePath, z.array(z.custom<BugReport>())); // Added
 
     return {
       counts: {
@@ -128,6 +131,7 @@ export async function getGeneralCounts(): Promise<{ counts?: { totalProducts: nu
         totalFounders: founders.length,
         totalBlogPosts: blogPosts.length,
         totalApplicants: applicants.length,
+        totalBugReports: bugReports.length, // Added
       }
     };
   } catch (error: any) {

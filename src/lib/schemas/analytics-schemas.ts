@@ -21,5 +21,15 @@ export const GeneralCountsSchema = z.object({
   totalFounders: z.number().int().min(0),
   totalBlogPosts: z.number().int().min(0),
   totalApplicants: z.number().int().min(0),
+  totalBugReports: z.number().int().min(0), // Added
 });
 export type GeneralCounts = z.infer<typeof GeneralCountsSchema>;
+
+// Schema for individual top Hall of Fame entry to be displayed on analytics
+export const TopHallOfFameParticipantSchema = z.object({
+  id: z.string().uuid(),
+  displayName: z.string(),
+  totalPoints: z.number().int(),
+  rank: z.number().int().optional().nullable(),
+});
+export type TopHallOfFameParticipant = z.infer<typeof TopHallOfFameParticipantSchema>;

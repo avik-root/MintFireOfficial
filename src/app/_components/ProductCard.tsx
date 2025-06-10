@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react'; // Added this line
+import React, { Fragment } from 'react'; // Explicitly import Fragment
 import type { Product } from '@/lib/schemas/product-schemas';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,20 +18,23 @@ interface ProductCardProps {
 export default function ProductCard({ product, onViewDetailsClick }: ProductCardProps) {
   const getStatusBadge = (status: string) => {
     let colorClass = 'bg-slate-600/30 text-slate-400 border-slate-500';
-    let Icon = Zap;
+    let Icon = Clock; // Default to Clock
 
     if (status === 'Stable') {
       colorClass = 'bg-green-600/30 text-green-400 border-green-500';
       Icon = CheckCircle;
     } else if (status === 'Beta') {
       colorClass = 'bg-yellow-600/30 text-yellow-400 border-yellow-500';
+      Icon = Zap; 
     } else if (status === 'Alpha') {
       colorClass = 'bg-orange-600/30 text-orange-400 border-orange-500';
+      Icon = Zap;
     } else if (status === 'Upcoming') {
       colorClass = 'bg-blue-600/30 text-blue-400 border-blue-500';
       Icon = Clock;
     } else if (status === 'Deprecated') {
       colorClass = 'bg-red-600/30 text-red-400 border-red-500';
+      Icon = Zap; 
     }
     return (
       <Badge variant="outline" className={`text-xs ${colorClass}`}>
@@ -63,7 +66,8 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
       if (typeof product.annualPrice === 'number') plans.push(`$${product.annualPrice.toFixed(2)}/yr`);
       
       if (plans.length > 0) return plans.join(' | ');
-      return "Subscription (Contact for pricing)"; 
+      // This case should ideally not be reached if validation requires all 3 for subscription
+      return "Subscription (Details unavailable)"; 
     }
     return "Paid (Details unavailable)";
   };
@@ -75,12 +79,12 @@ export default function ProductCard({ product, onViewDetailsClick }: ProductCard
     return (
       <>
         {developerNames.map((name, index) => (
-          <React.Fragment key={name}>
-            <Link href={`/company?member=${encodeURIComponent(name)}`} className="hover:text-primary hover:underline">
+          <Fragment key={name}> {/* Use imported Fragment */}
+            <Link href={`/company?member=${encodeURIComponent(name.trim())}`} className="hover:text-primary hover:underline">
               {name}
             </Link>
             {index < developerNames.length - 1 && (developerNames.length > 1 && index === developerNames.length - 2 ? ' & ' : ', ')}
-          </React.Fragment>
+          </Fragment>
         ))}
       </>
     );

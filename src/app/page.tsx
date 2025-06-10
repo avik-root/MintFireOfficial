@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction, Info, Code2, Search, ArrowUpDown, Archive, Loader2, AlertTriangle, SlidersHorizontal, PackageSearch } from 'lucide-react';
+import { ArrowRight, CheckCircle, Cpu, Smartphone, Sparkles, ShieldCheck, Blocks, Activity, Megaphone, Package, TestTube, Construction, Info, Code2, Search, ArrowUpDown, Archive, Loader2, AlertTriangle, SlidersHorizontal, PackageSearch, MessageSquareHeart } from 'lucide-react';
 import Link from 'next/link';
 import { getSiteContentItems } from '@/actions/site-content-actions';
 import type { SiteContentItem } from '@/lib/schemas/site-content-schemas';
@@ -15,6 +15,9 @@ import { getProducts } from '@/actions/product-actions';
 import type { Product } from '@/lib/schemas/product-schemas';
 import ProductCard from './_components/ProductCard'; 
 import ProductDetailModal from './_components/ProductDetailModal';
+import FeedbackForm from './_components/FeedbackForm';
+import { incrementProductView } from '@/actions/analytics-actions';
+
 
 interface CoreTechnology {
   id: string;
@@ -29,7 +32,7 @@ const coreTechnologiesData: CoreTechnology[] = [
   { id: "ct2", title: "Blockchain", description: "Building transparent and secure decentralized solutions.", icon: Blocks, link: "/services/blockchain" },
   { id: "ct3", title: "Artificial Intelligence", description: "Leveraging AI to create intelligent systems and insights.", icon: Cpu, link: "/services/ai" },
   { id: "ct4", title: "IoT Devices", description: "Connecting the physical world with smart, secure devices.", icon: Smartphone, link: "/services/iot-devices" },
-  { id: "ct5", title: "Industrial Software", description: "Optimizing industrial operations with robust software.", icon: Package, link: "/services/industrial-software" }, // Assuming Package is suitable
+  { id: "ct5", title: "Industrial Software", description: "Optimizing industrial operations with robust software.", icon: Package, link: "/services/industrial-software" }, 
   { id: "ct6", title: "Software Solutions", description: "Crafting bespoke software to meet diverse business needs.", icon: Code2, link: "/services/softwares" },
 ];
 
@@ -95,9 +98,14 @@ export default function Home() {
     fetchData();
   }, []);
 
-  const handleOpenProductModal = (product: Product) => {
+  const handleOpenProductModal = async (product: Product) => {
     setSelectedProductForModal(product);
     setIsProductModalOpen(true);
+    try {
+      await incrementProductView(product.id);
+    } catch (error) {
+      console.warn("Failed to increment product view count:", error);
+    }
   };
 
   const handleCloseProductModal = () => {
@@ -206,12 +214,10 @@ export default function Home() {
         valB = valB ? 1 : 0;
       }
       
-      // For pricingType, handle potential nulls for priceAmount
       if (sortKey === 'pricingType') {
         valA = a.priceAmount ?? (a.pricingType === 'Free' ? 0 : Infinity);
         valB = b.priceAmount ?? (b.pricingType === 'Free' ? 0 : Infinity);
       }
-
 
       let comparison = 0;
       if (valA > valB) comparison = 1;
@@ -253,7 +259,6 @@ export default function Home() {
         sectionId="featured-products"
       />
 
-      {/* Announcements Section */}
       <section id="announcements" className="py-12">
         <div className="flex items-center mb-8">
           <Megaphone className="w-10 h-10 text-primary mr-4 glowing-icon-primary" />
@@ -293,7 +298,6 @@ export default function Home() {
         sectionId="dev-testing"
       />
 
-      {/* All Products Showcase Section */}
       <section id="all-products-showcase" className="py-12">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-center">
@@ -319,7 +323,7 @@ export default function Home() {
                   if (value === 'name' || value === 'status' || value === 'pricingType') {
                     setSortDirection('asc');
                   } else {
-                    setSortDirection('desc'); // Default to desc for dates or feature status
+                    setSortDirection('desc'); 
                   }
                 }}
               >
@@ -370,7 +374,6 @@ export default function Home() {
         )}
       </section>
 
-
       <section id="core-technologies" className="py-16">
         <div className="text-center mb-12">
           <Activity className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
@@ -401,6 +404,12 @@ export default function Home() {
         </div>
       </section>
       
+      <section id="feedback" className="py-16">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <FeedbackForm />
+        </div>
+      </section>
+
       {selectedProductForModal && (
         <ProductDetailModal
           product={selectedProductForModal}
@@ -411,4 +420,3 @@ export default function Home() {
     </div>
   );
 }
-

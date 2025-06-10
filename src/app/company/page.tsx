@@ -13,6 +13,7 @@ import FounderCard from './_components/FounderCard';
 import TeamMemberDetailModal from './_components/TeamMemberDetailModal';
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { incrementTeamMemberView } from '@/actions/analytics-actions';
 
 const CompanyPageContent = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -58,17 +59,21 @@ const CompanyPageContent = () => {
         const decodedMemberName = decodeURIComponent(memberNameFromQuery);
         const memberToOpen = teamMembers.find(tm => tm.name === decodedMemberName);
         if (memberToOpen) {
-          setSelectedMember(memberToOpen);
-          setIsModalOpen(true);
+          handleViewDetails(memberToOpen); // Use existing handler to also track view
         }
       }
     }
   }, [searchParams, teamMembers]);
 
 
-  const handleViewDetails = (member: TeamMember) => {
+  const handleViewDetails = async (member: TeamMember) => {
     setSelectedMember(member);
     setIsModalOpen(true);
+    try {
+      await incrementTeamMemberView(member.id);
+    } catch (error) {
+      console.warn("Failed to increment team member view count:", error);
+    }
   };
 
   const handleCloseModal = () => {
@@ -217,7 +222,6 @@ const CompanyPageContent = () => {
   );
 };
 
-// Wrap CompanyPageContent with Suspense for useSearchParams
 export default function CompanyPage() {
   return (
     <Suspense fallback={<div className="flex justify-center items-center min-h-[calc(100vh-200px)]"><Loader2 className="w-12 h-12 animate-spin text-primary" /><p className="ml-3">Loading Company Information...</p></div>}>
@@ -225,4 +229,3 @@ export default function CompanyPage() {
     </Suspense>
   );
 }
-

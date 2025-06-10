@@ -405,33 +405,34 @@ export default function Home() {
         </div>
       </section>
       
-      <section id="feedback" className="py-16">
-        <div className="container mx-auto px-4 max-w-2xl">
-           <Card className="layered-card w-full">
-            <CardHeader className="text-center">
-                <MessageSquareHeart className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
-                <CardTitle className="font-headline text-3xl">Share Your Feedback</CardTitle>
-                <CardDescription>We value your opinion. Let us know how we can improve.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <FeedbackForm />
-            </CardContent>
-        </Card>
-        </div>
-      </section>
-
-      <section id="report-bugs" className="py-16">
-        <div className="container mx-auto px-4 max-w-2xl">
-           <Card className="layered-card w-full">
-            <CardHeader className="text-center">
-                <Bug className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
-                <CardTitle className="font-headline text-3xl">Report a Bug</CardTitle>
-                <CardDescription>Help us improve MintFire by reporting any bugs or vulnerabilities you find. Your efforts are appreciated!</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <BugReportForm />
-            </CardContent>
-           </Card>
+      <section id="user-engagement" className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            <div id="feedback-section" className="w-full">
+              <Card className="layered-card w-full">
+                <CardHeader className="text-center">
+                    <MessageSquareHeart className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
+                    <CardTitle className="font-headline text-3xl">Share Your Feedback</CardTitle>
+                    <CardDescription>We value your opinion. Let us know how we can improve.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FeedbackForm />
+                </CardContent>
+              </Card>
+            </div>
+            <div id="report-bugs-section" className="w-full">
+              <Card className="layered-card w-full">
+                <CardHeader className="text-center">
+                    <Bug className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
+                    <CardTitle className="font-headline text-3xl">Report a Bug</CardTitle>
+                    <CardDescription>Help us improve MintFire by reporting any bugs or vulnerabilities you find. Your efforts are appreciated!</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <BugReportForm />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </section>
 

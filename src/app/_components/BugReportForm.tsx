@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CreateBugReportInputSchema, type CreateBugReportInput } from "@/lib/schemas/bug-report-schemas";
-import { Loader2, Send, Bug } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreateBugReportInputSchema, BugReportLevelSchema, type CreateBugReportInput } from "@/lib/schemas/bug-report-schemas";
+import { Loader2, Send, Bug, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import React, { useState } from "react";
 import { submitBugReport } from "@/actions/bug-report-actions";
@@ -25,6 +26,7 @@ export default function BugReportForm() {
       fullName: "",
       email: "",
       phone: "",
+      level: "Low", // Default level
       description: "",
       pocGdriveLink: "",
       githubUrl: "",
@@ -108,6 +110,30 @@ export default function BugReportForm() {
               </FormItem>
             )}
           />
+
+        <FormField
+          control={form.control}
+          name="level"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center"><AlertTriangle className="mr-2 h-4 w-4 text-muted-foreground"/>Severity Level</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select severity level" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {BugReportLevelSchema.options.map(levelValue => (
+                    <SelectItem key={levelValue} value={levelValue}>{levelValue}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Assess the potential impact of this bug.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

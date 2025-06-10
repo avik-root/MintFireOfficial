@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getBugReports } from "@/actions/bug-report-actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Bug, Eye, AlertTriangle, Loader2, Trash2, ArrowUpDown } from "lucide-react";
+import { Bug, Eye, AlertTriangle as AlertIcon, Loader2, ArrowUpDown } from "lucide-react"; // Changed AlertTriangle to AlertIcon
 import { Badge } from "@/components/ui/badge";
 import type { BugReport } from "@/lib/schemas/bug-report-schemas";
 // import DeleteBugReportButton from "./_components/DeleteBugReportButton"; // Placeholder for future use
 
-type SortKey = 'fullName' | 'status' | 'reportedAt';
+type SortKey = 'fullName' | 'status' | 'reportedAt' | 'level';
 type SortDirection = 'asc' | 'desc';
 
 export default function AdminBugReportsPage() {
@@ -63,6 +63,10 @@ export default function AdminBugReportsPage() {
       if (sortKey === 'reportedAt') {
         valA = new Date(a.reportedAt).getTime();
         valB = new Date(b.reportedAt).getTime();
+      } else if (sortKey === 'level') {
+        const levelOrder = { Low: 0, Mid: 1, High: 2, ZeroDay: 3 };
+        valA = levelOrder[a.level as keyof typeof levelOrder] ?? -1;
+        valB = levelOrder[b.level as keyof typeof levelOrder] ?? -1;
       } else if (typeof valA === 'string' && typeof valB === 'string') {
         valA = valA.toLowerCase();
         valB = valB.toLowerCase();
@@ -88,6 +92,16 @@ export default function AdminBugReportsPage() {
         return 'bg-red-500/30 text-red-400 border-red-500';
       case 'Fixed': return 'bg-teal-500/30 text-teal-400 border-teal-500';
       case 'Rewarded': return 'bg-purple-500/30 text-purple-400 border-purple-500';
+      default: return 'bg-slate-600/30 text-slate-400 border-slate-500';
+    }
+  };
+
+  const getLevelColorClass = (level: string) => {
+    switch (level) {
+      case 'Low': return 'bg-yellow-500/30 text-yellow-400 border-yellow-500';
+      case 'Mid': return 'bg-orange-500/30 text-orange-400 border-orange-500';
+      case 'High': return 'bg-red-500/30 text-red-400 border-red-500';
+      case 'ZeroDay': return 'bg-purple-600/30 text-purple-400 border-purple-500'; // Distinct color for ZeroDay
       default: return 'bg-slate-600/30 text-slate-400 border-slate-500';
     }
   };
@@ -120,7 +134,7 @@ export default function AdminBugReportsPage() {
   if (error && sortedBugReports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
-        <AlertTriangle className="w-16 h-16 mb-4" />
+        <AlertIcon className="w-16 h-16 mb-4" />
         <h2 className="text-2xl font-semibold mb-2">Error Loading Bug Reports</h2>
         <p>{error}</p>
       </div>
@@ -131,7 +145,7 @@ export default function AdminBugReportsPage() {
     <div className="container mx-auto py-8 px-4 md:px-6 w-full">
       {error && sortedBugReports.length > 0 && (
         <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/30 rounded-md flex items-center">
-          <AlertTriangle className="w-5 h-5 mr-2" />
+          <AlertIcon className="w-5 h-5 mr-2" />
           <p>Error refreshing data: {error}. Displaying last known data.</p>
         </div>
       )}
@@ -161,6 +175,7 @@ export default function AdminBugReportsPage() {
                   <tr>
                     <SortableHeader columnKey="fullName">Reporter</SortableHeader>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Description (Snippet)</th>
+                    <SortableHeader columnKey="level">Level</SortableHeader>
                     <SortableHeader columnKey="status">Status</SortableHeader>
                     <SortableHeader columnKey="reportedAt">Reported At</SortableHeader>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
@@ -172,6 +187,12 @@ export default function AdminBugReportsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{report.fullName}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground max-w-xs truncate" title={report.description}>
                         {report.description.substring(0, 50)}{report.description.length > 50 ? '...' : ''}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Badge variant="outline" className={`${getLevelColorClass(report.level)} capitalize`}>
+                          <AlertIcon className="mr-1 h-3 w-3" />
+                          {report.level}
+                        </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Badge variant="outline" className={`${getStatusColorClass(report.status)} capitalize`}>
@@ -198,4 +219,3 @@ export default function AdminBugReportsPage() {
     </div>
   );
 }
-

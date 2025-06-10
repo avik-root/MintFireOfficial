@@ -13,11 +13,20 @@ export const BugReportStatusSchema = z.enum([
 ]);
 export type BugReportStatus = z.infer<typeof BugReportStatusSchema>;
 
+export const BugReportLevelSchema = z.enum([
+  'Low',
+  'Mid', // Medium severity
+  'High',
+  'ZeroDay'
+]);
+export type BugReportLevel = z.infer<typeof BugReportLevelSchema>;
+
 export const BugReportSchema = z.object({
   id: z.string().uuid(),
   fullName: z.string().min(1, "Full name is required."),
   email: z.string().email("Invalid email address."),
   phone: z.string().min(1, "Phone number is required."),
+  level: BugReportLevelSchema.describe("The severity level of the bug."),
   description: z.string().min(20, "Please provide a detailed description of the bug (min 20 characters)."),
   pocGdriveLink: z.string().url("Proof of Concept Google Drive link must be a valid URL.").min(1, "PoC Google Drive link is required."),
   githubUrl: z.string().url("Invalid GitHub URL.").optional().or(z.literal('')),

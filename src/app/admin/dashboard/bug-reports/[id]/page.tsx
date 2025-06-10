@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback, use } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getBugReportById, updateBugReport } from "@/actions/bug-report-actions";
-import { User, Loader2, AlertTriangle, Mail, Phone, Link as LinkIcon, ExternalLink, FileText, MessageSquare, CalendarDays, Bug as BugIcon, CheckCircle } from "lucide-react";
+import { User, Loader2, AlertTriangle as AlertIcon, Mail, Phone, Link as LinkIcon, ExternalLink, FileText, MessageSquare, CalendarDays, Bug as BugIcon, CheckCircle } from "lucide-react"; // Changed AlertTriangle to AlertIcon
 import type { BugReport, UpdateBugReportStatusInput } from "@/lib/schemas/bug-report-schemas";
 import { Badge } from '@/components/ui/badge';
 import UpdateBugReportStatusForm from '../_components/UpdateBugReportStatusForm';
@@ -54,6 +54,16 @@ export default function BugReportDetailPage({ params: paramsPromise }: { params:
     }
   };
 
+  const getLevelColorClass = (level: string) => {
+    switch (level) {
+      case 'Low': return 'bg-yellow-500/30 text-yellow-400 border-yellow-500';
+      case 'Mid': return 'bg-orange-500/30 text-orange-400 border-orange-500';
+      case 'High': return 'bg-red-500/30 text-red-400 border-red-500';
+      case 'ZeroDay': return 'bg-purple-600/30 text-purple-400 border-purple-500';
+      default: return 'bg-slate-600/30 text-slate-400 border-slate-500';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
@@ -66,7 +76,7 @@ export default function BugReportDetailPage({ params: paramsPromise }: { params:
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-destructive">
-        <AlertTriangle className="w-16 h-16 mb-4" />
+        <AlertIcon className="w-16 h-16 mb-4" />
         <h2 className="text-2xl font-semibold mb-2">Error</h2>
         <p>{error}</p>
          <Button asChild variant="link" className="mt-4">
@@ -113,13 +123,20 @@ export default function BugReportDetailPage({ params: paramsPromise }: { params:
         <div className="md:col-span-2">
           <Card className="layered-card w-full">
             <CardHeader>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-2">
                 <BugIcon className="w-8 h-8 text-primary glowing-icon-primary" />
                 <div>
                   <CardTitle className="font-headline text-3xl">Bug Report Details</CardTitle>
                   <CardDescription>Submitted by: {report.fullName}</CardDescription>
                 </div>
               </div>
+               <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">Severity:</p>
+                  <Badge variant="outline" className={`${getLevelColorClass(report.level)} capitalize text-sm px-2 py-0.5`}>
+                    <AlertIcon className="mr-1.5 h-3.5 w-3.5" />
+                    {report.level}
+                  </Badge>
+                </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <DetailItem icon={Mail} label="Reporter Email" value={report.email} isLink={true} />

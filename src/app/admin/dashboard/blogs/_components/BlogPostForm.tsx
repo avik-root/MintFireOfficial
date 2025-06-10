@@ -44,7 +44,7 @@ export default function BlogPostForm({
       content: initialData.content,
       author: initialData.author,
       tagsString: initialData.tags?.join(', ') || '',
-      imageUrl: initialData.imageUrl || undefined, // Will be handled by file input
+      // imageUrl is handled by file input/preview state, not directly in form values for RHF
       isPublished: initialData.isPublished,
     } : {
       title: "",
@@ -52,31 +52,34 @@ export default function BlogPostForm({
       content: "",
       author: "",
       tagsString: "",
-      imageUrl: "", // Will be handled by file input
+      // imageUrl: "", // Handled by file input
       isPublished: false,
     },
   });
 
   useEffect(() => {
-    if (initialData?.imageUrl) {
+    // Only set image preview from initialData if we are in "add" mode with some initial URL (rare)
+    // or if we are in "edit" mode and not removing the image.
+    // For "edit" mode, this primarily ensures the preview is shown if an image exists.
+    if (initialData?.imageUrl && !removeCurrentImage) {
       setImagePreview(initialData.imageUrl);
     }
-  }, [initialData]);
+  }, [initialData, removeCurrentImage]);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setRemoveCurrentImage(false); // If a new file is selected, don't remove the old one yet (it'll be replaced)
+      setRemoveCurrentImage(false); 
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
-      // If file input is cleared, but there was an initial image, keep previewing initial unless explicitly removed.
-      // If no initial image, then clear preview.
       setSelectedFile(null);
+      // If no new file is selected, and we are not in "edit" mode with an initial image, clear preview.
+      // If in "edit" mode, keep initial preview unless explicitly removed.
       if (!initialData?.imageUrl) {
         setImagePreview(null);
       }
@@ -96,23 +99,31 @@ export default function BlogPostForm({
     const formData = new FormData();
     
     Object.entries(data).forEach(([key, value]) => {
-      if (key !== 'imageUrl') { // Don't append imageUrl from form schema directly
-         if (typeof value === 'boolean') {
-          formData.append(key, String(value));
-        } else if (value !== undefined && value !== null) {
-          formData.append(key, String(value));
-        }
+      // imageUrl is not part of CreateBlogPostInput, so it won't be appended here.
+      // Tags array also not part of CreateBlogPostInput, tagsString is.
+       if (typeof value === 'boolean') {
+        formData.append(key, String(value));
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
       }
     });
 
-    if (selectedFile) {
+    // Only append imageFile if adding a new post and a file is selected
+    if (!initialData && selectedFile) {
       formData.append("imageFile", selectedFile);
     }
-    if (removeCurrentImage) {
-        formData.append("removeImage", "true");
+    // For "add" mode (or if image management was re-enabled for "edit"):
+    // If a new file is selected (applicable for "add" or if "edit" allowed changes)
+    if (selectedFile && (initialData || !initialData)) { // This condition covers add and edit (if edit UI was present)
+       if (!initialData || (initialData && initialData.imageUrl)) { // only append if adding, or if editing and there was an original image (to replace)
+          formData.append("imageFile", selectedFile);
+       }
     }
-    if (initialData?.imageUrl && !selectedFile && !removeCurrentImage) {
-      formData.append("existingImageUrl", initialData.imageUrl); // Keep existing if no new one and not removed
+    
+    // If in "add" mode and current image is to be removed (which shouldn't happen if previewing a new file)
+    // OR if in "edit" mode and remove button was clicked (UI for this is now removed for edit)
+    if (removeCurrentImage && (!initialData || initialData?.imageUrl)) {
+        formData.append("removeImage", "true");
     }
 
 
@@ -194,41 +205,67 @@ export default function BlogPostForm({
           )}
         />
         
-        <FormItem>
-          <FormLabel className="flex items-center"><ImageIcon className="mr-2 h-4 w-4 text-muted-foreground"/>Blog Post Image</FormLabel>
-          <FormControl>
-            <Input 
-              type="file" 
-              accept="image/png, image/jpeg, image/gif, image/webp" 
-              onChange={handleImageChange} 
-              disabled={isSubmitting}
-              ref={fileInputRef}
-              className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-            />
-          </FormControl>
-          <FormDescription>Upload a header image for the post (PNG, JPG, GIF, WEBP). Max 5MB.</FormDescription>
-          {imagePreview && (
-            <div className="mt-4 space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Image Preview:</p>
-              <div className="w-full md:w-1/2 lg:w-1/3 rounded-md border border-border overflow-hidden">
-                <NextImage 
-                  src={imagePreview} 
-                  alt="Selected preview" 
-                  width={0} 
-                  height={0}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  style={{ width: '100%', height: 'auto', display: 'block' }}
-                  data-ai-hint="blog image preview"
-                />
+        {/* Conditionally render image upload section only for ADDING new posts */}
+        {!initialData && (
+          <FormItem>
+            <FormLabel className="flex items-center"><ImageIcon className="mr-2 h-4 w-4 text-muted-foreground"/>Blog Post Image</FormLabel>
+            <FormControl>
+              <Input 
+                type="file" 
+                accept="image/png, image/jpeg, image/gif, image/webp" 
+                onChange={handleImageChange} 
+                disabled={isSubmitting}
+                ref={fileInputRef}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              />
+            </FormControl>
+            <FormDescription>Upload a header image for the post (PNG, JPG, GIF, WEBP). Max 5MB.</FormDescription>
+            {imagePreview && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Image Preview:</p>
+                <div className="w-full md:w-1/2 lg:w-1/3 rounded-md border border-border overflow-hidden">
+                  <NextImage 
+                    src={imagePreview} 
+                    alt="Selected preview" 
+                    width={0} 
+                    height={0}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    style={{ width: '100%', height: 'auto', display: 'block' }}
+                    data-ai-hint="blog image preview"
+                  />
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={handleRemoveImage} disabled={isSubmitting}>
+                  <Trash2 className="mr-2 h-3 w-3"/> Remove Image
+                </Button>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleRemoveImage} disabled={isSubmitting}>
-                <Trash2 className="mr-2 h-3 w-3"/> Remove Image
-              </Button>
+            )}
+            {/* FormMessage for imageUrl (if it were part of CreateBlogPostInputSchema) could go here */}
+          </FormItem>
+        )}
+        
+        {/* If editing and an image exists, show a non-interactive preview or just its path */}
+        {initialData && initialData.imageUrl && (
+          <FormItem>
+            <FormLabel>Current Image</FormLabel>
+            <div className="mt-2">
+               <div className="w-full md:w-1/2 lg:w-1/3 rounded-md border border-border overflow-hidden">
+                <NextImage 
+                    src={initialData.imageUrl} 
+                    alt="Current blog post image" 
+                    width={0} 
+                    height={0}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    style={{ width: '100%', height: 'auto', display: 'block' }}
+                    data-ai-hint="current blog image"
+                />
+                </div>
+              <FormDescription className="mt-2">
+                Image management is not available in edit mode. To change the image, please delete and re-create the post or use a direct file management method.
+              </FormDescription>
             </div>
-          )}
-          {/* FormMessage for imageUrl is less relevant now as it's file input, but CreateBlogPostInputSchema still has it */}
-          <FormMessage>{form.formState.errors.imageUrl?.message}</FormMessage>
-        </FormItem>
+          </FormItem>
+        )}
+
 
         <FormField
           control={form.control}

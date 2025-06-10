@@ -3,16 +3,15 @@
     "id": "901fb469-3d27-446b-b0bc-7754fc9d9763",
     "title": "La Interior ",
     "slug": "interior-desiging",
-    "content": "Revolutionize your interior design process. La Interior leverages cutting-edge AI to help you detect wall colors, generate stunning palettes, and visualize transformations in your own space before you pick up a paintbrush.\n\n",
+    "content": "Revolutionize your interior design process. La Interior leverages cutting-edge AI to help you detect wall colors, generate stunning palettes, and visualize transformations in your own space before you pick up a paintbrush.\r\n\r\n",
     "author": "hacker",
     "tags": [
       "tech",
       "ai"
     ],
     "imageUrl": "",
-    "isPublished": false,
+    "isPublished": true,
     "createdAt": "2025-06-09T21:34:43.351Z",
-    "updatedAt": "2025-06-09T21:35:55.895Z",
-    "tagsString": "tech, ai"
+    "updatedAt": "2025-06-10T15:11:55.391Z"
   }
 ]

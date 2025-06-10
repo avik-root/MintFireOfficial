@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
-  Users, // Keep Users icon for "Hall of Fame" or general user management
+  Users, 
   Package, 
   Newspaper, 
   FileText, 
@@ -23,7 +23,8 @@ import {
   ChevronRight,
   Crown, 
   Bug, 
-  Trophy, // Icon for Hall of Fame
+  Trophy, 
+  Image as ImageIcon, // Added ImageIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
@@ -31,8 +32,10 @@ import React from 'react';
 const sidebarNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/dashboard/products', label: 'Products', icon: Package },
-  { href: '/admin/dashboard/hall-of-fame-management', label: 'Hall of Fame', icon: Trophy }, // Updated "Users"
+  { href: '/admin/dashboard/hall-of-fame-management', label: 'Hall of Fame', icon: Trophy }, 
   { href: '/admin/dashboard/site-content', label: 'Site Content', icon: FileText },
+  { href: '/admin/dashboard/media', label: 'Media Library', icon: ImageIcon }, // Used ImageIcon for Media Library
+  { href: '/admin/dashboard/logo', label: 'Logo Management', icon: ImageIcon }, // Used ImageIcon for Logo
   { href: '/admin/dashboard/blogs', label: 'Blog Posts', icon: Newspaper },
   { href: '/admin/dashboard/applicants', label: 'Applicants', icon: Briefcase },
   { href: '/admin/dashboard/bug-reports', label: 'Bug Reports', icon: Bug },
@@ -44,7 +47,6 @@ const sidebarNavItems = [
 
 const sidebarBottomNavItems = [
   { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings },
-  // Add logout functionality later
   { href: '/admin/login', label: 'Logout', icon: LogOut }, 
 ];
 
@@ -62,7 +64,6 @@ export default function AdminDashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-card",
@@ -132,7 +133,6 @@ export default function AdminDashboardLayout({
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <div
         className={cn(
           "flex-1 flex flex-col",

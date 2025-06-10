@@ -138,7 +138,7 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
   }
 }
 
-export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string }> {
+export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string; requiresPin?: boolean; adminId?: string }> {
   try {
     const admins = await getAdminsInternal();
     const admin = admins.find(a => 
@@ -155,9 +155,14 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
         return { success: false, message: "Invalid credentials." };
     }
 
-    // If we reach here, password is correct.
-    // The UI should have already routed to PIN if 2FA was enabled for this admin.
-    // So, we assume if this action is called, it's for a direct login or PIN was already handled.
+    // Password is correct. Now check 2FA.
+    if (admin.is2FAEnabled) {
+        // Do NOT set auth cookie here. UI should handle PIN entry.
+        // Signal that PIN is required.
+        return { success: true, message: "Password verified. PIN required.", requiresPin: true, adminId: admin.adminId };
+    }
+
+    // 2FA is not enabled for this admin. Proceed with login by setting the cookie.
     setAuthCookie();
     return { success: true, message: "Login successful! Redirecting..." };
   } catch (error: any) {

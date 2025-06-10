@@ -124,9 +124,22 @@ export default function AdminLoginPage() {
     setServerError(null);
     const result = await loginAdmin(data);
     if (result.success) {
-      toast({ title: "Success", description: result.message });
-      const nextUrl = searchParams.get('next') || '/admin/dashboard';
-      router.push(nextUrl);
+      if (result.requiresPin && result.adminId) {
+        // Password was correct, but 2FA is enabled for this admin. Switch to PIN view.
+        setCurrentAdminId(result.adminId); // Ensure adminId is set for PIN form
+        setViewMode('pin_entry');
+        toast({ title: "Password Verified", description: "Please enter your 2FA PIN." });
+      } else if (!result.requiresPin) {
+        // Login successful (2FA not enabled or handled elsewhere).
+        toast({ title: "Success", description: result.message });
+        const nextUrl = searchParams.get('next') || '/admin/dashboard';
+        router.push(nextUrl);
+      } else {
+        // This case should ideally not be reached if result.success is true & requiresPin is true,
+        // but result.adminId is missing.
+        setServerError("An unexpected error occurred during login. Admin ID missing for 2FA.");
+        toast({ variant: "destructive", title: "Login Error", description: "Admin ID missing for 2FA." });
+      }
     } else {
       setServerError(result.message);
       toast({ variant: "destructive", title: "Login Failed", description: result.message });

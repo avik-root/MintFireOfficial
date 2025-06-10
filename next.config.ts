@@ -24,6 +24,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'learn.microsoft.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

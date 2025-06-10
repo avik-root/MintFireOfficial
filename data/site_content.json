@@ -1,35 +1,24 @@
 [
   {
-    "id": "a9b8ae57-1ced-4826-8591-a6fa49929e0c",
-    "type": "announcement",
-    "title": "Test",
-    "content": "Test",
-    "imageUrl": "",
-    "linkUrl": "",
-    "isActive": true,
-    "createdAt": "2025-06-09T18:46:47.400Z",
-    "updatedAt": "2025-06-09T18:46:47.400Z"
-  },
-  {
-    "id": "8f402daa-788b-413b-bbd7-d9b281198377",
-    "type": "announcement",
-    "title": "Test1 anc",
-    "content": "test hello",
-    "imageUrl": "",
-    "linkUrl": "",
-    "isActive": true,
-    "createdAt": "2025-06-09T18:48:02.018Z",
-    "updatedAt": "2025-06-09T20:37:19.715Z"
-  },
-  {
+    "id": "36d663e6-61ed-49ee-a40e-b2aa9e1ee2b3",
     "type": "announcement",
     "title": "Try La Interior ",
     "content": "Interior Design with AI technology.",
     "imageUrl": "",
     "linkUrl": "https://la-interior.onrender.com/",
     "isActive": true,
-    "id": "36d663e6-61ed-49ee-a40e-b2aa9e1ee2b3",
     "createdAt": "2025-06-09T20:52:15.315Z",
     "updatedAt": "2025-06-09T20:52:15.315Z"
+  },
+  {
+    "type": "announcement",
+    "title": "Under Maintenance ",
+    "content": "This site is under maintenance till 19th June.",
+    "imageUrl": "https://learn.microsoft.com/en-us/power-pages/admin/media/maintenance-mode/maintenance-page.png",
+    "linkUrl": "",
+    "isActive": true,
+    "id": "43f0c9cb-0063-4924-aebe-0e7e396538e3",
+    "createdAt": "2025-06-10T12:52:43.996Z",
+    "updatedAt": "2025-06-10T12:52:43.996Z"
   }
 ]

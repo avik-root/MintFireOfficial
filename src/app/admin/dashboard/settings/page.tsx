@@ -16,14 +16,24 @@ export default function AdminSettingsPage() {
   const fetchAdminData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const { admin: fetchedAdmin, error: fetchError } = await getAdminProfile();
-    if (fetchError) {
-      setError(fetchError);
-      setAdmin(null); 
-    } else if (fetchedAdmin) {
-      setAdmin(fetchedAdmin);
-    } else {
-      setError("Admin profile not found, but no specific error returned.");
+    try {
+      const result = await getAdminProfile(); // Get the whole result first
+
+      if (result && result.admin) { // Then check its properties
+        setAdmin(result.admin);
+      } else if (result && result.error) {
+        setError(result.error);
+        setAdmin(null);
+      } else {
+        // This case covers result being undefined, or result being an object but not having admin/error
+        setError("Admin profile data is missing or incomplete. The getAdminProfile function might have returned an unexpected value.");
+        setAdmin(null);
+      }
+    } catch (e: any) {
+      // This catch block handles errors if getAdminProfile itself throws an unhandled exception
+      // or if the promise returned by getAdminProfile is rejected.
+      console.error("Error directly from getAdminProfile call:", e);
+      setError(e.message || "An unexpected error occurred while fetching the admin profile.");
       setAdmin(null);
     }
     setIsLoading(false);
@@ -38,7 +48,7 @@ export default function AdminSettingsPage() {
       <div className="container mx-auto py-8 px-4 md:px-6 flex flex-col items-center">
         <div className="text-center mb-12">
           <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
-          <h1 className="text-4xl font-bold font-headline mb-2">Loading Admin Settings...</h1>
+          <h1 className="font-headline text-4xl font-bold mb-2">Loading Admin Settings...</h1>
         </div>
       </div>
     );
@@ -49,7 +59,7 @@ export default function AdminSettingsPage() {
       <div className="container mx-auto py-8 px-4 md:px-6 flex flex-col items-center">
         <div className="text-center mb-12">
           <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-4xl font-bold font-headline mb-2 text-destructive">Error</h1>
+          <h1 className="font-headline text-4xl font-bold mb-2 text-destructive">Error</h1>
           <p className="text-lg text-muted-foreground">{error || "Admin profile could not be loaded."}</p>
           <p className="text-sm text-muted-foreground mt-2">Please ensure an admin account exists and the data files are accessible.</p>
         </div>

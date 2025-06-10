@@ -166,7 +166,7 @@ export default function AdminLoginPage() {
       toast({ variant: "destructive", title: "PIN Invalid", description: result.message || "Incorrect PIN." });
       if (newAttempts >= MAX_PIN_ATTEMPTS) {
         setViewMode('pin_locked_super_action');
-        setServerError(\`Maximum PIN attempts reached. Use Super Action to bypass.\`);
+        setServerError("Maximum PIN attempts reached. Use Super Action to bypass.");
       }
     }
     pinForm.reset();

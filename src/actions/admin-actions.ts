@@ -5,13 +5,17 @@ import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
-import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput } from '@/lib/schemas/admin-schemas';
+import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput, VerifyPinInput } from '@/lib/schemas/admin-schemas';
 import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, Enable2FASchema, Change2FAPinSchema, Disable2FASchema } from '@/lib/schemas/admin-schemas';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { randomBytes } from 'crypto';
 
 const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
 const securityHashFilePath = path.join(process.cwd(), 'data', 'securityhash.json');
 const SALT_ROUNDS = 10;
+const AUTH_COOKIE_NAME = 'admin-auth-token';
+const SESSION_MAX_AGE = 8 * 60 * 60; // 8 hours in seconds
 
 async function getSuperActionHashInternal(): Promise<string | null> {
   try {
@@ -114,7 +118,7 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
   }
 }
 
-export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string }> {
+export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string; requiresPin?: boolean; adminId?: string }> {
   try {
     const admins = await getAdminsInternal();
     const admin = admins.find(a => 
@@ -130,6 +134,24 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     if (!passwordMatch) {
         return { success: false, message: "Invalid credentials." };
     }
+
+    if (admin.is2FAEnabled) {
+      // Password is correct, but 2FA is enabled. Do not set auth cookie yet.
+      // Signal to the client that PIN entry is required.
+      return { success: true, message: "Password verified. Please enter your 2FA PIN.", requiresPin: true, adminId: admin.adminId };
+    }
+
+    // Password correct and 2FA not enabled, proceed to set auth cookie
+    const tokenValue = randomBytes(32).toString('hex');
+    cookies().set(AUTH_COOKIE_NAME, tokenValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: SESSION_MAX_AGE, 
+    });
+    
+    revalidatePath('/admin/dashboard', 'layout');
+    revalidatePath('/admin/login');
     return { success: true, message: "Login successful! Redirecting..." };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to log in." };
@@ -171,7 +193,7 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
     let currentAdmin = admins[0]; 
 
     if (validatedData.newPassword) {
-      if (!validatedData.currentPassword) { // This should be caught by Zod, but belt-and-suspenders
+      if (!validatedData.currentPassword) { 
         return { success: false, message: "Current password required to set new password." };
       }
       const currentPasswordMatch = await bcrypt.compare(validatedData.currentPassword, currentAdmin.password);
@@ -227,7 +249,7 @@ export async function change2FAPin(adminId: string, pinData: Change2FAPinInput):
     if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA is not enabled for this account."};
 
     if (!validation.data.currentPin) {
-       return { success: false, message: "Current PIN is required to change PIN.", errors: [{path: ["currentPin"], message: "Current PIN is required."}] };
+       return { success: false, message: "Current PIN is required to change PIN.", errors: [{path: ["currentPin"], message: "Current PIN is required.", code: z.ZodIssueCode.custom}] };
     }
     const currentPinMatch = await bcrypt.compare(validation.data.currentPin, admin.hashedPin);
     if (!currentPinMatch) return { success: false, message: "Incorrect current PIN." };
@@ -257,7 +279,7 @@ export async function disable2FA(adminId: string, verificationData: Disable2FAIn
     if (admin.hashedPin) {
       verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.hashedPin);
     }
-    if (!verified) { // Try password if PIN failed or no PIN was set (should not happen if 2FA enabled)
+    if (!verified) { 
       verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.password);
     }
     if (!verified) return { success: false, message: "Incorrect current PIN or password." };
@@ -278,11 +300,20 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
         const admins = await getAdminsInternal();
         const admin = admins.find(a => a.adminId === adminId);
         if (!admin) return { success: false, message: "Admin not found." };
-        if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA not active." };
+        if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA not active for this account." };
 
         const pinMatch = await bcrypt.compare(pin, admin.hashedPin);
         if (pinMatch) {
-            return { success: true };
+            const tokenValue = randomBytes(32).toString('hex');
+            cookies().set(AUTH_COOKIE_NAME, tokenValue, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              path: '/',
+              maxAge: SESSION_MAX_AGE,
+            });
+            revalidatePath('/admin/dashboard', 'layout');
+            revalidatePath('/admin/login');
+            return { success: true, message: "PIN verified. Login successful." };
         } else {
             return { success: false, message: "Incorrect PIN." };
         }
@@ -314,5 +345,16 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
     } catch (error: any) {
         return { success: false, message: error.message || "Failed to disable 2FA with Super Action." };
     }
+}
+
+export async function logoutAdmin(): Promise<{ success: boolean; message: string }> {
+  try {
+    cookies().delete(AUTH_COOKIE_NAME, { path: '/' });
+    revalidatePath('/admin/login');
+    revalidatePath('/admin/dashboard', 'layout');
+    return { success: true, message: "Logged out successfully." };
+  } catch (error: any) {
+    return { success: false, message: "Logout failed. " + error.message };
+  }
 }
 

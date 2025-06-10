@@ -26,11 +26,19 @@ export type ProductPricingTerm = z.infer<typeof ProductPricingTermSchema>;
 export const BillingIntervalSchema = z.enum(['Monthly', 'Annually']);
 export type BillingInterval = z.infer<typeof BillingIntervalSchema>;
 
+export const ProductAccessProgramSchema = z.enum([
+  'N/A',
+  'Early Access Program',
+  'Developer Testing Program'
+]);
+export type ProductAccessProgram = z.infer<typeof ProductAccessProgramSchema>;
+
 export const ProductSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, "Product name is required."),
   version: z.string().optional().nullable(),
   status: ProductStatusSchema.default('Upcoming'),
+  accessProgram: ProductAccessProgramSchema.default('N/A'), // New field
   releaseDate: z.string().datetime({ message: "Invalid date format for release date." }).optional().nullable(),
   description: z.string().min(1, "Description is required."),
   longDescription: z.string().optional().nullable(),
@@ -40,15 +48,10 @@ export const ProductSchema = z.object({
   pricingType: ProductPricingTypeSchema.default('Free'),
   pricingTerm: ProductPricingTermSchema.default('Lifetime'), 
 
-  // For "Paid" + "Lifetime"
   priceAmount: z.number().positive("Price must be a positive number for Lifetime.").optional().nullable(),
-
-  // For "Paid" + "Subscription"
   monthlyPrice: z.number().positive("Monthly price must be a positive number.").optional().nullable(),
   sixMonthPrice: z.number().positive("6-Month price must be a positive number.").optional().nullable(),
   annualPrice: z.number().positive("Annual price must be a positive number.").optional().nullable(),
-
-  // For "Free" + "Subscription" (Free Trial)
   trialDuration: z.string().min(1, "Trial duration must be specified for free trials.").optional().nullable(),
   postTrialPriceAmount: z.number().positive("Post-trial price must be a positive number.").optional().nullable(),
   postTrialBillingInterval: BillingIntervalSchema.optional().nullable(),
@@ -64,7 +67,6 @@ export const ProductSchema = z.object({
 });
 export type Product = z.infer<typeof ProductSchema>;
 
-// Exporting the ProductSchema as an array for use in the AI flow
 export const ProductListSchema = z.array(ProductSchema);
 export type ProductList = z.infer<typeof ProductListSchema>;
 
@@ -73,6 +75,7 @@ export const FormProductSchema = z.object({
   name: z.string().min(1, "Product name is required."),
   version: z.string().optional().nullable(),
   status: ProductStatusSchema,
+  accessProgram: ProductAccessProgramSchema.default('N/A'), // New field for form
   releaseDate: z.string().datetime({ message: "Please select a valid release date."}).optional().nullable(),
   description: z.string().min(1, "Short description is required."),
   longDescription: z.string().optional().nullable(),
@@ -82,8 +85,7 @@ export const FormProductSchema = z.object({
   pricingType: ProductPricingTypeSchema,
   pricingTerm: ProductPricingTermSchema,
 
-  // String inputs from form, to be parsed and validated
-  priceAmountString: z.string().optional().nullable(), // For Paid Lifetime
+  priceAmountString: z.string().optional().nullable(), 
   monthlyPriceString: z.string().optional().nullable(),
   sixMonthPriceString: z.string().optional().nullable(),
   annualPriceString: z.string().optional().nullable(),
@@ -101,16 +103,16 @@ export const FormProductSchema = z.object({
     const parseAndValidateAmount = (value: string | null | undefined, path: (string | number)[], fieldName: string, isRequired: boolean) => {
         if (isRequired && (!value || value.trim() === '')) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${fieldName} is required.`, path });
-            return false; // Indicate failure
+            return false; 
         }
         if (value && value.trim() !== '') {
             const num = parseFloat(value);
             if (isNaN(num) || num <= 0) {
                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${fieldName} must be a positive number.`, path });
-                return false; // Indicate failure
+                return false;
             }
         }
-        return true; // Indicate success or not applicable
+        return true; 
     };
 
     if (data.pricingType === 'Paid') {
@@ -122,18 +124,17 @@ export const FormProductSchema = z.object({
             if(!parseAndValidateAmount(data.priceAmountString, ["priceAmountString"], "Price amount", true)) return z.NEVER;
         }
     } else if (data.pricingType === 'Free') {
-        if (data.pricingTerm === 'Subscription') { // Free Trial
+        if (data.pricingTerm === 'Subscription') { 
             if (!data.trialDuration || data.trialDuration.trim() === '') {
                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Trial duration is required for free trials.", path: ["trialDuration"] });
             }
-            // If post-trial price is set, interval is required and price must be valid.
             const hasPostTrialPrice = data.postTrialPriceAmountString && data.postTrialPriceAmountString.trim() !== '';
             if (hasPostTrialPrice) {
                 if(!parseAndValidateAmount(data.postTrialPriceAmountString, ["postTrialPriceAmountString"], "Post-trial price", true)) return z.NEVER;
                 if (!data.postTrialBillingInterval) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial billing interval is required if post-trial price is set.", path: ["postTrialBillingInterval"] });
                 }
-            } else if (data.postTrialBillingInterval) { // If interval is set, price must be set
+            } else if (data.postTrialBillingInterval) { 
                  ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Post-trial price is required if post-trial billing interval is set.", path: ["postTrialPriceAmountString"] });
             }
         }

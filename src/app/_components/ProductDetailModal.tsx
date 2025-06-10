@@ -6,11 +6,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink, Repeat, Clock, Layers } from 'lucide-react';
+import { Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket, KeyRound, Info, ExternalLink, Repeat, Clock, Layers, ListPlus, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
-import React, { Fragment } from 'react'; // Added Fragment import
+import React, { Fragment, useState } from 'react';
+import WaitlistForm from './WaitlistForm'; // Import WaitlistForm
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -19,11 +20,31 @@ interface ProductDetailModalProps {
 }
 
 export default function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
+  const [showWaitlistForm, setShowWaitlistForm] = useState(false);
+
+  React.useEffect(() => {
+    // Reset waitlist form view when modal is closed or product changes
+    if (!isOpen || !product) {
+      setShowWaitlistForm(false);
+    }
+  }, [isOpen, product]);
+
+
   if (!product) return null;
+
+  const handleWaitlistSuccess = () => {
+    setShowWaitlistForm(false); // Or potentially close the whole modal: onClose();
+    // Optionally, could add a "Thank you for joining" message here before closing.
+  };
+
+  const handleCancelWaitlist = () => {
+    setShowWaitlistForm(false);
+  };
+
 
   const getStatusBadge = (status: string) => {
     let colorClass = 'bg-slate-600/30 text-slate-400 border-slate-500';
-    let IconComponent = Clock; // Default to Clock
+    let IconComponent = Clock; 
 
     if (status === 'Stable') {
       colorClass = 'bg-green-600/30 text-green-400 border-green-500';
@@ -56,7 +77,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     return (
       <>
         {developerNames.map((name, index) => (
-          <Fragment key={name + index}> {/* Added index to key for safety if names aren't unique */}
+          <Fragment key={name + index}> 
             <Link href={`/company?member=${encodeURIComponent(name.trim())}`} className="hover:text-primary hover:underline">
               {name}
             </Link>
@@ -130,81 +151,100 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
             <Package className="w-7 h-7 md:w-8 md:h-8 text-primary flex-shrink-0" />
             {product.name}
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground mt-1">
-            Developed by: <span className="ml-1">{renderDeveloperLinksModal()}</span>
-          </DialogDescription>
+          {!showWaitlistForm && (
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
+              Developed by: <span className="ml-1">{renderDeveloperLinksModal()}</span>
+            </DialogDescription>
+          )}
         </DialogHeader>
         
         <ScrollArea className="flex-grow">
           <div className="p-6 space-y-5">
-            <div className="flex items-center justify-between">
-                 {getStatusBadge(product.status)}
-            </div>
-            
-            <DetailItem icon={Info} label="Description" value={product.description} />
-            {product.longDescription && (
-                <DetailItem icon={Info} label="Detailed Information" value={product.longDescription.replace(/\n/g, '<br />')} isHtml={true} />
-            )}
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                <DetailItem icon={DollarSign} label="Pricing Overview" value={getPricingText(product.pricingType, product.pricingTerm)} />
-                {product.releaseDate && (typeof product.releaseDate === 'string' || product.releaseDate instanceof Date) && (
-                    <DetailItem 
-                        icon={CalendarDays} 
-                        label={product.status === 'Upcoming' ? 'Expected Release' : 'Release Date'} 
-                        value={format(new Date(product.releaseDate), "MMMM d, yyyy")} 
-                    />
+            {showWaitlistForm ? (
+              <WaitlistForm 
+                productId={product.id} 
+                productName={product.name}
+                onSuccess={handleWaitlistSuccess}
+                onCancel={handleCancelWaitlist}
+              />
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                    {getStatusBadge(product.status)}
+                </div>
+                
+                <DetailItem icon={Info} label="Description" value={product.description} />
+                {product.longDescription && (
+                    <DetailItem icon={Info} label="Detailed Information" value={product.longDescription.replace(/\n/g, '<br />')} isHtml={true} />
                 )}
-            </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                    <DetailItem icon={DollarSign} label="Pricing Overview" value={getPricingText(product.pricingType, product.pricingTerm)} />
+                    {product.releaseDate && (typeof product.releaseDate === 'string' || product.releaseDate instanceof Date) && (
+                        <DetailItem 
+                            icon={CalendarDays} 
+                            label={product.status === 'Upcoming' ? 'Expected Release' : 'Release Date'} 
+                            value={format(new Date(product.releaseDate), "MMMM d, yyyy")} 
+                        />
+                    )}
+                     <DetailItem icon={Tag} label="Access Program" value={product.accessProgram || 'N/A'} />
+                </div>
 
-            {product.pricingType === 'Paid' && product.pricingTerm === 'Subscription' && (
-                <div className="pt-2 border-t border-border mt-4">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Layers className="w-4 h-4 mr-1.5 text-accent" />Subscription Plans</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {typeof product.monthlyPrice === 'number' && <DetailItem label="Monthly" value={product.monthlyPrice} />}
-                        {typeof product.sixMonthPrice === 'number' && <DetailItem label="6-Month Plan" value={product.sixMonthPrice} />}
-                        {typeof product.annualPrice === 'number' && <DetailItem label="Annual Plan" value={product.annualPrice} />}
+                {product.pricingType === 'Paid' && product.pricingTerm === 'Subscription' && (
+                    <div className="pt-2 border-t border-border mt-4">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Layers className="w-4 h-4 mr-1.5 text-accent" />Subscription Plans</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {typeof product.monthlyPrice === 'number' && <DetailItem label="Monthly" value={product.monthlyPrice} />}
+                            {typeof product.sixMonthPrice === 'number' && <DetailItem label="6-Month Plan" value={product.sixMonthPrice} />}
+                            {typeof product.annualPrice === 'number' && <DetailItem label="Annual Plan" value={product.annualPrice} />}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {product.pricingType === 'Free' && product.pricingTerm === 'Subscription' && typeof product.postTrialPriceAmount === 'number' && product.postTrialBillingInterval && (
-                 <div className="pt-2 border-t border-border mt-4">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Repeat className="w-4 h-4 mr-1.5 text-accent" />Post-Trial Pricing</h4>
-                    <DetailItem label="After Trial" value={`$${product.postTrialPriceAmount.toFixed(2)} / ${product.postTrialBillingInterval.toLowerCase()}`} />
-                </div>
-            )}
-
-            { (product.tags && product.tags.length > 0) && (
-              <DetailItem icon={Tag} label="Tags" value={product.tags} />
-            )}
-
-            { (product.couponDetails || product.activationDetails) && (
-                <div className="pt-2 border-t border-border mt-4">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3">Additional Info</h4>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                        <DetailItem icon={Ticket} label="Coupon Details" value={product.couponDetails} />
-                        <DetailItem icon={KeyRound} label="Activation Details" value={product.activationDetails} />
+                {product.pricingType === 'Free' && product.pricingTerm === 'Subscription' && typeof product.postTrialPriceAmount === 'number' && product.postTrialBillingInterval && (
+                    <div className="pt-2 border-t border-border mt-4">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Repeat className="w-4 h-4 mr-1.5 text-accent" />Post-Trial Pricing</h4>
+                        <DetailItem label="After Trial" value={`$${product.postTrialPriceAmount.toFixed(2)} / ${product.postTrialBillingInterval.toLowerCase()}`} />
                     </div>
-                </div>
+                )}
+
+                { (product.tags && product.tags.length > 0) && (
+                  <DetailItem icon={Tag} label="Tags" value={product.tags} />
+                )}
+
+                { (product.couponDetails || product.activationDetails) && (
+                    <div className="pt-2 border-t border-border mt-4">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3">Additional Info</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            <DetailItem icon={Ticket} label="Coupon Details" value={product.couponDetails} />
+                            <DetailItem icon={KeyRound} label="Activation Details" value={product.activationDetails} />
+                        </div>
+                    </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
 
-        <DialogFooter className="p-4 border-t border-border bg-card">
-          <div className="flex w-full justify-between items-center gap-2">
-             <Button variant="outline" onClick={onClose}>Close</Button>
-            {productLinkProps && (
-                <Button asChild variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                    <Link href={productLinkProps.href} target={productLinkProps.target} rel={productLinkProps.rel}>
-                        Try Out <ExternalLink className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-            )}
-          </div>
-        </DialogFooter>
+        {!showWaitlistForm && (
+            <DialogFooter className="p-4 border-t border-border bg-card">
+            <div className="flex w-full justify-between items-center gap-2">
+                <Button variant="outline" onClick={onClose}>Close</Button>
+                {product.status === 'Upcoming' ? (
+                    <Button variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => setShowWaitlistForm(true)}>
+                        Join Waitlist <ListPlus className="ml-2 h-4 w-4" />
+                    </Button>
+                ) : productLinkProps ? (
+                    <Button asChild variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                        <Link href={productLinkProps.href} target={productLinkProps.target} rel={productLinkProps.rel}>
+                            Try Out <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                ) : null}
+            </div>
+            </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
-

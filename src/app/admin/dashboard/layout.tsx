@@ -24,7 +24,8 @@ import {
   Crown, 
   Bug, 
   Trophy, 
-  Image as ImageIcon,
+  ImageIcon,
+  ListPlus, // Added for Waitlist
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
@@ -41,6 +42,7 @@ const sidebarNavItems = [
   { href: '/admin/dashboard/team', label: 'Team', icon: UsersRound },
   { href: '/admin/dashboard/founders', label: 'Founders', icon: Crown },
   { href: '/admin/dashboard/feedback', label: 'Feedback', icon: MessageSquareWarning },
+  { href: '/admin/dashboard/waitlist', label: 'Product Waitlist', icon: ListPlus }, // New Waitlist Link
   { href: '/admin/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 

@@ -1,10 +1,17 @@
 
+"use client";
+
+import React, { useState } from 'react'; // Added useState
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default function ContactPage() {
+  const [isPhoneHovered, setIsPhoneHovered] = useState(false);
+  const fullPhoneNumber = "+91 6294246820";
+  const maskedPhoneNumber = "+91 62XXXXXX20";
+
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
       <section className="text-center mb-16">
@@ -44,7 +51,14 @@ export default function ContactPage() {
             <p className="text-muted-foreground mb-4">
               Reach out to our team during business hours.
             </p>
-            <p className="text-2xl font-semibold text-foreground">+91 6294246820</p>
+            <p 
+              className="text-2xl font-semibold text-foreground cursor-pointer"
+              onMouseEnter={() => setIsPhoneHovered(true)}
+              onMouseLeave={() => setIsPhoneHovered(false)}
+              title="Hover to reveal full number"
+            >
+              {isPhoneHovered ? fullPhoneNumber : maskedPhoneNumber}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">(Mon-Fri, 10 AM - 6 PM IST)</p>
           </CardContent>
         </Card>
@@ -63,8 +77,7 @@ export default function ContactPage() {
               MintFire Headquarters
             </p>
             <p className="text-foreground">
-              Kolkata, India<br />
-              Remote (Cloud Based)
+              India, Kolkata - Remote (Cloud Based)
             </p>
             <div className="mt-4 aspect-w-16 aspect-h-9 rounded-md overflow-hidden border border-border">
               {/* Placeholder for a map embed or relevant graphic */}

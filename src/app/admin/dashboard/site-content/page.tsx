@@ -103,7 +103,6 @@ export default function AdminSiteContentPage() {
                 <thead className="bg-card">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Title</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Created At</th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
@@ -113,9 +112,6 @@ export default function AdminSiteContentPage() {
                   {siteContentItems.map((item: SiteContentItem) => (
                     <tr key={item.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{item.title}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        <Badge variant={'outline'} className="capitalize">{item.type}</Badge>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Badge variant={item.isActive ? "default" : "destructive"} className={item.isActive ? "bg-green-600/30 text-green-400 border-green-500" : "bg-red-600/30 text-red-400 border-red-500"}>
                           {item.isActive ? "Active" : "Inactive"}

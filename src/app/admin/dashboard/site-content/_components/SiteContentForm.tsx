@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { CreateSiteContentItemSchema, type CreateSiteContentItemInput, type SiteContentItem } from "@/lib/schemas/site-content-schemas";
 import { Loader2, Save } from "lucide-react";
@@ -73,28 +72,7 @@ export default function SiteContentForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Content Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting || true}> {/* Disabled as only one option */}
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select content type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {/* Only "Announcement" is now an option */}
-                  <SelectItem value="announcement">Announcement</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
+        {/* Type field is removed as it's always 'announcement' */}
         <FormField
           control={form.control}
           name="title"

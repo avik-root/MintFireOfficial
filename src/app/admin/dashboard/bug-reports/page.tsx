@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Bug, Eye, AlertTriangle as AlertIcon, Loader2, ArrowUpDown } from "lucide-react"; // Changed AlertTriangle to AlertIcon
 import { Badge } from "@/components/ui/badge";
 import type { BugReport } from "@/lib/schemas/bug-report-schemas";
-// import DeleteBugReportButton from "./_components/DeleteBugReportButton"; // Placeholder for future use
+import DeleteBugReportButton from "./_components/DeleteBugReportButton"; // Import the new component
 
 type SortKey = 'fullName' | 'status' | 'reportedAt' | 'level';
 type SortDirection = 'asc' | 'desc';
@@ -206,7 +206,7 @@ export default function AdminBugReportsPage() {
                             <Eye className="h-4 w-4 text-accent" />
                           </Link>
                         </Button>
-                        {/* <DeleteBugReportButton reportId={report.id} /> Placeholder */}
+                        <DeleteBugReportButton reportId={report.id} onDeleted={fetchData} />
                       </td>
                     </tr>
                   ))}

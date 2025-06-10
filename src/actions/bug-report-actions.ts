@@ -30,7 +30,16 @@ async function getBugReportsInternal(): Promise<BugReport[]> {
       throw readError;
     }
     if (fileContent.trim() === '') return [];
-    const items = JSON.parse(fileContent);
+    
+    let items = JSON.parse(fileContent);
+    // Pre-process items to add default 'level' if missing for backward compatibility
+    items = items.map((item: any) => {
+      if (typeof item.level === 'undefined') {
+        return { ...item, level: 'Low' }; // Default to 'Low'
+      }
+      return item;
+    });
+
     return z.array(BugReportSchema).parse(items);
   } catch (error: any) {
     console.error(`Error processing bug reports file (${bugReportsFilePath}):`, error);

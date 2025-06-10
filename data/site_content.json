@@ -9,16 +9,5 @@
     "isActive": true,
     "createdAt": "2025-06-09T20:52:15.315Z",
     "updatedAt": "2025-06-09T20:52:15.315Z"
-  },
-  {
-    "type": "announcement",
-    "title": "Under Maintenance ",
-    "content": "This site is under maintenance till 19th June.",
-    "imageUrl": "https://learn.microsoft.com/en-us/power-pages/admin/media/maintenance-mode/maintenance-page.png",
-    "linkUrl": "",
-    "isActive": true,
-    "id": "43f0c9cb-0063-4924-aebe-0e7e396538e3",
-    "createdAt": "2025-06-10T12:52:43.996Z",
-    "updatedAt": "2025-06-10T12:52:43.996Z"
   }
 ]

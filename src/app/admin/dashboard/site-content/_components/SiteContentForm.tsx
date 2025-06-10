@@ -36,14 +36,14 @@ export default function SiteContentForm({
       type: initialData.type, // Should always be 'announcement' now
       title: initialData.title,
       content: initialData.content,
-      imageUrl: initialData.imageUrl || undefined,
+      // imageUrl: initialData.imageUrl || undefined, // Field removed
       linkUrl: initialData.linkUrl || undefined,
       isActive: initialData.isActive,
     } : {
       type: "announcement", // Default to 'announcement'
       title: "",
       content: "",
-      imageUrl: "",
+      // imageUrl: "", // Field removed
       linkUrl: "",
       isActive: true,
     },
@@ -101,6 +101,7 @@ export default function SiteContentForm({
           )}
         />
         
+        {/* Image URL Field Removed
         <FormField
           control={form.control}
           name="imageUrl"
@@ -115,6 +116,7 @@ export default function SiteContentForm({
             </FormItem>
           )}
         />
+        */}
 
         <FormField
           control={form.control}

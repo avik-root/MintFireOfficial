@@ -70,7 +70,37 @@ export async function manageHallOfFameEntry(data: ManageHallOfFameEntryInput): P
   if (!validation.success) {
     return { success: false, error: "Invalid data provided.", errors: validation.error.issues };
   }
-  const { userId, displayName, pointsToAdd, newAchievement, profileUrl, avatarUrl } = validation.data;
+  const validatedData = validation.data;
+  const { userId, displayName, pointsToAdd, newAchievement, profileUrl } = validatedData;
+  let formAvatarUrl = validatedData.avatarUrl; // Avatar URL from the form
+
+  let finalAvatarUrl = formAvatarUrl;
+
+  // Attempt to fetch GitHub avatar if profileUrl is a GitHub URL and admin didn't provide a specific avatarUrl
+  if ((!finalAvatarUrl || finalAvatarUrl.trim() === '') && profileUrl && profileUrl.startsWith('https://github.com/')) {
+    const githubUsername = profileUrl.substring('https://github.com/'.length).split('/')[0];
+    if (githubUsername) {
+      try {
+        console.log(`Attempting to fetch GitHub avatar for ${githubUsername}`);
+        const response = await fetch(`https://api.github.com/users/${githubUsername}`);
+        if (response.ok) {
+          const githubUser = await response.json();
+          if (githubUser.avatar_url) {
+            finalAvatarUrl = githubUser.avatar_url;
+            console.log(`Fetched avatar for ${githubUsername}: ${finalAvatarUrl}`);
+          } else {
+            console.warn(`GitHub user ${githubUsername} found but no avatar_url returned.`);
+          }
+        } else {
+          console.warn(`Failed to fetch GitHub user ${githubUsername}: ${response.status} ${response.statusText}`);
+        }
+      } catch (fetchError: any) {
+        console.error(`Error fetching GitHub avatar for ${githubUsername}:`, fetchError.message);
+        // Do not block saving if GitHub fetch fails, finalAvatarUrl will remain as admin provided (or empty)
+      }
+    }
+  }
+
 
   try {
     let entries = await getHallOfFameEntriesInternal();
@@ -78,13 +108,14 @@ export async function manageHallOfFameEntry(data: ManageHallOfFameEntryInput): P
 
     if (entry) {
       // Update existing entry
-      entry.displayName = displayName; // Allow display name update
+      entry.displayName = displayName; 
       entry.totalPoints += pointsToAdd;
       if (newAchievement && !entry.achievements.includes(newAchievement)) {
         entry.achievements.push(newAchievement);
       }
-      entry.profileUrl = profileUrl || entry.profileUrl;
-      entry.avatarUrl = avatarUrl || entry.avatarUrl;
+      entry.profileUrl = profileUrl || entry.profileUrl; // Keep existing if not provided
+      entry.avatarUrl = finalAvatarUrl || entry.avatarUrl; // Use fetched/form or keep existing if both are empty
+
       if (pointsToAdd > 0 || newAchievement) {
         entry.lastRewardedAt = new Date().toISOString();
       }
@@ -98,7 +129,7 @@ export async function manageHallOfFameEntry(data: ManageHallOfFameEntryInput): P
         achievements: newAchievement ? [newAchievement] : [],
         lastRewardedAt: (pointsToAdd > 0 || newAchievement) ? new Date().toISOString() : null,
         profileUrl: profileUrl || null,
-        avatarUrl: avatarUrl || null,
+        avatarUrl: finalAvatarUrl || null,
       };
       entries.push(entry);
     }

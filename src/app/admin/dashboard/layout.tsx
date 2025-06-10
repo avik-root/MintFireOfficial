@@ -12,7 +12,6 @@ import {
   Users,
   Package, // Icon for Products
   Newspaper, 
-  ImageIcon, 
   FileText, 
   Briefcase, 
   UsersRound, 
@@ -33,7 +32,6 @@ const sidebarNavItems = [
   { href: '/admin/dashboard/users', label: 'Users', icon: Users },
   { href: '/admin/dashboard/site-content', label: 'Site Content', icon: FileText },
   { href: '/admin/dashboard/blogs', label: 'Blog Posts', icon: Newspaper },
-  { href: '/admin/dashboard/media', label: 'Media', icon: ImageIcon },
   { href: '/admin/dashboard/applicants', label: 'Applicants', icon: Briefcase },
   { href: '/admin/dashboard/team', label: 'Team', icon: UsersRound },
   { href: '/admin/dashboard/founders', label: 'Founders', icon: Crown },

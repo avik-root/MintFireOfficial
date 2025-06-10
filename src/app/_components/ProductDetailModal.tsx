@@ -10,6 +10,7 @@ import { Package, Users, Zap, CheckCircle, CalendarDays, DollarSign, Tag, Ticket
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
+import React, { Fragment } from 'react'; // Added Fragment import
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -22,20 +23,23 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
   const getStatusBadge = (status: string) => {
     let colorClass = 'bg-slate-600/30 text-slate-400 border-slate-500';
-    let IconComponent = Zap;
+    let IconComponent = Clock; // Default to Clock
 
     if (status === 'Stable') {
       colorClass = 'bg-green-600/30 text-green-400 border-green-500';
       IconComponent = CheckCircle;
     } else if (status === 'Beta') {
       colorClass = 'bg-yellow-600/30 text-yellow-400 border-yellow-500';
+      IconComponent = Zap;
     } else if (status === 'Alpha') {
       colorClass = 'bg-orange-600/30 text-orange-400 border-orange-500';
+      IconComponent = Zap;
     } else if (status === 'Upcoming') {
       colorClass = 'bg-blue-600/30 text-blue-400 border-blue-500';
       IconComponent = Clock;
     } else if (status === 'Deprecated') {
       colorClass = 'bg-red-600/30 text-red-400 border-red-500';
+      IconComponent = Zap;
     }
     return (
       <Badge variant="outline" className={`text-sm px-2 py-1 ${colorClass}`}>
@@ -44,6 +48,25 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
       </Badge>
     );
   };
+
+  const renderDeveloperLinksModal = () => {
+    if (!product.developer) return null;
+    const developerNames = product.developer.split(/[,&]/).map(name => name.trim()).filter(name => name.length > 0);
+
+    return (
+      <>
+        {developerNames.map((name, index) => (
+          <Fragment key={name + index}> {/* Added index to key for safety if names aren't unique */}
+            <Link href={`/company?member=${encodeURIComponent(name.trim())}`} className="hover:text-primary hover:underline">
+              {name}
+            </Link>
+            {index < developerNames.length - 1 && (developerNames.length > 1 && index === developerNames.length - 2 ? ' & ' : ', ')}
+          </Fragment>
+        ))}
+      </>
+    );
+  };
+
 
   const getPricingText = (pricingType: string, pricingTerm: string) => {
     if (product.pricingType === 'Free') {
@@ -60,8 +83,12 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
         return `$${product.priceAmount.toFixed(2)} (Lifetime)`;
     }
     if (product.pricingTerm === 'Subscription') {
-      // For "Paid" + "Subscription", specific plans are listed below this summary.
-      return "Subscription Plans Available"; 
+      const plans = [];
+      if (typeof product.monthlyPrice === 'number') plans.push(`$${product.monthlyPrice.toFixed(2)}/mo`);
+      if (typeof product.sixMonthPrice === 'number') plans.push(`$${product.sixMonthPrice.toFixed(2)}/6mo`);
+      if (typeof product.annualPrice === 'number') plans.push(`$${product.annualPrice.toFixed(2)}/yr`);
+      if (plans.length > 0) return plans.join(' | ');
+      return "Subscription (Details unavailable)";
     }
     return "Paid (Details unavailable)";
   };
@@ -104,7 +131,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
             {product.name}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-1">
-            Developed by: {product.developer}
+            Developed by: <span className="ml-1">{renderDeveloperLinksModal()}</span>
           </DialogDescription>
         </DialogHeader>
         
@@ -121,7 +148,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                 <DetailItem icon={DollarSign} label="Pricing Overview" value={getPricingText(product.pricingType, product.pricingTerm)} />
-                {product.releaseDate && (
+                {product.releaseDate && (typeof product.releaseDate === 'string' || product.releaseDate instanceof Date) && (
                     <DetailItem 
                         icon={CalendarDays} 
                         label={product.status === 'Upcoming' ? 'Expected Release' : 'Release Date'} 
@@ -130,7 +157,6 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 )}
             </div>
 
-            {/* Conditional Pricing Details */}
             {product.pricingType === 'Paid' && product.pricingTerm === 'Subscription' && (
                 <div className="pt-2 border-t border-border mt-4">
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 mt-3 flex items-center"><Layers className="w-4 h-4 mr-1.5 text-accent" />Subscription Plans</h4>
@@ -181,3 +207,4 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     </Dialog>
   );
 }
+

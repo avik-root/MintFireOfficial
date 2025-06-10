@@ -210,8 +210,16 @@ export default function BlogPostForm({
           {imagePreview && (
             <div className="mt-4 space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Image Preview:</p>
-              <div className="relative w-full aspect-video md:w-1/2 lg:w-1/3 rounded-md border border-border overflow-hidden">
-                <NextImage src={imagePreview} alt="Selected preview" layout="fill" objectFit="cover" data-ai-hint="blog image preview"/>
+              <div className="w-full md:w-1/2 lg:w-1/3 rounded-md border border-border overflow-hidden">
+                <NextImage 
+                  src={imagePreview} 
+                  alt="Selected preview" 
+                  width={0} 
+                  height={0}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  style={{ width: '100%', height: 'auto', display: 'block' }}
+                  data-ai-hint="blog image preview"
+                />
               </div>
               <Button type="button" variant="outline" size="sm" onClick={handleRemoveImage} disabled={isSubmitting}>
                 <Trash2 className="mr-2 h-3 w-3"/> Remove Image

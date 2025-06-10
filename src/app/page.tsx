@@ -239,7 +239,7 @@ export default function Home() {
             <span className="glitch-text" data-text="MintFire">MintFire</span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-            Pioneering the future of Cyber Security, Blockchain, AI, and IoT Devices.
+            MintFire is a next-generation technology company at the forefront of Cybersecurity, Blockchain, Web3, AI, and IoT innovation. We design and develop secure, scalable, and future-ready solutions that empower businesses and individuals in the decentralized digital era. With a deep focus on cutting-edge technologies and resilient architecture, MintFire is committed to pioneering the future of secure, intelligent, and connected systems.
           </p>
           <div className="space-x-4">
             <Button asChild size="lg" variant="default" className="shadow-lg shadow-primary/50">

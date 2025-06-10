@@ -164,6 +164,8 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
 
     // 2FA is not enabled for this admin. Proceed with login by setting the cookie.
     setAuthCookie();
+    revalidatePath('/admin/login'); 
+    revalidatePath('/admin/dashboard');
     return { success: true, message: "Login successful! Redirecting..." };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to log in." };
@@ -317,6 +319,8 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
         const pinMatch = await bcrypt.compare(pin, admin.hashedPin);
         if (pinMatch) {
             setAuthCookie(); // Set auth cookie on successful PIN verification
+            revalidatePath('/admin/login'); 
+            revalidatePath('/admin/dashboard');
             return { success: true };
         } else {
             return { success: false, message: "Incorrect PIN." };

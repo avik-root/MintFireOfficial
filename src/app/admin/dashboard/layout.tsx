@@ -2,10 +2,9 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation'; // Added useRouter
 import Logo from '@/components/Logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
@@ -25,10 +24,13 @@ import {
   Bug, 
   Trophy, 
   ImageIcon,
-  ListPlus, // Added for Waitlist
+  ListPlus,
+  Loader2, // Added Loader2 for logout button
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { logoutAdmin } from '@/actions/admin-actions'; // Import server action
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 const sidebarNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -42,14 +44,12 @@ const sidebarNavItems = [
   { href: '/admin/dashboard/team', label: 'Team', icon: UsersRound },
   { href: '/admin/dashboard/founders', label: 'Founders', icon: Crown },
   { href: '/admin/dashboard/feedback', label: 'Feedback', icon: MessageSquareWarning },
-  { href: '/admin/dashboard/waitlist', label: 'Product Waitlist', icon: ListPlus }, // New Waitlist Link
+  { href: '/admin/dashboard/waitlist', label: 'Product Waitlist', icon: ListPlus },
   { href: '/admin/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
-const sidebarBottomNavItems = [
-  { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings },
-  { href: '/admin/login', label: 'Logout', icon: LogOut }, 
-];
+// Settings is kept separate as it's a distinct action group
+const settingsNavItem = { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings };
 
 export default function AdminDashboardLayout({
   children,
@@ -57,10 +57,30 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter(); // Initialize useRouter
+  const { toast } = useToast(); // Initialize useToast
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false); // State for logout loading
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const result = await logoutAdmin();
+      if (result.success) {
+        toast({ title: "Logged Out", description: "You have been successfully logged out." });
+        router.push('/admin/login'); // Client-side redirect
+        router.refresh(); // Ensure page refresh to clear any stale client state
+      } else {
+        toast({ variant: "destructive", title: "Logout Failed", description: result.message });
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Logout Error", description: error.message || "An unexpected error occurred." });
+    }
+    setIsLoggingOut(false);
   };
 
   return (
@@ -110,26 +130,39 @@ export default function AdminDashboardLayout({
 
         <div className="mt-auto border-t border-border p-2.5">
           <nav className={cn("grid gap-1", isCollapsed ? "px-0.5" : "px-2")}>
-            {sidebarBottomNavItems.map((item) => {
-               const isActive = pathname === item.href;
-               return(
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={cn(
-                    "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium hover:bg-primary/10 hover:text-primary",
-                    isActive ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground",
-                    isCollapsed ? "justify-center" : "gap-3 justify-start"
-                  )}
-                  title={isCollapsed ? item.label : undefined}
-                >
-                  <item.icon className="h-5 w-5 shrink-0" />
-                  <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}>
-                    {item.label}
-                  </span>
-                </Link>
-               );
-            })}
+            {/* Settings Link */}
+            <Link
+              key={settingsNavItem.label}
+              href={settingsNavItem.href}
+              className={cn(
+                "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium hover:bg-primary/10 hover:text-primary",
+                pathname === settingsNavItem.href ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground",
+                isCollapsed ? "justify-center" : "gap-3 justify-start"
+              )}
+              title={isCollapsed ? settingsNavItem.label : undefined}
+            >
+              <settingsNavItem.icon className="h-5 w-5 shrink-0" />
+              <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}>
+                {settingsNavItem.label}
+              </span>
+            </Link>
+            
+            {/* Logout Button */}
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className={cn(
+                "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium hover:bg-destructive/20 hover:text-destructive text-muted-foreground w-full",
+                 isCollapsed ? "justify-center" : "gap-3 justify-start"
+              )}
+              title={isCollapsed ? "Logout" : undefined}
+            >
+              {isLoggingOut ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" /> : <LogOut className="h-5 w-5 shrink-0" />}
+              <span className={cn(isCollapsed ? "sr-only" : "opacity-100")}>
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </span>
+            </Button>
           </nav>
         </div>
       </aside>

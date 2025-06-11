@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation'; // Ensure this is from next/navigation
+import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
   const [pinAttempts, setPinAttempts] = useState(0);
   const MAX_PIN_ATTEMPTS = 5;
 
-  const router = useRouter();
+  const router = useRouter(); // Still keep for router.refresh if needed, but primary navigation will change.
   const { toast } = useToast();
 
   const checkInitialStatus = useCallback(async () => {
@@ -98,9 +98,7 @@ export default function AdminLoginPage() {
 
   const handleCreateSubmit = async (data: CreateAdminInput) => {
     setServerError(null);
-    console.log("Client: Calling createAdminAccount with data:", { ...data, password: "[REDACTED]", confirmPassword: "[REDACTED]" });
     const result = await createAdminAccount(data);
-    console.log("Client: Received from createAdminAccount:", result);
 
     if (result && typeof result.success === 'boolean') {
         if (result.success) {
@@ -112,7 +110,6 @@ export default function AdminLoginPage() {
             if (result.errors) {
                 result.errors.forEach((err: any) => {
                     const fieldName = Array.isArray(err.path) ? err.path.join(".") : err.path;
-                    // @ts-ignore
                     createForm.setError(fieldName as keyof CreateAdminInput, { message: err.message });
                 });
                 toast({ variant: "destructive", title: "Creation Failed", description: "Please check the form for errors." });
@@ -129,11 +126,11 @@ export default function AdminLoginPage() {
   const handleLoginSubmit = async (data: LoginAdminInput) => {
     setServerError(null);
     loginForm.clearErrors();
-    console.log("Client: Calling loginAdmin with data:", {...data, password: "[REDACTED]"});
     
     try {
       const result = await loginAdmin(data);
       console.log("Client: loginAdmin result:", result);
+
       if (result && typeof result.success !== 'undefined') {
         if (result.success) {
           if (result.requiresPin && result.adminId) {
@@ -143,8 +140,8 @@ export default function AdminLoginPage() {
             toast({ title: "2FA Required", description: result.message });
           } else {
             toast({ title: "Login Successful", description: result.message });
-            router.refresh(); // Refresh router state
-            router.push('/admin/dashboard'); // Then navigate
+            // router.refresh(); // Keep for cache invalidation if needed
+            window.location.href = '/admin/dashboard'; // Force full page navigation
           }
         } else {
           setServerError(result.message);
@@ -169,7 +166,6 @@ export default function AdminLoginPage() {
     }
     setServerError(null);
     pinForm.clearErrors();
-    console.log("Client: Calling verifyPinForLogin for adminId:", currentAdminId);
     
     try {
       const result = await verifyPinForLogin(currentAdminId, data.pin);
@@ -178,8 +174,8 @@ export default function AdminLoginPage() {
       if (result && typeof result.success !== 'undefined') {
         if (result.success) {
           toast({ title: "PIN Verified", description: result.message || "Login successful! Redirecting..."});
-          router.refresh(); // Refresh router state
-          router.push('/admin/dashboard'); // Then navigate
+          // router.refresh(); 
+          window.location.href = '/admin/dashboard'; // Force full page navigation
         } else {
           const newAttempts = pinAttempts + 1;
           setPinAttempts(newAttempts);
@@ -212,10 +208,8 @@ export default function AdminLoginPage() {
     }
     setIsSubmittingSuperAction(true);
     setServerError(null);
-    console.log("Client: Calling disable2FABySuperAction for adminId:", currentAdminId);
     try {
       const result = await disable2FABySuperAction(currentAdminId, superActionInput);
-      console.log("Client: disable2FABySuperAction result:", result);
       if (result && typeof result.success !== 'undefined') {
           if (result.success) {
               toast({ title: "2FA Disabled", description: result.message });
@@ -300,3 +294,5 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+
+    

@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation'; // Added useRouter
+import { usePathname, useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -25,12 +25,12 @@ import {
   Trophy, 
   ImageIcon,
   ListPlus,
-  Loader2, // Added Loader2 for logout button
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
-import { logoutAdmin } from '@/actions/admin-actions'; // Import server action
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { logoutAdmin } from '@/actions/admin-actions';
+import { useToast } from '@/hooks/use-toast';
 
 const sidebarNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -48,7 +48,6 @@ const sidebarNavItems = [
   { href: '/admin/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
-// Settings is kept separate as it's a distinct action group
 const settingsNavItem = { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings };
 
 export default function AdminDashboardLayout({
@@ -57,10 +56,10 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter(); // Initialize useRouter
-  const { toast } = useToast(); // Initialize useToast
+  const router = useRouter(); 
+  const { toast } = useToast(); 
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const [isLoggingOut, setIsLoggingOut] = React.useState(false); // State for logout loading
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -72,8 +71,8 @@ export default function AdminDashboardLayout({
       const result = await logoutAdmin();
       if (result.success) {
         toast({ title: "Logged Out", description: "You have been successfully logged out." });
-        router.push('/admin/login'); // Client-side redirect
-        router.refresh(); // Ensure page refresh to clear any stale client state
+        // router.refresh(); // Keep for cache invalidation if needed
+        window.location.href = '/admin/login'; // Force full page navigation
       } else {
         toast({ variant: "destructive", title: "Logout Failed", description: result.message });
       }
@@ -130,7 +129,6 @@ export default function AdminDashboardLayout({
 
         <div className="mt-auto border-t border-border p-2.5">
           <nav className={cn("grid gap-1", isCollapsed ? "px-0.5" : "px-2")}>
-            {/* Settings Link */}
             <Link
               key={settingsNavItem.label}
               href={settingsNavItem.href}
@@ -147,7 +145,6 @@ export default function AdminDashboardLayout({
               </span>
             </Link>
             
-            {/* Logout Button */}
             <Button
               variant="ghost"
               onClick={handleLogout}
@@ -181,3 +178,5 @@ export default function AdminDashboardLayout({
     </div>
   );
 }
+
+    

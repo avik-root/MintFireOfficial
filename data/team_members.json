@@ -1,32 +1,32 @@
 [
   {
-    "id": "eff6d8eb-4e27-49ca-9616-aa98bcad0062",
-    "memberId": "TESHAC1001TH01",
-    "name": "Avik Samanta",
-    "role": "CEO & Co-Founder",
-    "description": "Hack today fun tomorrow ",
-    "imageUrl": "/uploads/team-photos/5239531b-81a6-437c-92eb-96c554e37fb7.jpg",
-    "email": "hacker@gmail.com",
-    "githubUrl": "https://github.com/avik-root",
-    "linkedinUrl": "https://www.linkedin.com/in/avik-samanta-root/",
-    "joiningDate": "2024-10-23T18:30:00.000Z",
-    "isPublic": true,
-    "createdAt": "2025-06-09T19:30:46.795Z",
-    "updatedAt": "2025-06-09T23:57:00.123Z"
-  },
-  {
     "id": "f280ed92-ea89-49c0-b0c1-3455c308f105",
     "memberId": "JELMIN2002JM02",
     "name": "Anusha Gupta",
     "role": "CEO & Founder",
     "description": "Happy ",
-    "imageUrl": "/uploads/team-photos/c9495387-3687-478e-86c9-a954c20a2f48.jpg",
+    "imageUrl": "/uploads/team-photos/e8cf8110-c63b-45f6-9840-caa53b066da6.jpg",
     "email": "mint@gmail.com",
     "githubUrl": "https://github.com/anushagupta11",
     "linkedinUrl": "https://www.linkedin.com/in/anusha-gupta-ofc/",
     "joiningDate": "2024-06-20T18:30:00.000Z",
     "isPublic": true,
     "createdAt": "2025-06-09T20:19:42.414Z",
-    "updatedAt": "2025-06-10T11:29:26.689Z"
+    "updatedAt": "2025-06-10T16:46:29.671Z"
+  },
+  {
+    "id": "eff6d8eb-4e27-49ca-9616-aa98bcad0062",
+    "memberId": "TESHAC1001TH01",
+    "name": "Avik Samanta",
+    "role": "CEO & Co-Founder",
+    "description": "Hack today fun tomorrow ",
+    "imageUrl": "/uploads/team-photos/902a0c98-6c3c-4c08-a5b0-c501b7427ee5.png",
+    "email": "hacker@gmail.com",
+    "githubUrl": "https://github.com/avik-root",
+    "linkedinUrl": "https://www.linkedin.com/in/avik-samanta-root/",
+    "joiningDate": "2024-10-23T18:30:00.000Z",
+    "isPublic": true,
+    "createdAt": "2025-06-09T19:30:46.795Z",
+    "updatedAt": "2025-06-10T18:32:08.835Z"
   }
 ]

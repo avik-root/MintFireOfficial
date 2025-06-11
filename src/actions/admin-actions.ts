@@ -146,7 +146,8 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     }
 
     const token = randomBytes(32).toString('hex');
-    cookies().set(AUTH_COOKIE_NAME, token, {
+    const cookieStore = await cookies();
+    cookieStore.set(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -164,7 +165,8 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
 
 export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?: string }> {
   try {
-    const currentAdminToken = cookies().get(AUTH_COOKIE_NAME)?.value;
+    const cookieStore = await cookies();
+    const currentAdminToken = cookieStore.get(AUTH_COOKIE_NAME)?.value;
     if (!currentAdminToken) {
         return { error: "Not authenticated." };
     }
@@ -332,7 +334,8 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
         const pinMatch = await bcrypt.compare(pin, admin.hashedPin);
         if (pinMatch) {
             const token = randomBytes(32).toString('hex');
-            cookies().set(AUTH_COOKIE_NAME, token, {
+            const cookieStore = await cookies();
+            cookieStore.set(AUTH_COOKIE_NAME, token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
@@ -368,7 +371,8 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
         admins[adminIndex].is2FAEnabled = false;
         admins[adminIndex].hashedPin = null;
         await saveAdmins(admins);
-        cookies().delete(AUTH_COOKIE_NAME);
+        const cookieStore = await cookies();
+        cookieStore.delete(AUTH_COOKIE_NAME);
         revalidatePath('/admin/dashboard/settings');
         revalidatePath('/admin/login');
         console.log("Server: disable2FABySuperAction - Success for admin:", adminId);
@@ -381,7 +385,8 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
 
 export async function logoutAdmin(): Promise<{ success: boolean; message: string }> {
   try {
-    cookies().delete(AUTH_COOKIE_NAME); 
+    const cookieStore = await cookies();
+    cookieStore.delete(AUTH_COOKIE_NAME); 
     console.log("Server: logoutAdmin - Success, cookie cleared.");
     return { success: true, message: "Logged out successfully." };
   } catch (error: any) {
@@ -389,5 +394,4 @@ export async function logoutAdmin(): Promise<{ success: boolean; message: string
     return { success: false, message: "Logout failed. " + error.message };
   }
 }
-
     

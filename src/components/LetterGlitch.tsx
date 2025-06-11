@@ -1,21 +1,21 @@
 
 "use client";
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, type RefObject } from 'react';
 
 interface LetterGlitchProps {
   glitchColors?: string[];
   glitchSpeed?: number;
-  centerVignette?: boolean;
-  outerVignette?: boolean;
+  centerVignette?: boolean; // Prop remains but will not be used for rendering
+  outerVignette?: boolean;  // Prop remains but will not be used for rendering
   smooth?: boolean;
 }
 
 const LetterGlitch = ({
   glitchColors = ['#2b4539', '#61dca3', '#61b3dc'],
   glitchSpeed = 50,
-  centerVignette = false,
-  outerVignette = true,
+  // centerVignette and outerVignette props are no longer used for rendering
+  // but kept in props for potential future re-introduction if needed without breaking API.
   smooth = true,
 }: LetterGlitchProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,7 +47,7 @@ const LetterGlitch = ({
 
   const hexToRgb = (hex: string) => {
     const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, (m, r, g, b) => {
+    hex = hex.replace(shorthandRegex, (_m, r, g, b) => {
       return r + r + g + g + b + b;
     });
 
@@ -225,21 +225,12 @@ const LetterGlitch = ({
       clearTimeout(resizeTimeout);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [glitchColors, glitchSpeed, smooth]);
+  }, [glitchColors, glitchSpeed, smooth]); // Removed vignette related dependencies
 
   return (
     <div className="absolute inset-0 w-full h-full bg-black overflow-hidden -z-10">
       <canvas ref={canvasRef} className="block w-full h-full" />
-      {outerVignette && (
-        <div
-          className="absolute top-0 left-0 w-full h-full pointer-events-none bg-[radial-gradient(circle,rgba(0,0,0,0.7)_0%,rgba(0,0,0,0.9)_50%,rgba(0,0,0,1)_100%)]"
-        ></div>
-      )}
-      {centerVignette && (
-        <div
-          className="absolute top-0 left-0 w-full h-full pointer-events-none bg-[radial-gradient(circle,_rgba(0,0,0,0.8)_0%,_rgba(0,0,0,0)_60%)]"
-        ></div>
-      )}
+      {/* Vignette divs have been removed */}
     </div>
   );
 };

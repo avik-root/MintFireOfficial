@@ -4,16 +4,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CreateFeedbackInputSchema, type CreateFeedbackInput } from "@/lib/schemas/feedback-schemas";
 import { Loader2, Send, Star, MessageSquareHeart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import React, { useState } from "react";
 import { submitFeedback } from "@/actions/feedback-actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function FeedbackForm() {
   const { toast } = useToast();
@@ -66,7 +64,7 @@ export default function FeedbackForm() {
 
   if (submissionSuccess) {
     return (
-      <div className="py-12 text-center bg-card border border-primary/30 rounded-lg shadow-xl layered-card">
+      <div className="py-12 text-center"> {/* Removed card-like styling */}
         <MessageSquareHeart className="w-16 h-16 text-accent mx-auto mb-4 glowing-icon" />
         <h3 className="text-2xl font-semibold mb-3 text-foreground">Thank You!</h3>
         <p className="text-muted-foreground max-w-md mx-auto">
@@ -80,98 +78,89 @@ export default function FeedbackForm() {
   }
 
   return (
-    <Card className="layered-card w-full">
-      <CardHeader className="text-center">
-        <MessageSquareHeart className="w-12 h-12 text-primary mx-auto mb-4 glowing-icon-primary" />
-        <CardTitle className="font-headline text-3xl">Share Your Feedback</CardTitle>
-        <CardDescription>We value your opinion. Let us know how we can improve.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl><Input placeholder="Your Name" {...field} disabled={isSubmitting} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="your.email@example.com" {...field} disabled={isSubmitting} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl><Input placeholder="Your Name" {...field} disabled={isSubmitting} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email Address</FormLabel>
+                <FormControl><Input type="email" placeholder="your.email@example.com" {...field} disabled={isSubmitting} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-            <FormField
-              control={form.control}
-              name="rating"
-              render={({ field }) => ( // field is not directly used for stars, currentRating state is
-                <FormItem>
-                  <FormLabel>Overall Rating</FormLabel>
-                  <FormControl>
-                    <div className="flex space-x-1 items-center">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          type="button"
-                          key={star}
-                          onClick={() => {
-                            setCurrentRating(star);
-                            form.setValue("rating", star, { shouldValidate: true });
-                          }}
-                          onMouseEnter={() => setHoverRating(star)}
-                          onMouseLeave={() => setHoverRating(0)}
-                          className="focus:outline-none p-1"
-                          aria-label={`Rate ${star} out of 5 stars`}
-                          disabled={isSubmitting}
-                        >
-                          <Star
-                            className={`w-7 h-7 transition-colors duration-150 
-                              ${(hoverRating || currentRating) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/50 fill-muted-foreground/20'}`}
-                          />
-                        </button>
-                      ))}
-                      {currentRating > 0 && <span className="ml-2 text-sm text-muted-foreground">({currentRating}/5)</span>}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="rating"
+          render={({ field }) => ( 
+            <FormItem>
+              <FormLabel>Overall Rating</FormLabel>
+              <FormControl>
+                <div className="flex space-x-1 items-center">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      onClick={() => {
+                        setCurrentRating(star);
+                        form.setValue("rating", star, { shouldValidate: true });
+                      }}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="focus:outline-none p-1"
+                      aria-label={`Rate ${star} out of 5 stars`}
+                      disabled={isSubmitting}
+                    >
+                      <Star
+                        className={`w-7 h-7 transition-colors duration-150 
+                          ${(hoverRating || currentRating) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/50 fill-muted-foreground/20'}`}
+                      />
+                    </button>
+                  ))}
+                  {currentRating > 0 && <span className="ml-2 text-sm text-muted-foreground">({currentRating}/5)</span>}
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="message"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Feedback</FormLabel>
-                  <FormControl><Textarea placeholder="Tell us what you think..." {...field} rows={6} disabled={isSubmitting} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="message"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Feedback</FormLabel>
+              <FormControl><Textarea placeholder="Tell us what you think..." {...field} rows={6} disabled={isSubmitting} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto" variant="default">
-              {isSubmitting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
-              ) : (
-                <><Send className="mr-2 h-4 w-4" /> Submit Feedback</>
-              )}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto" variant="default">
+          {isSubmitting ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
+          ) : (
+            <><Send className="mr-2 h-4 w-4" /> Submit Feedback</>
+          )}
+        </Button>
+      </form>
+    </Form>
   );
 }

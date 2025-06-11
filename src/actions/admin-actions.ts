@@ -8,14 +8,14 @@ import bcrypt from 'bcrypt';
 import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput } from '@/lib/schemas/admin-schemas';
 import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, Enable2FASchema, Change2FAPinSchema, Disable2FASchema } from '@/lib/schemas/admin-schemas';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
-import { randomBytes } from 'crypto';
+// import { cookies } from 'next/headers'; // No longer setting cookies here
+// import { randomBytes } from 'crypto'; // No longer generating tokens here
 
 const adminFilePath = path.join(process.cwd(), 'data', 'admin.json');
 const securityHashFilePath = path.join(process.cwd(), 'data', 'securityhash.json');
 const SALT_ROUNDS = 10;
-const AUTH_COOKIE_NAME = 'admin-auth-token';
-const SESSION_MAX_AGE = 8 * 60 * 60; // 8 hours in seconds
+// const AUTH_COOKIE_NAME = 'admin-auth-token'; // No longer needed
+// const SESSION_MAX_AGE = 8 * 60 * 60; // No longer needed
 
 async function getSuperActionHashInternal(): Promise<string | null> {
   try {
@@ -121,7 +121,10 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
 }
 
 export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string; requiresPin?: boolean; adminId?: string }> {
-  console.log("Server: loginAdmin called with data:", { ...data, password: "[REDACTED]" });
+  console.log("Server: loginAdmin called. Auth removed, allowing direct access conceptually.");
+  // Bypassing actual credential check as auth is removed.
+  // Still, we might need to return the adminId if other parts of the system expect it,
+  // or for 2FA flow if it were still active (which it isn't for login enforcement).
   try {
     const admins = await getAdminsInternal();
     const admin = admins.find(a =>
@@ -131,32 +134,27 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     );
 
     if (!admin) {
-      console.log("Server: loginAdmin - Admin not found or credentials mismatch.");
-      return { success: false, message: "Invalid credentials." };
+      console.log("Server: loginAdmin - Admin not found (but auth is removed).");
+      // Even if auth is removed, if the goal is to simulate a "successful" login to proceed,
+      // we might want to return success. However, this function might not be called much.
+      return { success: false, message: "Admin details not found in system (auth checks bypassed)." };
     }
-    const passwordMatch = await bcrypt.compare(data.password, admin.password);
-    if (!passwordMatch) {
-      console.log("Server: loginAdmin - Password mismatch for admin:", admin.adminId);
-      return { success: false, message: "Invalid credentials." };
-    }
+    // Password check removed
+    // Cookie setting removed
 
+    // If 2FA were conceptually still on for the user (even if not enforced), we'd indicate it.
+    // But since overall auth is off, this path is less relevant.
     if (admin.is2FAEnabled) {
-      console.log("Server: loginAdmin - 2FA enabled for admin:", admin.adminId, " - Returning:", { success: true, message: "Password verified. Please enter your 2FA PIN.", requiresPin: true, adminId: admin.adminId });
-      return { success: true, message: "Password verified. Please enter your 2FA PIN.", requiresPin: true, adminId: admin.adminId };
+      console.log("Server: loginAdmin - 2FA would be required for admin:", admin.adminId, " - Returning:", { success: true, message: "Login credentials would be valid. 2FA would be next step.", requiresPin: true, adminId: admin.adminId });
+      return { success: true, message: "Login credentials would be valid. 2FA would be next step.", requiresPin: true, adminId: admin.adminId };
     }
 
-    const tokenValue = randomBytes(32).toString('hex');
-    cookies().set(AUTH_COOKIE_NAME, tokenValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: SESSION_MAX_AGE,
-    });
-    console.log("Server: loginAdmin - Login successful (no 2FA) for admin:", admin.adminId, " - Returning:", { success: true, message: "Login successful!" });
-    return { success: true, message: "Login successful!" };
+    console.log("Server: loginAdmin - Login successful (auth checks bypassed) for admin:", admin.adminId, " - Returning:", { success: true, message: "Login successful (auth checks bypassed)!" });
+    return { success: true, message: "Login successful (auth checks bypassed)!" };
+
   } catch (error: any) {
-    console.error("Server: loginAdmin - Error during login:", error);
-    return { success: false, message: error.message || "Failed to log in." };
+    console.error("Server: loginAdmin - Error during simulated login:", error);
+    return { success: false, message: error.message || "Failed to process login request." };
   }
 }
 
@@ -206,7 +204,7 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
     }
 
     currentAdmin.adminName = validatedData.adminName;
-    currentAdmin.adminId = validatedData.adminId;
+    // adminId is not updatable
     currentAdmin.email = validatedData.email;
 
     await saveAdmins([currentAdmin, ...admins.slice(1)]);
@@ -218,6 +216,8 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
 }
 
 // --- 2FA Actions ---
+// These actions still modify the 2FA status in the admin.json,
+// but login enforcement itself is removed.
 export async function enable2FA(adminId: string, pinData: Enable2FAInput): Promise<{ success: boolean; message: string; errors?: z.ZodIssue[] }> {
   const validation = Enable2FASchema.safeParse(pinData);
   if(!validation.success) {
@@ -302,7 +302,7 @@ export async function disable2FA(adminId: string, verificationData: Disable2FAIn
 }
 
 export async function verifyPinForLogin(adminId: string, pin: string): Promise<{ success: boolean; message?: string }> {
-    console.log("Server: verifyPinForLogin called for adminId:", adminId, "with PIN:", pin.substring(0,1) + "****" + pin.substring(pin.length -1));
+    console.log("Server: verifyPinForLogin called for adminId:", adminId, "with PIN (auth checks bypassed).");
     try {
         const admins = await getAdminsInternal();
         const admin = admins.find(a => a.adminId === adminId);
@@ -311,24 +311,19 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
             return { success: false, message: "Admin not found." };
         }
         if (!admin.is2FAEnabled || !admin.hashedPin) {
-            console.log("Server: verifyPinForLogin - 2FA not active for admin:", adminId);
-            return { success: false, message: "2FA not active for this account." };
+            console.log("Server: verifyPinForLogin - 2FA not active for admin (but auth bypassed):", adminId);
+            // Even if 2FA isn't active or no PIN, we might return success if overall auth is off.
+            return { success: true, message: "PIN check bypassed as auth is removed." };
         }
 
         const pinMatch = await bcrypt.compare(pin, admin.hashedPin);
         if (pinMatch) {
-            const tokenValue = randomBytes(32).toString('hex');
-            cookies().set(AUTH_COOKIE_NAME, tokenValue, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              path: '/',
-              maxAge: SESSION_MAX_AGE,
-            });
-            console.log("Server: verifyPinForLogin - PIN verified for admin:", adminId, " - Returning:", { success: true, message: "PIN verified. Login successful." });
-            return { success: true, message: "PIN verified. Login successful." };
+            // Cookie setting removed
+            console.log("Server: verifyPinForLogin - PIN would be verified for admin:", adminId, " - Returning:", { success: true, message: "PIN verified. Login successful (auth checks bypassed)." });
+            return { success: true, message: "PIN verified. Login successful (auth checks bypassed)." };
         } else {
-            console.log("Server: verifyPinForLogin - Incorrect PIN for admin:", adminId);
-            return { success: false, message: "Incorrect PIN." };
+            console.log("Server: verifyPinForLogin - Incorrect PIN for admin (auth checks bypassed):", adminId);
+            return { success: false, message: "Incorrect PIN (auth checks bypassed)." };
         }
     } catch (error: any) {
         console.error("Server: verifyPinForLogin - Error during PIN verification:", error);
@@ -365,11 +360,10 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
 
 export async function logoutAdmin(): Promise<{ success: boolean; message: string }> {
   try {
-    cookies().delete(AUTH_COOKIE_NAME, { path: '/' });
-    console.log("Server: logoutAdmin - Returning:", { success: true, message: "Logged out successfully." });
-    return { success: true, message: "Logged out successfully." };
-  } catch (error: any)
-{
+    // cookies().delete(AUTH_COOKIE_NAME); // Cookie clearing removed
+    console.log("Server: logoutAdmin - Returning:", { success: true, message: "Logged out successfully (auth checks bypassed)." });
+    return { success: true, message: "Logged out successfully (auth checks bypassed)." };
+  } catch (error: any) {
     console.error("Server: logoutAdmin - Error during logout:", error);
     return { success: false, message: "Logout failed. " + error.message };
   }

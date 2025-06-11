@@ -15,6 +15,7 @@ import { Loader2, ShieldAlert } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 const MAX_PIN_ATTEMPTS = 5;
+const AUTH_COOKIE_NAME = 'admin-auth-token'; // Defined here for client-side check removal clarity
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export default function AdminLoginPage() {
     }
   }, []);
 
+
   useEffect(() => {
     initializeView();
   }, [initializeView]);
@@ -65,7 +67,7 @@ export default function AdminLoginPage() {
     if (result.success) {
       toast({ title: "Admin Account Created", description: "You can now log in with your new credentials." });
       setViewMode('login');
-      loginForm.reset(); // Reset login form
+      loginForm.reset(); 
     } else {
       if (result.errors) {
         result.errors.forEach((err) => {
@@ -86,12 +88,12 @@ export default function AdminLoginPage() {
     if (result && result.success) {
       if (result.requiresPin && result.adminId) {
         setAdminIdForPin(result.adminId);
-        setPinAttempts(0); // Reset PIN attempts
+        setPinAttempts(0); 
         setViewMode('pinEntry');
         pinForm.reset();
       } else {
         toast({ title: "Login Successful", description: "Redirecting to dashboard..." });
-        window.location.href = '/admin/dashboard'; // Full page reload
+        window.location.href = '/admin/dashboard'; 
       }
     } else if (result) {
       setServerError(result.message);
@@ -110,8 +112,8 @@ export default function AdminLoginPage() {
     const result = await verifyPinForLogin(adminIdForPin, data.pin);
 
     if (result && result.success) {
-      toast({ title: "PIN Verified", description: "Redirecting to dashboard..." });
-      window.location.href = '/admin/dashboard'; // Full page reload
+      toast({ title: "PIN Verified", description: "Redirecting to login page as requested..." });
+      window.location.href = '/admin/login'; // Changed redirect to /admin/login
     } else {
       setPinAttempts(prev => prev + 1);
       if (pinAttempts + 1 >= MAX_PIN_ATTEMPTS) {
@@ -135,10 +137,10 @@ export default function AdminLoginPage() {
     const result = await disable2FABySuperAction(adminIdForPin, superActionInput);
     if (result.success) {
         toast({ title: "2FA Disabled via Super Action", description: "You can now log in or reset 2FA." });
-        setViewMode('login'); // Go back to login, user might need to re-enter credentials
+        setViewMode('login'); 
         setAdminIdForPin(null);
         setSuperActionInput('');
-        loginForm.reset(); // Reset login form potentially
+        loginForm.reset(); 
     } else {
         setServerError(result.message || "Super Action failed.");
     }
@@ -158,7 +160,7 @@ export default function AdminLoginPage() {
       <div className="flex items-center justify-center min-h-screen py-12 bg-background text-foreground">
         <SuperActionFormComponent
           onSubmit={handleSuperActionSubmit}
-          isSubmitting={createAdminForm.formState.isSubmitting} // Use any form's isSubmitting for simplicity
+          isSubmitting={createAdminForm.formState.isSubmitting} 
           serverError={serverError}
           superActionInput={superActionInput}
           setSuperActionInput={setSuperActionInput}

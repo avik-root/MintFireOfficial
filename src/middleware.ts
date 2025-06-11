@@ -1,47 +1,48 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 
 const ADMIN_LOGIN_URL = '/admin/login';
-const ADMIN_DASHBOARD_URL = '/admin/dashboard';
+const ADMIN_DASHBOARD_BASE_URL = '/admin/dashboard';
+const AUTH_COOKIE_NAME = 'admin-auth-token';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const adminAuthToken = cookies().get('admin-auth-token');
+  const adminAuthToken = request.cookies.get(AUTH_COOKIE_NAME);
 
-  // If the user is trying to access the login page
+  // If trying to access the login page
   if (pathname === ADMIN_LOGIN_URL) {
-    // If they are already logged in (have a token), redirect them to the dashboard
+    // If already authenticated, redirect to dashboard
     if (adminAuthToken?.value) {
-      return NextResponse.redirect(new URL(ADMIN_DASHBOARD_URL, request.url));
+      console.log(`Middleware: User authenticated, redirecting from ${pathname} to ${ADMIN_DASHBOARD_BASE_URL}`);
+      return NextResponse.redirect(new URL(ADMIN_DASHBOARD_BASE_URL, request.url));
     }
-    // Otherwise, allow access to the login page
+    // Otherwise, allow access to login page
+    console.log(`Middleware: User not authenticated, allowing access to ${pathname}`);
     return NextResponse.next();
   }
 
-  // For any admin dashboard route
-  // This check is okay because the matcher limits when this middleware runs.
-  if (pathname.startsWith(ADMIN_DASHBOARD_URL)) {
+  // If trying to access any admin dashboard route
+  if (pathname.startsWith(ADMIN_DASHBOARD_BASE_URL)) {
+    // If not authenticated, redirect to login
     if (!adminAuthToken?.value) {
-      // If no token, redirect to login
+      console.log(`Middleware: User not authenticated, redirecting from ${pathname} to ${ADMIN_LOGIN_URL}`);
       const loginUrl = new URL(ADMIN_LOGIN_URL, request.url);
-      // Optionally, add a query param to redirect back after login:
+      // Optional: Add a query param to redirect back after login
       // loginUrl.searchParams.set('redirectedFrom', pathname);
       return NextResponse.redirect(loginUrl);
     }
-    // Token exists, allow access to the dashboard route
+    // Otherwise, allow access to the dashboard route
+    console.log(`Middleware: User authenticated, allowing access to ${pathname}`);
     return NextResponse.next();
   }
 
-  // Fallback for paths not explicitly handled by the above logic but still matched by the matcher.
-  // If the matcher is precise (as it is), this might not be strictly necessary for /admin/dashboard paths,
-  // but it's a safe default.
+  // For any other path not covered above (should not happen with the current matcher)
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     '/admin/login',
-    '/admin/dashboard/:path*', // This matches /admin/dashboard and /admin/dashboard/subpath
+    '/admin/dashboard/:path*', // Matches /admin/dashboard and all its sub-paths
   ],
 };

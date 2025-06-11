@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
-import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput, VerifyPinInput } from '@/lib/schemas/admin-schemas';
+import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput } from '@/lib/schemas/admin-schemas';
 import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, Enable2FASchema, Change2FAPinSchema, Disable2FASchema } from '@/lib/schemas/admin-schemas';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -112,8 +112,10 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
       hashedPin: null,
     };
     await saveAdmins([newAdmin]);
+    console.log("Server: createAdminAccount - Returning:", { success: true, message: "Admin account created successfully. You can now log in." });
     return { success: true, message: "Admin account created successfully. You can now log in." };
   } catch (error: any) {
+    console.error("Server: createAdminAccount - Error:", error);
     return { success: false, message: error.message || "Failed to create admin account." };
   }
 }
@@ -139,7 +141,7 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     }
 
     if (admin.is2FAEnabled) {
-      console.log("Server: loginAdmin - 2FA enabled for admin:", admin.adminId);
+      console.log("Server: loginAdmin - 2FA enabled for admin:", admin.adminId, " - Returning:", { success: true, message: "Password verified. Please enter your 2FA PIN.", requiresPin: true, adminId: admin.adminId });
       return { success: true, message: "Password verified. Please enter your 2FA PIN.", requiresPin: true, adminId: admin.adminId };
     }
 
@@ -150,7 +152,7 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
       path: '/',
       maxAge: SESSION_MAX_AGE,
     });
-    console.log("Server: loginAdmin - Login successful (no 2FA) for admin:", admin.adminId);
+    console.log("Server: loginAdmin - Login successful (no 2FA) for admin:", admin.adminId, " - Returning:", { success: true, message: "Login successful!" });
     return { success: true, message: "Login successful!" };
   } catch (error: any) {
     console.error("Server: loginAdmin - Error during login:", error);
@@ -274,6 +276,7 @@ export async function disable2FA(adminId: string, verificationData: Disable2FAIn
     if (adminIndex === -1) return { success: false, message: "Admin not found." };
     const admin = admins[adminIndex];
     if (!admin.is2FAEnabled) return { success: false, message: "2FA is already disabled."};
+    
     if (admin.is2FAEnabled && !admin.hashedPin) {
         console.warn(`Admin ${admin.adminId} has 2FA enabled but no hashedPin stored. Proceeding to disable based on password.`);
     }
@@ -321,7 +324,7 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
               path: '/',
               maxAge: SESSION_MAX_AGE,
             });
-            console.log("Server: verifyPinForLogin - PIN verified for admin:", adminId);
+            console.log("Server: verifyPinForLogin - PIN verified for admin:", adminId, " - Returning:", { success: true, message: "PIN verified. Login successful." });
             return { success: true, message: "PIN verified. Login successful." };
         } else {
             console.log("Server: verifyPinForLogin - Incorrect PIN for admin:", adminId);
@@ -352,8 +355,10 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
         await saveAdmins(admins);
         revalidatePath('/admin/dashboard/settings');
         revalidatePath('/admin/login');
+        console.log("Server: disable2FABySuperAction - Success for admin:", adminId, " - Returning:", { success: true, message: "2FA disabled via Super Action. You can now log in." });
         return { success: true, message: "2FA disabled via Super Action. You can now log in." };
     } catch (error: any) {
+        console.error("Server: disable2FABySuperAction - Error:", error);
         return { success: false, message: error.message || "Failed to disable 2FA with Super Action." };
     }
 }
@@ -361,6 +366,7 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
 export async function logoutAdmin(): Promise<{ success: boolean; message: string }> {
   try {
     cookies().delete(AUTH_COOKIE_NAME, { path: '/' });
+    console.log("Server: logoutAdmin - Returning:", { success: true, message: "Logged out successfully." });
     return { success: true, message: "Logged out successfully." };
   } catch (error: any)
 {

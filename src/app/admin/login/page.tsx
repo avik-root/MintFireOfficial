@@ -2,9 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, Mail, UserPlus, LogIn, AlertTriangle, Loader2, UserSquare2, Fingerprint, Eye, EyeOff, Shield } from 'lucide-react';
+import { useRouter } from 'next/navigation'; // Ensure this is from next/navigation
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -23,13 +21,12 @@ import {
   type VerifyPinInput
 } from '@/lib/schemas/admin-schemas';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
-// Import the new form components
 import CreateAdminFormComponent from './_components/CreateAdminForm';
-import ActualLoginForm from './_components/AdminLoginForm'; // This will be the repurposed component for standard login
+import ActualLoginForm from './_components/AdminLoginForm';
 import PinEntryFormComponent from './_components/PinEntryForm';
 import SuperActionFormComponent from './_components/SuperActionForm';
-
 
 type ViewMode = 'loading' | 'create' | 'pin_entry' | 'pin_locked_super_action' | 'login_form';
 
@@ -40,7 +37,7 @@ export default function AdminLoginPage() {
   const [showCreateConfirmPassword, setShowCreateConfirmPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showPin, setShowPin] = useState(false);
-  const [currentAdminId, setCurrentAdminId] = useState<string | null>(null); // Used for PIN/SuperAction
+  const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
   const [pinAttempts, setPinAttempts] = useState(0);
   const MAX_PIN_ATTEMPTS = 5;
 
@@ -50,22 +47,22 @@ export default function AdminLoginPage() {
   const checkInitialStatus = useCallback(async () => {
     setServerError(null);
     try {
-      const { exists, adminId, is2FAEnabled, error } = await checkAdminExists();
+      const { exists, adminId, error } = await checkAdminExists();
       if (error) {
         setServerError(error);
-        setViewMode('login_form'); // Default to login if check fails
+        setViewMode('login_form'); 
         toast({ variant: "destructive", title: "System Error", description: error });
         return;
       }
       if (exists) {
-        setCurrentAdminId(adminId || null); // Store adminId if exists
+        setCurrentAdminId(adminId || null);
         setViewMode('login_form');
       } else {
         setViewMode('create');
       }
     } catch (e : any) {
       setServerError(e.message || "Failed to check admin status.");
-      setViewMode('login_form'); // Default to login on unexpected error
+      setViewMode('login_form'); 
       toast({ variant: "destructive", title: "System Error", description: e.message || "Failed to check admin status." });
     }
   }, [toast]);
@@ -108,7 +105,7 @@ export default function AdminLoginPage() {
     if (result && typeof result.success === 'boolean') {
         if (result.success) {
             toast({ title: "Account Created", description: result.message });
-            await checkInitialStatus(); // Re-check status, should transition to login_form
+            await checkInitialStatus(); 
             createForm.reset();
         } else {
             setServerError(result.message);
@@ -129,7 +126,6 @@ export default function AdminLoginPage() {
     }
   };
 
-
   const handleLoginSubmit = async (data: LoginAdminInput) => {
     setServerError(null);
     loginForm.clearErrors();
@@ -137,27 +133,25 @@ export default function AdminLoginPage() {
     
     try {
       const result = await loginAdmin(data);
-      console.log("Client: Received from loginAdmin:", result);
-
-      if (result && typeof result.success === 'boolean') {
+      console.log("Client: loginAdmin result:", result);
+      if (result && typeof result.success !== 'undefined') {
         if (result.success) {
           if (result.requiresPin && result.adminId) {
-            setCurrentAdminId(result.adminId); // Store adminId for PIN entry
+            setCurrentAdminId(result.adminId);
             setViewMode('pin_entry');
-            setPinAttempts(0); // Reset PIN attempts
+            setPinAttempts(0);
             toast({ title: "2FA Required", description: result.message });
           } else {
             toast({ title: "Login Successful", description: result.message });
-            router.refresh();
-            router.push('/admin/dashboard');
+            router.refresh(); // Refresh router state
+            router.push('/admin/dashboard'); // Then navigate
           }
         } else {
           setServerError(result.message);
           toast({ variant: "destructive", title: "Login Failed", description: result.message });
         }
       } else {
-        console.error("Client: loginAdmin returned unexpected result:", result);
-        setServerError("Login action did not return a valid response. Please check console for details.");
+        setServerError("Login action did not return a valid success property.");
         toast({ variant: "destructive", title: "Login Error", description: "Received an unexpected response from the server." });
       }
     } catch (error: any) {
@@ -170,22 +164,22 @@ export default function AdminLoginPage() {
   const handlePinSubmit = async (data: VerifyPinInput) => {
     if (!currentAdminId) {
       toast({ variant: "destructive", title: "Error", description: "Admin ID not found for PIN verification." });
-      setViewMode('login_form'); // Fallback to login if adminId is missing
+      setViewMode('login_form'); 
       return;
     }
     setServerError(null);
     pinForm.clearErrors();
-    console.log("Client: Calling verifyPinForLogin for adminId:", currentAdminId, "with PIN (masked)");
+    console.log("Client: Calling verifyPinForLogin for adminId:", currentAdminId);
     
     try {
       const result = await verifyPinForLogin(currentAdminId, data.pin);
-      console.log("Client: Received from verifyPinForLogin:", result);
+      console.log("Client: verifyPinForLogin result:", result);
 
-      if (result && typeof result.success === 'boolean') {
+      if (result && typeof result.success !== 'undefined') {
         if (result.success) {
           toast({ title: "PIN Verified", description: result.message || "Login successful! Redirecting..."});
-          router.refresh();
-          router.push('/admin/dashboard');
+          router.refresh(); // Refresh router state
+          router.push('/admin/dashboard'); // Then navigate
         } else {
           const newAttempts = pinAttempts + 1;
           setPinAttempts(newAttempts);
@@ -198,8 +192,7 @@ export default function AdminLoginPage() {
           }
         }
       } else {
-        console.error("Client: verifyPinForLogin returned unexpected result:", result);
-        setServerError("PIN verification action did not return a valid response. Please check console.");
+        setServerError("PIN verification action did not return a valid success property.");
         toast({ variant: "destructive", title: "PIN Error", description: "Received an unexpected response from the server during PIN verification." });
       }
     } catch (error: any) {
@@ -214,7 +207,7 @@ export default function AdminLoginPage() {
   const handleSuperActionSubmit = async () => {
     if (!currentAdminId) {
         toast({ variant: "destructive", title: "Error", description: "Admin ID not found for Super Action." });
-        setViewMode('login_form'); // Fallback
+        setViewMode('login_form'); 
         return;
     }
     setIsSubmittingSuperAction(true);
@@ -222,21 +215,21 @@ export default function AdminLoginPage() {
     console.log("Client: Calling disable2FABySuperAction for adminId:", currentAdminId);
     try {
       const result = await disable2FABySuperAction(currentAdminId, superActionInput);
-      console.log("Client: Received from disable2FABySuperAction:", result);
-      if (result && typeof result.success === 'boolean') {
+      console.log("Client: disable2FABySuperAction result:", result);
+      if (result && typeof result.success !== 'undefined') {
           if (result.success) {
               toast({ title: "2FA Disabled", description: result.message });
-              setViewMode('login_form'); // Go back to login form
+              setViewMode('login_form'); 
               setPinAttempts(0);
               setSuperActionInput('');
-              loginForm.reset(); // Reset login form as user will now login normally
-              setCurrentAdminId(null); // Clear stored adminId
+              loginForm.reset(); 
+              setCurrentAdminId(null); 
           } else {
               setServerError(result.message);
               toast({ variant: "destructive", title: "Super Action Failed", description: result.message });
           }
       } else {
-        setServerError("Super Action did not return a valid response.");
+        setServerError("Super Action did not return a valid success property.");
         toast({ variant: "destructive", title: "Super Action Error", description: "Received an unexpected response." });
       }
     } catch (error: any) {

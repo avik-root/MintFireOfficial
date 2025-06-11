@@ -4,7 +4,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import type { CreateAdminInput, LoginAdminInput, UpdateAdminProfileInput, AdminProfile, AdminUserStored, Enable2FAInput, Change2FAPinInput, Disable2FAInput } from '@/lib/schemas/admin-schemas';
 import { AdminUserStoredSchema, CreateAdminSchema, UpdateAdminProfileSchema, Enable2FASchema, Change2FAPinSchema, Disable2FASchema } from '@/lib/schemas/admin-schemas';
 import { revalidatePath } from 'next/cache';
@@ -153,7 +153,7 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
       maxAge: SESSION_MAX_AGE,
       path: '/',
     });
-    console.log("Server: loginAdmin - Login successful (no 2FA) for admin:", admin.adminId);
+    console.log("Server: loginAdmin - Login successful (no 2FA) for admin:", admin.adminId, "Token:", token);
     return { success: true, message: "Login successful!" };
 
   } catch (error: any) {
@@ -164,19 +164,16 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
 
 export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?: string }> {
   try {
-    // This check relies on the middleware enforcing authentication
     const currentAdminToken = cookies().get(AUTH_COOKIE_NAME)?.value;
     if (!currentAdminToken) {
         return { error: "Not authenticated." };
     }
-    // In a real system, you'd validate the token against a session store.
-    // Here, we just assume if the cookie exists, they are "logged in" to the first admin profile.
-
+    
     const admins = await getAdminsInternal();
     if (admins.length === 0) {
       return { error: "Admin account not found." };
     }
-    const currentAdmin = admins[0]; // Assuming single admin for simplicity
+    const currentAdmin = admins[0]; 
     return {
       admin: {
         adminName: currentAdmin.adminName,
@@ -342,7 +339,7 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
                 maxAge: SESSION_MAX_AGE,
                 path: '/',
             });
-            console.log("Server: verifyPinForLogin - PIN verified, token set for admin:", adminId);
+            console.log("Server: verifyPinForLogin - PIN verified, token set for admin:", adminId, "Token:", token);
             return { success: true, message: "PIN verified. Login successful." };
         } else {
             console.log("Server: verifyPinForLogin - Incorrect PIN for admin:", adminId);
@@ -371,7 +368,6 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
         admins[adminIndex].is2FAEnabled = false;
         admins[adminIndex].hashedPin = null;
         await saveAdmins(admins);
-        // Also clear any existing auth cookie as the session state is changing
         cookies().delete(AUTH_COOKIE_NAME);
         revalidatePath('/admin/dashboard/settings');
         revalidatePath('/admin/login');

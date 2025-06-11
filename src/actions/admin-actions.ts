@@ -119,6 +119,7 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
 }
 
 export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string; requiresPin?: boolean; adminId?: string }> {
+  console.log("Server: loginAdmin called with data:", { ...data, password: "[REDACTED]" });
   try {
     const admins = await getAdminsInternal();
     const admin = admins.find(a =>
@@ -128,20 +129,20 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
     );
 
     if (!admin) {
+      console.log("Server: loginAdmin - Admin not found or credentials mismatch.");
       return { success: false, message: "Invalid credentials." };
     }
     const passwordMatch = await bcrypt.compare(data.password, admin.password);
     if (!passwordMatch) {
-        return { success: false, message: "Invalid credentials." };
+      console.log("Server: loginAdmin - Password mismatch for admin:", admin.adminId);
+      return { success: false, message: "Invalid credentials." };
     }
 
     if (admin.is2FAEnabled) {
-      // Password is correct, but 2FA is enabled. Do not set auth cookie yet.
-      // Signal to the client that PIN entry is required.
+      console.log("Server: loginAdmin - 2FA enabled for admin:", admin.adminId);
       return { success: true, message: "Password verified. Please enter your 2FA PIN.", requiresPin: true, adminId: admin.adminId };
     }
 
-    // Password correct and 2FA not enabled, proceed to set auth cookie
     const tokenValue = randomBytes(32).toString('hex');
     cookies().set(AUTH_COOKIE_NAME, tokenValue, {
       httpOnly: true,
@@ -149,9 +150,10 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
       path: '/',
       maxAge: SESSION_MAX_AGE,
     });
-
+    console.log("Server: loginAdmin - Login successful (no 2FA) for admin:", admin.adminId);
     return { success: true, message: "Login successful!" };
   } catch (error: any) {
+    console.error("Server: loginAdmin - Error during login:", error);
     return { success: false, message: error.message || "Failed to log in." };
   }
 }
@@ -168,7 +170,7 @@ export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?:
         adminName: currentAdmin.adminName,
         adminId: currentAdmin.adminId,
         email: currentAdmin.email,
-        is2FAEnabled: currentAdmin.is2FAEnabled, // No .default(false) here
+        is2FAEnabled: currentAdmin.is2FAEnabled,
       }
     };
   } catch (error: any) {
@@ -297,11 +299,18 @@ export async function disable2FA(adminId: string, verificationData: Disable2FAIn
 }
 
 export async function verifyPinForLogin(adminId: string, pin: string): Promise<{ success: boolean; message?: string }> {
+    console.log("Server: verifyPinForLogin called for adminId:", adminId, "with PIN:", pin.substring(0,1) + "****" + pin.substring(pin.length -1));
     try {
         const admins = await getAdminsInternal();
         const admin = admins.find(a => a.adminId === adminId);
-        if (!admin) return { success: false, message: "Admin not found." };
-        if (!admin.is2FAEnabled || !admin.hashedPin) return { success: false, message: "2FA not active for this account." };
+        if (!admin) {
+            console.log("Server: verifyPinForLogin - Admin not found.");
+            return { success: false, message: "Admin not found." };
+        }
+        if (!admin.is2FAEnabled || !admin.hashedPin) {
+            console.log("Server: verifyPinForLogin - 2FA not active for admin:", adminId);
+            return { success: false, message: "2FA not active for this account." };
+        }
 
         const pinMatch = await bcrypt.compare(pin, admin.hashedPin);
         if (pinMatch) {
@@ -312,11 +321,14 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
               path: '/',
               maxAge: SESSION_MAX_AGE,
             });
+            console.log("Server: verifyPinForLogin - PIN verified for admin:", adminId);
             return { success: true, message: "PIN verified. Login successful." };
         } else {
+            console.log("Server: verifyPinForLogin - Incorrect PIN for admin:", adminId);
             return { success: false, message: "Incorrect PIN." };
         }
     } catch (error: any) {
+        console.error("Server: verifyPinForLogin - Error during PIN verification:", error);
         return { success: false, message: error.message || "PIN verification failed." };
     }
 }
@@ -350,9 +362,9 @@ export async function logoutAdmin(): Promise<{ success: boolean; message: string
   try {
     cookies().delete(AUTH_COOKIE_NAME, { path: '/' });
     return { success: true, message: "Logged out successfully." };
-  } catch (error: any) {
+  } catch (error: any)
+{
+    console.error("Server: logoutAdmin - Error during logout:", error);
     return { success: false, message: "Logout failed. " + error.message };
   }
 }
-
-    

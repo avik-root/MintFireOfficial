@@ -73,14 +73,14 @@ export default function AdminLoginForm() {
   const handleCreateSubmit = async (data: CreateAdminInput) => {
     setServerError(null);
     const result = await createAdminAccount(data);
-    if (result.success) {
+    if (result && result.success) {
       toast({ title: "Success", description: result.message });
       // After creation, go to login form directly
       setViewMode('login_form');
       createForm.reset();
       loginForm.reset(); // Reset login form in case user was trying to log in before
       pinForm.reset();
-    } else {
+    } else if (result) {
       if (result.errors) {
          result.errors.forEach((err) => {
            if (err.path && err.path.length > 0) {
@@ -94,27 +94,49 @@ export default function AdminLoginForm() {
         setServerError(result.message);
         toast({ variant: "destructive", title: "Creation Failed", description: result.message });
       }
+    } else {
+        setServerError("Create admin action did not return a valid response.");
+        toast({ variant: "destructive", title: "Creation Error", description: "Received an unexpected response from the server." });
     }
   };
 
   const handleLoginSubmit = async (data: LoginAdminInput) => {
     setServerError(null);
-    const result = await loginAdmin(data);
-    if (result.success) {
-      if (result.requiresPin && result.adminId) {
-        setCurrentAdminId(result.adminId);
-        setViewMode('pin_entry');
-        setPinAttempts(0);
+    loginForm.clearErrors(); 
+    setIsSubmittingLogin(true);
+    try {
+      console.log("Client: Calling loginAdmin with data:", data);
+      const result = await loginAdmin(data);
+      console.log("Client: Received from loginAdmin:", result);
+
+      if (result && typeof result.success === 'boolean') {
+        if (result.success) {
+          if (result.requiresPin && result.adminId) {
+            setCurrentAdminId(result.adminId);
+            setViewMode('pin_entry');
+            setPinAttempts(0);
+            toast({ title: "2FA Required", description: result.message });
+          } else {
+            toast({ title: "Login Successful", description: result.message });
+            router.refresh();
+            router.push('/admin/dashboard');
+          }
+        } else {
+          setServerError(result.message);
+          toast({ variant: "destructive", title: "Login Failed", description: result.message });
+        }
       } else {
-        toast({ title: "Login Successful", description: "Redirecting to dashboard..." });
-        router.refresh(); // Refresh router cache
-        router.push('/admin/dashboard');
+        console.error("Client: loginAdmin returned unexpected result:", result);
+        setServerError("Login action did not return a valid response. Please check console for details.");
+        toast({ variant: "destructive", title: "Login Error", description: "Received an unexpected response from the server." });
       }
-    } else {
-      setServerError(result.message);
-      toast({ variant: "destructive", title: "Login Failed", description: result.message });
+    } catch (error: any) {
+      console.error("Client: Error during loginAdmin call:", error);
+      setServerError(error.message || "An unexpected error occurred during login.");
+      toast({ variant: "destructive", title: "Login Error", description: error.message || "An unexpected error occurred." });
+    } finally {
+      setIsSubmittingLogin(false);
     }
-    loginForm.reset(data); // Keep form data on failed login attempt
   };
 
   const handlePinSubmit = async (data: VerifyPinInput) => {
@@ -123,46 +145,75 @@ export default function AdminLoginForm() {
       return;
     }
     setServerError(null);
-    const result = await verifyPinForLogin(currentAdminId, data.pin);
-    if (result.success) {
-      toast({ title: "PIN Verified", description: "Login successful! Redirecting..."});
-      router.refresh(); // Refresh router cache
-      router.push('/admin/dashboard');
-    } else {
-      const newAttempts = pinAttempts + 1;
-      setPinAttempts(newAttempts);
-      setServerError(result.message || "Incorrect PIN.");
-      toast({ variant: "destructive", title: "PIN Invalid", description: result.message || "Incorrect PIN." });
-      if (newAttempts >= MAX_PIN_ATTEMPTS) {
-        setViewMode('pin_locked_super_action');
-        setServerError(`Maximum PIN attempts reached. Use Super Action to bypass.`);
-      }
-    }
-    pinForm.reset();
-  };
+    pinForm.clearErrors();
+    setIsSubmittingPin(true);
+    try {
+      console.log("Client: Calling verifyPinForLogin for adminId:", currentAdminId, "with PIN:", data.pin.substring(0,1) + "****" + data.pin.substring(data.pin.length -1));
+      const result = await verifyPinForLogin(currentAdminId, data.pin);
+      console.log("Client: Received from verifyPinForLogin:", result);
 
+      if (result && typeof result.success === 'boolean') {
+        if (result.success) {
+          toast({ title: "PIN Verified", description: result.message || "Login successful! Redirecting..."});
+          router.refresh(); 
+          router.push('/admin/dashboard');
+        } else {
+          const newAttempts = pinAttempts + 1;
+          setPinAttempts(newAttempts);
+          setServerError(result.message || "Incorrect PIN.");
+          toast({ variant: "destructive", title: "PIN Invalid", description: result.message || "Incorrect PIN." });
+          if (newAttempts >= MAX_PIN_ATTEMPTS) {
+            setViewMode('pin_locked_super_action');
+            setServerError(`Maximum PIN attempts reached. Use Super Action to bypass.`);
+            toast({ variant: "destructive", title: "PIN Locked", description: "Maximum PIN attempts reached. Use Super Action to bypass 2FA." });
+          }
+        }
+      } else {
+        console.error("Client: verifyPinForLogin returned unexpected result:", result);
+        setServerError("PIN verification action did not return a valid response. Please check console.");
+        toast({ variant: "destructive", title: "PIN Error", description: "Received an unexpected response from the server during PIN verification." });
+      }
+    } catch (error: any) {
+      console.error("Client: Error during verifyPinForLogin call:", error);
+      setServerError(error.message || "An unexpected error occurred during PIN verification.");
+      toast({ variant: "destructive", title: "PIN Error", description: error.message || "An unexpected error occurred." });
+    } finally {
+      setIsSubmittingPin(false);
+      pinForm.reset();
+    }
+  };
+  
   const handleSuperActionSubmit = async () => {
     if (!currentAdminId) {
-      toast({ variant: "destructive", title: "Error", description: "Admin ID not found for Super Action." });
-      return;
+        toast({ variant: "destructive", title: "Error", description: "Admin ID not found for Super Action." });
+        return;
     }
     setIsSubmittingSuperAction(true);
     setServerError(null);
-    const result = await disable2FABySuperAction(currentAdminId, superActionInput);
-    setIsSubmittingSuperAction(false);
-    if (result.success) {
-      toast({ title: "2FA Disabled", description: result.message });
-      setViewMode('login_form');
-      setPinAttempts(0);
-      setSuperActionInput('');
-    } else {
-      setServerError(result.message);
-      toast({ variant: "destructive", title: "Super Action Failed", description: result.message });
+    try {
+      const result = await disable2FABySuperAction(currentAdminId, superActionInput);
+      if (result && result.success) {
+          toast({ title: "2FA Disabled", description: result.message });
+          setViewMode('login_form');
+          setPinAttempts(0);
+          setSuperActionInput('');
+          loginForm.reset(); // Reset login form as user will now login normally
+      } else if (result) {
+          setServerError(result.message);
+          toast({ variant: "destructive", title: "Super Action Failed", description: result.message });
+      } else {
+        setServerError("Super Action did not return a valid response.");
+        toast({ variant: "destructive", title: "Super Action Error", description: "Received an unexpected response." });
+      }
+    } catch (error: any) {
+      setServerError(error.message || "An unexpected error occurred with Super Action.");
+      toast({ variant: "destructive", title: "Super Action Error", description: error.message || "An unexpected error occurred." });
+    } finally {
+      setIsSubmittingSuperAction(false);
     }
   };
 
-
-  // Props for child components
+  // Props for child components (passed to AdminLoginPage to render the actual form parts)
   const childProps = {
     viewMode,
     setViewMode,
@@ -308,8 +359,4 @@ export default function AdminLoginForm() {
     </Card>
   );
 }
-
-// This component now expects its parent (AdminLoginPage) to handle the initial 'loading' state
-// and pass down the determined initialViewMode.
-// It also no longer directly calls checkAdminExists.
 AdminLoginForm.displayName = "AdminLoginForm";

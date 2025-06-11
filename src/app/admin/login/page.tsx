@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // Keep for router.refresh if needed
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -29,6 +29,7 @@ import PinEntryFormComponent from './_components/PinEntryForm';
 import SuperActionFormComponent from './_components/SuperActionForm';
 
 type ViewMode = 'loading' | 'create' | 'pin_entry' | 'pin_locked_super_action' | 'login_form';
+const AUTH_COOKIE_NAME = 'admin-auth-token'; // Define for client-side check
 
 export default function AdminLoginPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('loading');
@@ -41,35 +42,8 @@ export default function AdminLoginPage() {
   const [pinAttempts, setPinAttempts] = useState(0);
   const MAX_PIN_ATTEMPTS = 5;
 
-  const router = useRouter(); // Still keep for router.refresh if needed, but primary navigation will change.
+  const router = useRouter(); 
   const { toast } = useToast();
-
-  const checkInitialStatus = useCallback(async () => {
-    setServerError(null);
-    try {
-      const { exists, adminId, error } = await checkAdminExists();
-      if (error) {
-        setServerError(error);
-        setViewMode('login_form'); 
-        toast({ variant: "destructive", title: "System Error", description: error });
-        return;
-      }
-      if (exists) {
-        setCurrentAdminId(adminId || null);
-        setViewMode('login_form');
-      } else {
-        setViewMode('create');
-      }
-    } catch (e : any) {
-      setServerError(e.message || "Failed to check admin status.");
-      setViewMode('login_form'); 
-      toast({ variant: "destructive", title: "System Error", description: e.message || "Failed to check admin status." });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    checkInitialStatus();
-  }, [checkInitialStatus]);
 
   const createForm = useForm<CreateAdminInput>({
     resolver: zodResolver(CreateAdminSchema),
@@ -96,6 +70,71 @@ export default function AdminLoginPage() {
 
   const passwordForCreateStrengthMeter = useWatch({ control: createForm.control, name: 'password' });
 
+  useEffect(() => {
+    // This effect determines the initial state of the login page for an unauthenticated user,
+    // or attempts to redirect if a cookie is found client-side (as a fallback to middleware).
+    console.log("AdminLoginPage: useEffect triggered. Current viewMode:", viewMode);
+
+    const cookieExistsClientSide = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(`${AUTH_COOKIE_NAME}=`));
+
+    if (cookieExistsClientSide) {
+      console.log("AdminLoginPage: Client-side auth cookie detected. Attempting redirect to dashboard.");
+      // If the client has an auth cookie, it means they are likely logged in.
+      // The middleware should ideally handle redirecting them from /admin/login to /admin/dashboard.
+      // This client-side redirect is a fallback.
+      window.location.href = '/admin/dashboard';
+      return; // Stop further processing in this effect if redirecting
+    }
+
+    // If no client-side cookie, proceed to check server for admin account existence
+    // This is to determine if we show "create admin" or "login" form.
+    const performInitialServerCheck = async () => {
+      console.log("AdminLoginPage: No client-side cookie. Performing initial server check for admin existence.");
+      setViewMode('loading');
+      setServerError(null);
+      try {
+        const { exists, adminId, error } = await checkAdminExists();
+        if (error) {
+          console.error("AdminLoginPage: Error from checkAdminExists:", error);
+          setServerError(error);
+          setViewMode('login_form'); // Default to login form on error
+          toast({ variant: "destructive", title: "System Error", description: error });
+          return;
+        }
+        if (exists) {
+          console.log("AdminLoginPage: Admin account exists. Setting viewMode to login_form.");
+          setCurrentAdminId(adminId || null);
+          setViewMode('login_form');
+        } else {
+          console.log("AdminLoginPage: No admin account exists. Setting viewMode to create.");
+          setViewMode('create');
+        }
+      } catch (e: any) {
+        console.error("AdminLoginPage: Catch block error during checkAdminExists:", e);
+        setServerError(e.message || "Failed to check admin status.");
+        setViewMode('login_form'); // Default to login form on error
+        toast({ variant: "destructive", title: "System Error", description: e.message || "Failed to check admin status." });
+      }
+    };
+
+    // Only run the server check if we are not already in a loading state from a previous run
+    // and no cookie was found client-side.
+    if (viewMode === 'loading' && !cookieExistsClientSide) {
+       performInitialServerCheck();
+    } else if (!cookieExistsClientSide && viewMode !== 'create' && viewMode !== 'login_form') {
+      // If somehow viewMode is not loading, create, or login_form, and no cookie, re-evaluate.
+      performInitialServerCheck();
+    }
+
+
+  // Effect should run once on mount or if toast changes (which is stable).
+  // viewMode is intentionally excluded from deps here to prevent loops if performInitialServerCheck itself changes viewMode.
+  // The logic inside handles the 'loading' state to prevent re-runs.
+  }, [toast]); 
+
+
   const handleCreateSubmit = async (data: CreateAdminInput) => {
     setServerError(null);
     const result = await createAdminAccount(data);
@@ -103,7 +142,12 @@ export default function AdminLoginPage() {
     if (result && typeof result.success === 'boolean') {
         if (result.success) {
             toast({ title: "Account Created", description: result.message });
-            await checkInitialStatus(); 
+            // After creating, re-check status which should set viewMode to 'login_form'
+            const { exists, adminId } = await checkAdminExists();
+            if (exists) {
+                setCurrentAdminId(adminId || null);
+                setViewMode('login_form');
+            }
             createForm.reset();
         } else {
             setServerError(result.message);
@@ -126,30 +170,31 @@ export default function AdminLoginPage() {
   const handleLoginSubmit = async (data: LoginAdminInput) => {
     setServerError(null);
     loginForm.clearErrors();
+    console.log("Client: handleLoginSubmit called with data:", { ...data, password: "[REDACTED]" });
     
     try {
       const result = await loginAdmin(data);
-      console.log("Client: loginAdmin result:", result);
+      console.log("Client: loginAdmin raw result:", result);
 
       if (result && typeof result.success !== 'undefined') {
         if (result.success) {
           if (result.requiresPin && result.adminId) {
             setCurrentAdminId(result.adminId);
             setViewMode('pin_entry');
-            setPinAttempts(0);
+            setPinAttempts(0); // Reset PIN attempts
             toast({ title: "2FA Required", description: result.message });
           } else {
             toast({ title: "Login Successful", description: result.message });
-            // router.refresh(); // Keep for cache invalidation if needed
-            window.location.href = '/admin/dashboard'; // Force full page navigation
+            window.location.href = '/admin/dashboard'; 
           }
         } else {
           setServerError(result.message);
           toast({ variant: "destructive", title: "Login Failed", description: result.message });
         }
       } else {
-        setServerError("Login action did not return a valid success property.");
-        toast({ variant: "destructive", title: "Login Error", description: "Received an unexpected response from the server." });
+        console.error("Client: loginAdmin result is invalid or missing 'success' property:", result);
+        setServerError(result?.message || "Login action did not return a valid success property.");
+        toast({ variant: "destructive", title: "Login Error", description: result?.message || "Received an unexpected response from the server." });
       }
     } catch (error: any) {
       console.error("Client: Error during loginAdmin call:", error);
@@ -166,16 +211,16 @@ export default function AdminLoginPage() {
     }
     setServerError(null);
     pinForm.clearErrors();
+    console.log("Client: handlePinSubmit called for adminId:", currentAdminId);
     
     try {
       const result = await verifyPinForLogin(currentAdminId, data.pin);
-      console.log("Client: verifyPinForLogin result:", result);
+      console.log("Client: verifyPinForLogin raw result:", result);
 
       if (result && typeof result.success !== 'undefined') {
         if (result.success) {
           toast({ title: "PIN Verified", description: result.message || "Login successful! Redirecting..."});
-          // router.refresh(); 
-          window.location.href = '/admin/dashboard'; // Force full page navigation
+          window.location.href = '/admin/dashboard';
         } else {
           const newAttempts = pinAttempts + 1;
           setPinAttempts(newAttempts);
@@ -188,8 +233,9 @@ export default function AdminLoginPage() {
           }
         }
       } else {
-        setServerError("PIN verification action did not return a valid success property.");
-        toast({ variant: "destructive", title: "PIN Error", description: "Received an unexpected response from the server during PIN verification." });
+        console.error("Client: verifyPinForLogin result is invalid or missing 'success' property:", result);
+        setServerError(result?.message || "PIN verification action did not return a valid success property.");
+        toast({ variant: "destructive", title: "PIN Error", description: result?.message || "Received an unexpected response from the server during PIN verification." });
       }
     } catch (error: any) {
       console.error("Client: Error during verifyPinForLogin call:", error);
@@ -208,25 +254,29 @@ export default function AdminLoginPage() {
     }
     setIsSubmittingSuperAction(true);
     setServerError(null);
+    console.log("Client: handleSuperActionSubmit called for adminId:", currentAdminId);
     try {
       const result = await disable2FABySuperAction(currentAdminId, superActionInput);
+      console.log("Client: disable2FABySuperAction raw result:", result);
       if (result && typeof result.success !== 'undefined') {
           if (result.success) {
               toast({ title: "2FA Disabled", description: result.message });
               setViewMode('login_form'); 
               setPinAttempts(0);
               setSuperActionInput('');
-              loginForm.reset(); 
-              setCurrentAdminId(null); 
+              // loginForm.reset(); // Reset login form if needed
+              setCurrentAdminId(null); // Clear adminId as 2FA context is gone
           } else {
               setServerError(result.message);
               toast({ variant: "destructive", title: "Super Action Failed", description: result.message });
           }
       } else {
-        setServerError("Super Action did not return a valid success property.");
-        toast({ variant: "destructive", title: "Super Action Error", description: "Received an unexpected response." });
+        console.error("Client: disable2FABySuperAction result is invalid or missing 'success' property:", result);
+        setServerError(result?.message || "Super Action did not return a valid success property.");
+        toast({ variant: "destructive", title: "Super Action Error", description: result?.message || "Received an unexpected response." });
       }
     } catch (error: any) {
+      console.error("Client: Error during disable2FABySuperAction call:", error);
       setServerError(error.message || "An unexpected error occurred with Super Action.");
       toast({ variant: "destructive", title: "Super Action Error", description: error.message || "An unexpected error occurred." });
     } finally {
@@ -294,5 +344,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-
-    

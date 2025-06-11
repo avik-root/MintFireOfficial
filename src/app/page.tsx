@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, type ElementType } from 'react';
@@ -234,12 +235,15 @@ export default function Home() {
   return (
     <div className="space-y-16">
       <section className="relative text-center py-16 md:py-24 rounded-xl shadow-2xl border border-primary/30 overflow-hidden">
-        <LetterGlitch 
-          glitchColors={['#7DF9FF', '#39FF14', '#0000FF']} // Electric Blue, Neon Green, and a darker blue
-          glitchSpeed={75}
-          smooth={true}
-          outerVignette={true}
-        />
+        <div className="absolute inset-0 z-0">
+          <LetterGlitch 
+            glitchColors={['#007A99', '#00800A', '#000080']} // Darker shades
+            glitchSpeed={75}
+            smooth={true}
+          />
+        </div>
+        <div className="absolute inset-0 bg-black/70 z-5"></div> {/* Transparent black overlay */}
+        
         <div className="relative z-10 container mx-auto px-4">
           <h1 className="font-headline text-5xl md:text-7xl font-bold mb-6">
             <span className="glitch-text" data-text="MintFire">MintFire</span>
@@ -452,3 +456,4 @@ export default function Home() {
     </div>
   );
 }
+

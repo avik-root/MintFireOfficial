@@ -19,13 +19,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For any other route matched by the matcher (i.e., /admin/dashboard/*)
-  // an auth token is required.
-  if (pathname === ADMIN_DASHBOARD_URL || pathname.startsWith(ADMIN_DASHBOARD_URL + '/')) {
+  // For any admin dashboard route
+  // This check is okay because the matcher limits when this middleware runs.
+  if (pathname.startsWith(ADMIN_DASHBOARD_URL)) {
     if (!adminAuthToken?.value) {
       // If no token, redirect to login
       const loginUrl = new URL(ADMIN_LOGIN_URL, request.url);
-      // Optionally, add a query param to redirect back after login, e.g.:
+      // Optionally, add a query param to redirect back after login:
       // loginUrl.searchParams.set('redirectedFrom', pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -33,15 +33,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // This line should ideally not be reached if the matcher is correct,
-  // but as a fallback, allow other non-matched requests.
+  // Fallback for paths not explicitly handled by the above logic but still matched by the matcher.
+  // If the matcher is precise (as it is), this might not be strictly necessary for /admin/dashboard paths,
+  // but it's a safe default.
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     '/admin/login',
-    '/admin/dashboard', // Specific match for the root dashboard
-    '/admin/dashboard/:path*', // Match for all sub-paths of dashboard
+    '/admin/dashboard/:path*', // This matches /admin/dashboard and /admin/dashboard/subpath
   ],
 };

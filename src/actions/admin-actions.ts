@@ -103,10 +103,10 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
       return { success: false, message: "An admin account already exists." };
     }
     const hashedPassword = await bcrypt.hash(validation.data.password, SALT_ROUNDS);
-    const newAdmin: AdminUserStored = { 
+    const newAdmin: AdminUserStored = {
       adminName: validation.data.adminName,
       adminId: validation.data.adminId,
-      email: validation.data.email, 
+      email: validation.data.email,
       password: hashedPassword,
       is2FAEnabled: false,
       hashedPin: null,
@@ -121,7 +121,7 @@ export async function createAdminAccount(data: CreateAdminInput): Promise<{ succ
 export async function loginAdmin(data: LoginAdminInput): Promise<{ success: boolean; message: string; requiresPin?: boolean; adminId?: string }> {
   try {
     const admins = await getAdminsInternal();
-    const admin = admins.find(a => 
+    const admin = admins.find(a =>
       a.email.toLowerCase() === data.email.toLowerCase() &&
       a.adminName === data.adminName &&
       a.adminId === data.adminId
@@ -147,12 +147,10 @@ export async function loginAdmin(data: LoginAdminInput): Promise<{ success: bool
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: SESSION_MAX_AGE, 
+      maxAge: SESSION_MAX_AGE,
     });
-    
-    revalidatePath('/admin/dashboard', 'layout');
-    revalidatePath('/admin/login');
-    return { success: true, message: "Login successful! Redirecting..." };
+
+    return { success: true, message: "Login successful!" };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to log in." };
   }
@@ -165,13 +163,13 @@ export async function getAdminProfile(): Promise<{ admin?: AdminProfile; error?:
       return { error: "Admin account not found." };
     }
     const currentAdmin = admins[0];
-    return { 
+    return {
       admin: {
         adminName: currentAdmin.adminName,
         adminId: currentAdmin.adminId,
         email: currentAdmin.email,
-        is2FAEnabled: currentAdmin.is2FAEnabled || false,
-      } 
+        is2FAEnabled: currentAdmin.is2FAEnabled, // No .default(false) here
+      }
     };
   } catch (error: any) {
     return { error: error.message || "Failed to fetch admin profile." };
@@ -190,10 +188,10 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
     if (admins.length === 0) {
       return { success: false, message: "Admin account not found." };
     }
-    let currentAdmin = admins[0]; 
+    let currentAdmin = admins[0];
 
     if (validatedData.newPassword) {
-      if (!validatedData.currentPassword) { 
+      if (!validatedData.currentPassword) {
         return { success: false, message: "Current password required to set new password." };
       }
       const currentPasswordMatch = await bcrypt.compare(validatedData.currentPassword, currentAdmin.password);
@@ -208,7 +206,7 @@ export async function updateAdminProfile(data: UpdateAdminProfileInput): Promise
     currentAdmin.email = validatedData.email;
 
     await saveAdmins([currentAdmin, ...admins.slice(1)]);
-    revalidatePath('/admin/dashboard/settings'); 
+    revalidatePath('/admin/dashboard/settings');
     return { success: true, message: "Admin profile updated successfully." };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to update admin profile." };
@@ -274,16 +272,19 @@ export async function disable2FA(adminId: string, verificationData: Disable2FAIn
     if (adminIndex === -1) return { success: false, message: "Admin not found." };
     const admin = admins[adminIndex];
     if (!admin.is2FAEnabled) return { success: false, message: "2FA is already disabled."};
+    if (admin.is2FAEnabled && !admin.hashedPin) {
+        console.warn(`Admin ${admin.adminId} has 2FA enabled but no hashedPin stored. Proceeding to disable based on password.`);
+    }
 
     let verified = false;
     if (admin.hashedPin) {
       verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.hashedPin);
     }
-    if (!verified) { 
+    if (!verified) {
       verified = await bcrypt.compare(validation.data.currentPinOrPassword, admin.password);
     }
     if (!verified) return { success: false, message: "Incorrect current PIN or password." };
-    
+
     admins[adminIndex].is2FAEnabled = false;
     admins[adminIndex].hashedPin = null;
     await saveAdmins(admins);
@@ -311,8 +312,6 @@ export async function verifyPinForLogin(adminId: string, pin: string): Promise<{
               path: '/',
               maxAge: SESSION_MAX_AGE,
             });
-            revalidatePath('/admin/dashboard', 'layout');
-            revalidatePath('/admin/login');
             return { success: true, message: "PIN verified. Login successful." };
         } else {
             return { success: false, message: "Incorrect PIN." };
@@ -335,7 +334,7 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
         const admins = await getAdminsInternal();
         const adminIndex = admins.findIndex(a => a.adminId === adminId);
         if (adminIndex === -1) return { success: false, message: "Admin not found for Super Action." };
-        
+
         admins[adminIndex].is2FAEnabled = false;
         admins[adminIndex].hashedPin = null;
         await saveAdmins(admins);
@@ -350,11 +349,10 @@ export async function disable2FABySuperAction(adminId: string, superActionAttemp
 export async function logoutAdmin(): Promise<{ success: boolean; message: string }> {
   try {
     cookies().delete(AUTH_COOKIE_NAME, { path: '/' });
-    revalidatePath('/admin/login');
-    revalidatePath('/admin/dashboard', 'layout');
     return { success: true, message: "Logged out successfully." };
   } catch (error: any) {
     return { success: false, message: "Logout failed. " + error.message };
   }
 }
 
+    

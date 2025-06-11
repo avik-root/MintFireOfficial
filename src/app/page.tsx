@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, type ElementType } from 'react';
@@ -18,6 +17,7 @@ import ProductDetailModal from './_components/ProductDetailModal';
 import FeedbackForm from './_components/FeedbackForm';
 import BugReportForm from './_components/BugReportForm'; 
 import { incrementProductView } from '@/actions/analytics-actions';
+import LetterGlitch from '@/components/LetterGlitch';
 
 
 interface CoreTechnology {
@@ -233,8 +233,14 @@ export default function Home() {
 
   return (
     <div className="space-y-16">
-      <section className="text-center py-16 md:py-24 bg-gradient-to-br from-background to-primary/10 rounded-xl shadow-2xl border border-primary/30">
-        <div className="container mx-auto px-4">
+      <section className="relative text-center py-16 md:py-24 rounded-xl shadow-2xl border border-primary/30 overflow-hidden">
+        <LetterGlitch 
+          glitchColors={['#7DF9FF', '#39FF14', '#0000FF']} // Electric Blue, Neon Green, and a darker blue
+          glitchSpeed={75}
+          smooth={true}
+          outerVignette={true}
+        />
+        <div className="relative z-10 container mx-auto px-4">
           <h1 className="font-headline text-5xl md:text-7xl font-bold mb-6">
             <span className="glitch-text" data-text="MintFire">MintFire</span>
           </h1>

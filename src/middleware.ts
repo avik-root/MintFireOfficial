@@ -3,24 +3,37 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const ADMIN_LOGIN_URL = '/admin/login';
 const ADMIN_DASHBOARD_BASE_URL = '/admin/dashboard';
-// const AUTH_COOKIE_NAME = 'admin-auth-token'; // No longer used for enforcement
+const AUTH_COOKIE_NAME = 'admin-auth-token';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const authToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  console.log(`Middleware: Processing request for ${pathname}`);
+  console.log(`Middleware: Processing request for ${pathname}. Auth token: ${authToken ? 'present' : 'absent'}`);
 
-  // If trying to access the login page, and we are removing auth,
-  // we might want to redirect directly to dashboard or just allow it.
-  // For simplicity now, if someone hits /admin/login, let them go to the dashboard.
+  // If trying to access the login page
   if (pathname === ADMIN_LOGIN_URL) {
-    console.log(`Middleware: Request to login page, redirecting to dashboard as auth is removed.`);
-    return NextResponse.redirect(new URL(ADMIN_DASHBOARD_BASE_URL, request.url));
+    if (authToken) {
+      // User is authenticated and trying to access login page, redirect to dashboard
+      console.log(`Middleware: Authenticated user accessing login page, redirecting to dashboard.`);
+      return NextResponse.redirect(new URL(ADMIN_DASHBOARD_BASE_URL, request.url));
+    }
+    // User is not authenticated, allow access to login page
+    console.log(`Middleware: Unauthenticated user accessing login page, allowing.`);
+    return NextResponse.next();
   }
 
-  // For any admin dashboard route, allow access.
+  // For any admin dashboard route
   if (pathname.startsWith(ADMIN_DASHBOARD_BASE_URL)) {
-    console.log(`Middleware: Allowing access to dashboard route ${pathname} as auth is removed.`);
+    if (!authToken) {
+      // User is not authenticated, redirect to login page
+      console.log(`Middleware: Unauthenticated user accessing dashboard route ${pathname}, redirecting to login.`);
+      const redirectUrl = new URL(ADMIN_LOGIN_URL, request.url);
+      redirectUrl.searchParams.set('redirectedFrom', pathname); // Optional: remember where they were going
+      return NextResponse.redirect(redirectUrl);
+    }
+    // User is authenticated, allow access
+    console.log(`Middleware: Authenticated user accessing dashboard route ${pathname}, allowing.`);
     return NextResponse.next();
   }
 

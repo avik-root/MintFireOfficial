@@ -22,14 +22,14 @@ import {
   Trophy, 
   ImageIcon,
   ListPlus,
-  // Loader2, // No longer needed for logout
-  // LogOut, // No longer needed for logout
+  Loader2, 
+  LogOut, 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
-// import { logoutAdmin } from '@/actions/admin-actions'; // No longer needed
+import { logoutAdmin } from '@/actions/admin-actions'; 
 import { useToast } from '@/hooks/use-toast';
-import { usePathname, useRouter } from 'next/navigation'; // useRouter still needed for potential future use or active link styling
+import { usePathname, useRouter } from 'next/navigation'; 
 
 const sidebarNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -55,30 +55,30 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // const router = useRouter(); // Keep if needed for other purposes
-  // const { toast } = useToast();  // Keep if needed for other purposes
+  // const router = useRouter(); // Not actively used for nav here, but kept for future.
+  const { toast } = useToast();  
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  // const [isLoggingOut, setIsLoggingOut] = React.useState(false); // No longer needed
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false); 
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
-  // const handleLogout = async () => { // Logout functionality removed
-  //   setIsLoggingOut(true);
-  //   try {
-  //     // const result = await logoutAdmin(); // Server action call removed
-  //     // if (result.success) { // Success check removed
-  //     //   toast({ title: "Logged Out", description: "You have been successfully logged out." });
-  //       window.location.href = '/admin/login'; // Direct redirect as auth is removed
-  //     // } else {
-  //     //   toast({ variant: "destructive", title: "Logout Failed", description: result.message });
-  //     // }
-  //   } catch (error: any) {
-  //     toast({ variant: "destructive", title: "Logout Error", description: error.message || "An unexpected error occurred." });
-  //   }
-  //   setIsLoggingOut(false);
-  // };
+  const handleLogout = async () => { 
+    setIsLoggingOut(true);
+    try {
+      const result = await logoutAdmin(); 
+      if (result.success) { 
+        toast({ title: "Logged Out", description: "You have been successfully logged out." });
+        window.location.href = '/admin/login'; // Force reload to ensure cookie cleared
+      } else {
+        toast({ variant: "destructive", title: "Logout Failed", description: result.message });
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Logout Error", description: error.message || "An unexpected error occurred." });
+    }
+    setIsLoggingOut(false);
+  };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -143,7 +143,6 @@ export default function AdminDashboardLayout({
               </span>
             </Link>
             
-            {/* Logout button removed
             <Button
               variant="ghost"
               onClick={handleLogout}
@@ -159,7 +158,6 @@ export default function AdminDashboardLayout({
                 {isLoggingOut ? "Logging out..." : "Logout"}
               </span>
             </Button>
-            */}
           </nav>
         </div>
       </aside>
